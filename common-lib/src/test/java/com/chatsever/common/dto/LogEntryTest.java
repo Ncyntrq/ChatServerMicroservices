@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Test serialize/deserialize LogEntry qua Jackson */
 class LogEntryTest {
 
     private ObjectMapper mapper;
@@ -19,6 +20,7 @@ class LogEntryTest {
         mapper.registerModule(new JavaTimeModule());
     }
 
+    // Kiểm tra: serialize → JSON → deserialize lại phải giữ nguyên tất cả field
     @Test
     void roundtripPreservesAllFields() throws Exception {
         LogEntry entry = new LogEntry(

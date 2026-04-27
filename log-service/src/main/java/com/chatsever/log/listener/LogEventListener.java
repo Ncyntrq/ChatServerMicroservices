@@ -9,8 +9,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Consume LogEntry events tu RabbitMQ.
- * Spec: doc/03_thiet_ke_chi_tiet.md § 3.2.5, doc/04_giao_thuc_truyen_thong.md § 4.6
+ * Consumer nhận LogEntry từ RabbitMQ queue "chat.log.queue".
+ * Khi messaging-service publish event → listener này tự động nhận và ghi log.
  */
 @Component
 public class LogEventListener {
@@ -23,9 +23,10 @@ public class LogEventListener {
         this.logService = logService;
     }
 
+    // Spring AMQP tự gọi method này mỗi khi có message mới trong queue
     @RabbitListener(queues = RabbitMQConfig.QUEUE)
     public void onLogEvent(LogEntry entry) {
-        log.debug("Nhan log event: type={} sender={}", entry.getEventType(), entry.getSender());
+        log.debug("Nhận log event: type={} sender={}", entry.getEventType(), entry.getSender());
         logService.log(entry);
     }
 }

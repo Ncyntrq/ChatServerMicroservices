@@ -7,22 +7,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 
 /**
- * Payload tin nhan qua WebSocket. JSON-serialized bang Jackson.
- * Spec: doc/03_thiet_ke_chi_tiet.md § 3.2.1.
- *
- * KHONG co field token — JWT chi truyen qua query param khi WS handshake.
+ * DTO tin nhắn WebSocket giữa client ↔ server.
+ * Field null sẽ bị bỏ khỏi JSON nhờ @JsonInclude(NON_NULL).
+ * KHÔNG chứa token — JWT chỉ truyền qua query param lúc WS handshake.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MessageDTO {
 
-    private MessageType type;
-    private String sender;
-    private String receiver;
-    private String content;
+    private MessageType type;       // Loại tin: CHAT, PRIVATE, SYSTEM, ...
+    private String sender;          // Người gửi
+    private String receiver;        // Người nhận (null nếu broadcast)
+    private String content;         // Nội dung tin nhắn
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
 
+    // Constructor mặc định — Jackson cần để deserialize
     public MessageDTO() {}
 
     public MessageDTO(MessageType type, String sender, String receiver, String content, LocalDateTime timestamp) {
@@ -32,6 +32,8 @@ public class MessageDTO {
         this.content = content;
         this.timestamp = timestamp;
     }
+
+    // --- Getter & Setter ---
 
     public MessageType getType() { return type; }
     public void setType(MessageType type) { this.type = type; }

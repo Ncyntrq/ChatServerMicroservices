@@ -17,6 +17,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Test REST API /api/logs/history bằng MockMvc.
+ * LogService được mock — chỉ test controller layer.
+ */
 @WebMvcTest(LogController.class)
 class LogControllerTest {
 
@@ -26,6 +30,7 @@ class LogControllerTest {
     @MockitoBean
     LogService logService;
 
+    // Test: gọi GET /history → trả về đúng format PagedResponse
     @Test
     void historyReturnsPagedResponse() throws Exception {
         LogEntry e = new LogEntry(LocalDateTime.of(2026, 4, 22, 14, 35),
@@ -43,6 +48,7 @@ class LogControllerTest {
            .andExpect(jsonPath("$.content[0].eventType").value("BROADCAST"));
     }
 
+    // Test: truyền eventType=PRIVATE → filter phải hoạt động
     @Test
     void historyAcceptsEventTypeFilter() throws Exception {
         when(logService.getHistory(eq(0), eq(50), eq("PRIVATE")))

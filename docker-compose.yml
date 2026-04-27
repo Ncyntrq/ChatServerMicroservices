@@ -1,14 +1,16 @@
-# Stack tối thiểu cho Phase 1 (Người A): RabbitMQ + log-service.
-# Khi các service khác (auth/messaging/presence/gateway) sẵn sàng, team thêm vào đây.
+# Docker Compose — Phase 1: RabbitMQ + log-service
+# Khi team dev xong service khác (auth/messaging/presence/gateway) → thêm vào đây.
+# Chạy: docker compose up -d
 
 services:
 
+  # Message broker — trung gian truyền event giữa các service
   rabbitmq:
     image: rabbitmq:3-management
     container_name: chat-rabbitmq
     ports:
-      - "5672:5672"      # AMQP
-      - "15672:15672"    # Management UI (guest/guest)
+      - "5672:5672"      # AMQP protocol
+      - "15672:15672"    # Web UI quản lý (http://localhost:15672, login: guest/guest)
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -17,26 +19,26 @@ services:
     networks:
       - chat-net
 
+  # Service ghi log — nhận event từ RabbitMQ, expose REST API xem history
   log-service:
     build:
-      context: .
+      context: .                        # Build từ project root (cần common-lib)
       dockerfile: log-service/Dockerfile
     image: chatsever/log-service:1.0.0-SNAPSHOT
     container_name: chat-log-service
     ports:
       - "8084:8084"
     environment:
-      # Override application.yml — Spring Boot tự map SPRING_RABBITMQ_HOST → spring.rabbitmq.host
-      SPRING_RABBITMQ_HOST: rabbitmq
+      # Override application.yml cho môi trường Docker
+      SPRING_RABBITMQ_HOST: rabbitmq    # Tên container RabbitMQ trong Docker network
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
     depends_on:
       rabbitmq:
-        condition: service_healthy
+        condition: service_healthy      # Đợi RabbitMQ sẵn sàng mới start
     volumes:
-      # Persist file log ra host để debug
-      - ./log-service/logs:/app/logs
+      - ./log-service/logs:/app/logs    # Mount file log ra host để debug
     networks:
       - chat-net
 

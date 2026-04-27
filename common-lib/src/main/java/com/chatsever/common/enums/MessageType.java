@@ -1,17 +1,14 @@
 package com.chatsever.common.enums;
 
-/**
- * Loại tin nhắn truyền qua WebSocket / RabbitMQ.
- * Spec: doc/03_thiet_ke_chi_tiet.md § 3.2.1.
- */
+/** Loại tin nhắn qua WebSocket / RabbitMQ */
 public enum MessageType {
-    CHAT,
-    PRIVATE,
-    SYSTEM,
-    ERROR,
-    LIST,
-    JOIN,
-    LEAVE,
-    PING,
-    PONG
+    CHAT,       // Tin broadcast cho tất cả
+    PRIVATE,    // Tin riêng cho 1 người
+    SYSTEM,     // Thông báo hệ thống
+    ERROR,      // Trả lỗi cho client
+    LIST,       // Danh sách user online
+    JOIN,       // User vào phòng
+    LEAVE,      // User rời phòng
+    PING,       // Heartbeat từ client
+    PONG        // Server trả lời heartbeat
 }

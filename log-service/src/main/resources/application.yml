@@ -1,24 +1,27 @@
+# Cấu hình log-service — Spring Boot
+# Ghi đè bằng biến môi trường khi chạy Docker (VD: SPRING_RABBITMQ_HOST=rabbitmq)
+
 server:
-  port: 8084
+  port: 8084    # Port API
 
 spring:
   application:
     name: log-service
   rabbitmq:
-    host: localhost
+    host: localhost     # Docker override: SPRING_RABBITMQ_HOST=rabbitmq
     port: 5672
     username: guest
     password: guest
   jackson:
     serialization:
-      write-dates-as-timestamps: false
+      write-dates-as-timestamps: false    # Date format string, không phải số
 
 logging:
   file:
-    name: ./logs/chat_log.txt
+    name: ./logs/chat_log.txt   # File lưu log JSON Lines
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info    # Expose health check endpoint

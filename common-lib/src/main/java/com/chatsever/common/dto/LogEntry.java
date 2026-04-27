@@ -5,22 +5,21 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 /**
- * Su kien log gui qua RabbitMQ (Topic Exchange `chat.exchange`).
- * Producer: messaging-service. Consumer: log-service.
- * Spec: doc/03_thiet_ke_chi_tiet.md § 3.2.1, doc/04_giao_thuc_truyen_thong.md § 4.6.
- *
- * eventType hop le: BROADCAST, PRIVATE, USER_LOGIN, USER_LOGOUT, USER_REGISTER.
+ * DTO log event — truyền qua RabbitMQ từ messaging-service → log-service.
+ * eventType: BROADCAST | PRIVATE | USER_LOGIN | USER_LOGOUT | USER_REGISTER
  */
 public class LogEntry {
 
+    // Thời điểm sự kiện. Null → LogService tự gán = now()
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
 
-    private String eventType;
-    private String sender;
-    private String receiver;
-    private String content;
+    private String eventType;  // Loại sự kiện
+    private String sender;     // Người gửi (null nếu system event)
+    private String receiver;   // Người nhận (null nếu broadcast)
+    private String content;    // Nội dung tin nhắn / mô tả event
 
+    // Constructor mặc định — Jackson cần để deserialize
     public LogEntry() {}
 
     public LogEntry(LocalDateTime timestamp, String eventType, String sender, String receiver, String content) {
@@ -30,6 +29,8 @@ public class LogEntry {
         this.receiver = receiver;
         this.content = content;
     }
+
+    // --- Getter & Setter ---
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }

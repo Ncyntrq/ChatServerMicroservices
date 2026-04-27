@@ -22,21 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Ghi append `LogEntry` thanh JSON Lines vao file, doc + filter + paginate khi truy van.
- * Spec: doc/03_thiet_ke_chi_tiet.md § 3.2.5, doc/04_giao_thuc_truyen_thong.md § 4.4.A
- *
- * Format file: moi dong = 1 JSON-serialized LogEntry.
- * Thread-safety: synchronized writes (single-process; nhieu instance phai dung DB thay file).
+ * Service ghi/đọc log theo format JSON Lines (mỗi dòng = 1 JSON LogEntry).
+ * File mặc định: ./logs/chat_log.txt (cấu hình trong application.yml).
+ * Thread-safe bằng synchronized — chỉ OK cho single instance,
+ * nếu chạy nhiều instance cần chuyển sang DB.
  */
 @Service
 public class LogService {
 
     private static final Logger log = LoggerFactory.getLogger(LogService.class);
 
-    private final Path logFile;
-    private final ObjectMapper mapper;
-    private final Object writeLock = new Object();
+    private final Path logFile;        // Đường dẫn file log
+    private final ObjectMapper mapper; // Jackson JSON parser
+    private final Object writeLock = new Object(); // Lock đồng bộ ghi file
 
+    // Đọc path từ config, mặc định "./logs/chat_log.txt"
     public LogService(@Value("${logging.file.name:./logs/chat_log.txt}") String logFilePath) {
         this.logFile = Paths.get(logFilePath);
         this.mapper = new ObjectMapper();
@@ -45,6 +45,7 @@ public class LogService {
         ensureParentDir();
     }
 
+    // Tạo thư mục cha nếu chưa có
     private void ensureParentDir() {
         try {
             Path parent = logFile.toAbsolutePath().getParent();
@@ -52,10 +53,11 @@ public class LogService {
                 Files.createDirectories(parent);
             }
         } catch (IOException e) {
-            log.warn("Khong the tao thu muc log: {}", e.getMessage());
+            log.warn("Không thể tạo thư mục log: {}", e.getMessage());
         }
     }
 
+    /** Ghi 1 LogEntry vào file (append). Tự gán timestamp nếu null. */
     public void log(LogEntry entry) {
         if (entry.getTimestamp() == null) {
             entry.setTimestamp(LocalDateTime.now());
@@ -67,33 +69,43 @@ public class LogService {
                 w.write(mapper.writeValueAsString(entry));
                 w.newLine();
             } catch (IOException e) {
-                log.error("Ghi log that bai", e);
+                log.error("Ghi log thất bại", e);
             }
         }
     }
 
+    /** Ghi log tin nhắn broadcast */
     public void logChat(String sender, String content) {
         log(new LogEntry(LocalDateTime.now(), "BROADCAST", sender, null, content));
     }
 
+    /** Ghi log tin nhắn riêng tư */
     public void logPrivate(String sender, String receiver, String content) {
         log(new LogEntry(LocalDateTime.now(), "PRIVATE", sender, receiver, content));
     }
 
+    /** Ghi log sự kiện hệ thống (LOGIN, LOGOUT, REGISTER, ...) */
     public void logSystem(String eventType, String content) {
         log(new LogEntry(LocalDateTime.now(), eventType, null, null, content));
     }
 
+    /**
+     * Đọc log + filter + phân trang.
+     * size tối đa 200 để tránh response quá lớn.
+     */
     public PagedResponse<LogEntry> getHistory(int page, int size, String eventType) {
         if (page < 0) page = 0;
         if (size <= 0) size = 50;
         if (size > 200) size = 200;
 
         List<LogEntry> all = readAll();
+
+        // Filter theo eventType nếu có
         List<LogEntry> filtered = (eventType == null || eventType.isBlank())
                 ? all
                 : all.stream().filter(e -> eventType.equals(e.getEventType())).toList();
 
+        // Cắt theo trang
         int from = Math.min(page * size, filtered.size());
         int to = Math.min(from + size, filtered.size());
         List<LogEntry> slice = filtered.subList(from, to);
@@ -101,6 +113,7 @@ public class LogService {
         return PagedResponse.of(slice, page, size, filtered.size());
     }
 
+    /** Đọc toàn bộ file log, bỏ qua dòng lỗi format */
     private List<LogEntry> readAll() {
         if (!Files.exists(logFile)) {
             return List.of();
@@ -112,11 +125,11 @@ public class LogService {
                 try {
                     result.add(mapper.readValue(line, LogEntry.class));
                 } catch (IOException ex) {
-                    log.warn("Bo qua dong log loi format: {}", line);
+                    log.warn("Bỏ qua dòng log lỗi format: {}", line);
                 }
             }
         } catch (IOException e) {
-            log.error("Doc file log that bai", e);
+            log.error("Đọc file log thất bại", e);
         }
         return result;
     }

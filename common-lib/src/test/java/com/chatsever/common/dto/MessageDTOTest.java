@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Test serialize/deserialize MessageDTO qua Jackson */
 class MessageDTOTest {
 
     private ObjectMapper mapper;
@@ -20,6 +21,7 @@ class MessageDTOTest {
         mapper.registerModule(new JavaTimeModule());
     }
 
+    // Kiểm tra: tin broadcast → receiver null → JSON phải bỏ qua field "receiver"
     @Test
     void serializeBroadcastMessage_omitsNullReceiver() throws Exception {
         MessageDTO msg = new MessageDTO();
@@ -32,10 +34,11 @@ class MessageDTOTest {
 
         assertTrue(json.contains("\"type\":\"CHAT\""));
         assertTrue(json.contains("\"sender\":\"nguyen\""));
-        assertFalse(json.contains("\"receiver\""), "Null receiver phai bi bo qua khi serialize");
-        assertFalse(json.contains("token"), "MessageDTO KHONG duoc co field token (§ 3.2.1)");
+        assertFalse(json.contains("\"receiver\""), "Null receiver phải bị bỏ qua khi serialize");
+        assertFalse(json.contains("token"), "MessageDTO KHÔNG được có field token");
     }
 
+    // Kiểm tra: deserialize tin PRIVATE → tất cả field phải có đầy đủ
     @Test
     void deserializePrivateMessage_populatesAllFields() throws Exception {
         String json = """

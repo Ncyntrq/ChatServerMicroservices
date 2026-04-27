@@ -10,8 +10,10 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Test LogService: ghi/đọc file log, filter, phân trang. Dùng @TempDir để tạo thư mục tạm. */
 class LogServiceTest {
 
+    // Test: ghi 2 log → đọc lại phải trả đủ 2 record
     @Test
     void logAndReadBack(@TempDir Path tmp) {
         Path file = tmp.resolve("chat_log.txt");
@@ -32,6 +34,7 @@ class LogServiceTest {
         assertEquals("Hi", page.content().get(1).getContent());
     }
 
+    // Test: filter theo eventType → chỉ trả record khớp
     @Test
     void filterByEventType(@TempDir Path tmp) {
         LogService svc = new LogService(tmp.resolve("log.txt").toString());
@@ -45,6 +48,7 @@ class LogServiceTest {
         page.content().forEach(e -> assertEquals("BROADCAST", e.getEventType()));
     }
 
+    // Test: 7 record, size=3 → phải chia đúng 3 trang (3+3+1)
     @Test
     void paginationSlicesCorrectly(@TempDir Path tmp) {
         LogService svc = new LogService(tmp.resolve("log.txt").toString());
@@ -64,6 +68,7 @@ class LogServiceTest {
         assertEquals("msg6", p2.content().get(0).getContent());
     }
 
+    // Test: file chưa tồn tại → trả empty, không crash
     @Test
     void emptyFileReturnsEmptyPage(@TempDir Path tmp) {
         LogService svc = new LogService(tmp.resolve("none.txt").toString());
