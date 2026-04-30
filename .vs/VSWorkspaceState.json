@@ -1,0 +1,21 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\gateway-service\\src",
+    "\\gateway-service\\src\\main",
+    "\\gateway-service\\src\\main\\java",
+    "\\gateway-service\\src\\main\\java\\com",
+    "\\gateway-service\\src\\main\\java\\com\\chatsever",
+    "\\gateway-service\\src\\main\\java\\com\\chatsever\\gateway",
+    "\\log-service",
+    "\\presence-service\\src",
+    "\\presence-service\\src\\main",
+    "\\presence-service\\src\\main\\java",
+    "\\presence-service\\src\\main\\java\\com",
+    "\\presence-service\\src\\main\\java\\com\\chatsever",
+    "\\presence-service\\src\\main\\java\\com\\chatsever\\presence",
+    "\\presence-service\\src\\main\\java\\com\\chatsever\\presence\\controller"
+  ],
+  "SelectedNode": "\\log-service\\Dockerfile",
+  "PreviewInSolutionExplorer": false
+}

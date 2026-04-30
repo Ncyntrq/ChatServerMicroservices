@@ -28,5 +28,7 @@
     <modules>
         <module>common-lib</module>
         <module>log-service</module>
+		<module>gateway-service</module>
+		<module>presence-service</module>
     </modules>
 </project>
