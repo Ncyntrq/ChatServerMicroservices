@@ -77,7 +77,27 @@ services:
         condition: service_healthy
     networks:
       - chat-net
+  # Messaging Service
+  messaging-service:
+    build:
+      context: .
+      dockerfile: messaging-service/Dockerfile
+    image: chatsever/messaging-service:1.0.0-SNAPSHOT
+    container_name: chat-messaging-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      PRESENCE_SERVICE_URL: http://presence-service:8083/api/presence
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      presence-service:
+        condition: service_started
+    networks:
+      - chat-net
 
 networks:
   chat-net:
     driver: bridge
+

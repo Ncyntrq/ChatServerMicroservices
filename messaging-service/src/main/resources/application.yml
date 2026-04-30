@@ -4,13 +4,10 @@ server:
 spring:
   application:
     name: messaging-service
-#  rabbitmq:
-#    host: ${SPRING_RABBITMQ_HOST:localhost}
-#    port: 5672
-#    username: guest
-#    password: guest
-#
-## Để debug cho dễ
-#logging:
-#  level:
-#    org.springframework.web: DEBUG
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: 5672
+
+services:
+  auth-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  presence-url: ${PRESENCE_SERVICE_URL:http://localhost:8083}
