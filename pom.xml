@@ -28,8 +28,10 @@
     <modules>
         <module>common-lib</module>
         <module>log-service</module>
-		<module>gateway-service</module>
-		<module>presence-service</module>
         <module>auth-service</module>
+        <module>presence-service</module>
+        <module>messaging-service</module>
+        <module>gateway-service</module>
+        <module>server-service</module>
     </modules>
 </project>

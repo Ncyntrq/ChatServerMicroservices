@@ -16,19 +16,19 @@ COPY presence-service presence-service
 COPY server-service server-service
 
 # --- SỬA TÊN MODULE TẠI ĐÂY ---
-RUN ./mvnw -pl messaging-service -am clean package -DskipTests
+RUN ./mvnw -pl auth-service -am clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
 # --- SỬA TÊN MODULE TẠI ĐÂY ---
-COPY --from=build /build/messaging-service/target/messaging-service-1.0.0-SNAPSHOT.jar app.jar
+COPY --from=build /build/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar app.jar
 
 ENV TZ=Asia/Ho_Chi_Minh
 
 # --- SỬA PORT TƯƠNG ỨNG TẠI ĐÂY ---
 # Gateway: 8080 | Auth: 8081 | Messaging: 8082 | Presence: 8083 | Log: 8084
-EXPOSE 8082
+EXPOSE 8081
 
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]

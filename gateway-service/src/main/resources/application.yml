@@ -6,29 +6,49 @@ spring:
     name: gateway-service
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            # Dịch vụ Xác thực & Cấp token
-            - id: auth-service
-              uri: http://auth-service:8081
-              predicates:
-                - Path=/api/auth/**
+      routes:
+        # 1. Dịch vụ Xác thực & Cấp token (Auth Service)
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/**
 
-            # Dịch vụ Nhắn tin thời gian thực (Websocket)
-            - id: messaging-ws
-              uri: ws://messaging-ws:8082
-              predicates:
-                - Path=/ws/chat/**
+        # 2. Dịch vụ Quản lý Nhóm/Server (Người D)
+        - id: server-service
+          uri: http://server-service:8085
+          predicates:
+            - Path=/api/servers/**
 
-            # Dịch vụ Theo dõi trạng thái Online/Offline
-            - id: presence-service
-              uri: http://presence-service:8083
-              predicates:
-                - Path=/api/presence/**
+        # 3. Dịch vụ Nhắn tin & Kênh (Messaging & Channel - Người C)
+        - id: messaging-service
+          uri: http://messaging-service:8082
+          predicates:
+            - Path=/api/messages/**, /api/channels/**
 
-            # Dịch vụ Quản lý lịch sử hệ thống (Log)
-            - id: log-service
-              uri: http://log-service:8084
-              predicates:
-                - Path=/api/logs/**
+        # 4. Dịch vụ Websocket (Dùng cho Real-time chat)
+        - id: messaging-ws
+          uri: ws://messaging-service:8082
+          predicates:
+            - Path=/ws/**
+
+        # 5. Dịch vụ Trạng thái (Presence Service - nâng cấp)
+        - id: presence-service
+          uri: http://presence-service:8083
+          predicates:
+            - Path=/api/presence/**
+
+        # 6. Dịch vụ File & Thông báo (Người A)
+        - id: asset-service
+          uri: http://file-service:8084
+          predicates:
+            - Path=/api/files/**, /api/notifications/**
+
+        # 7. Dịch vụ Log (Vẫn giữ từ V1)
+        - id: log-service
+          uri: http://log-service:8084
+          predicates:
+            - Path=/api/logs/**
+
+# Cấu hình bảo mật để JwtAuthFilter sử dụng
+jwt:
+  secret: chatsever-jwt-secret-key-2026

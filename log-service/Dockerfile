@@ -1,34 +1,34 @@
 # syntax=docker/dockerfile:1.6
-# Multi-stage build cho log-service.
-# Build context = project root (vì log-service phụ thuộc common-lib).
-
-# ---------- Stage 1: Build ----------
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /build
 
-# Copy Maven Wrapper + parent POM trước → tận dụng Docker cache layer
 COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
+RUN chmod +x mvnw && sed -i 's/\r$//' mvnw
 
-# Copy source code 2 module cần thiết
+# COPY đầy đủ các module để không bị lỗi thiếu dependencies
 COPY common-lib common-lib
+COPY auth-service auth-service
+COPY gateway-service gateway-service
 COPY log-service log-service
+COPY messaging-service messaging-service
+COPY presence-service presence-service
+COPY server-service server-service
 
-# Build JAR, skip test (test đã chạy ở CI/local trước đó)
+# --- SỬA TÊN MODULE TẠI ĐÂY ---
 RUN ./mvnw -pl log-service -am clean package -DskipTests
 
-# ---------- Stage 2: Runtime ----------
+# Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Lấy JAR từ stage build
+# --- SỬA TÊN MODULE TẠI ĐÂY ---
 COPY --from=build /build/log-service/target/log-service-1.0.0-SNAPSHOT.jar app.jar
 
-# Timezone Việt Nam
-ENV TZ=Asia/Ho_Chi_Minh \
-    JAVA_OPTS=""
+ENV TZ=Asia/Ho_Chi_Minh
 
+# --- SỬA PORT TƯƠNG ỨNG TẠI ĐÂY ---
+# Gateway: 8080 | Auth: 8081 | Messaging: 8082 | Presence: 8083 | Log: 8084
 EXPOSE 8084
 
-# Log ghi vào /app/logs/chat_log.txt — mount volume khi chạy docker-compose
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
