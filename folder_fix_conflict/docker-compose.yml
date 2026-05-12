@@ -48,7 +48,6 @@ services:
       - PRESENCE_SERVICE_URL=http://presence-service:8083
       - FILE_SERVICE_URL=http://file-service:8084
       - LOG_SERVICE_URL=http://log-service:8084
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8088
     depends_on:
       - auth-service
       - messaging-service
@@ -125,37 +124,6 @@ services:
       - chat-net
     depends_on:
       - rabbitmq
-
-  notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
-    ports:
-      - "8088:8088"
-    environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-    depends_on:
-      - rabbitmq
-    networks:
-      - chat-net
-
-  file-service:
-    build:
-      context: .
-      dockerfile: file-service/Dockerfile
-    ports:
-      - "8089:8089"
-    environment:
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=admin
-      - MINIO_SECRET_KEY=password123
-    depends_on:
-      - minio
-    networks:
-      - chat-net
 
 networks:
   chat-net:

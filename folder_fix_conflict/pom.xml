@@ -47,8 +47,5 @@
         <module>gateway-service</module>
         <module>server-service</module>
         <module>channel-service</module>
-        <!-- Merge thêm từ nhánh của bạn -->
-        <module>notification-service</module>
-        <module>file-service</module>
     </modules>
 </project>
