@@ -3,6 +3,8 @@
 
 # Log file
 *.log
+logs/
+chat_log.txt
 
 # BlueJ files
 *.ctxt
