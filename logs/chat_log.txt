@@ -212,3 +212,54 @@ Caused by: java.net.ConnectException: Connection refused: getsockopt
 2026-05-05T18:32:26.400+07:00  INFO 10620 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-20] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
 2026-05-05T18:32:26.401+07:00  INFO 10620 --- [log-service] [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
 2026-05-05T18:32:26.488+07:00  INFO 10620 --- [log-service] [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-12T10:50:48.021+07:00  INFO 22388 --- [log-service] [main] com.chatsever.log.LogApplication         : Starting LogApplication using Java 17.0.18 with PID 22388 (D:\UIT\SE330\Do an\chat-server-microservices\log-service\target\classes started by Admin in D:\UIT\SE330\Do an\chat-server-microservices)
+2026-05-12T10:50:48.023+07:00  INFO 22388 --- [log-service] [main] com.chatsever.log.LogApplication         : No active profile set, falling back to 1 default profile: "default"
+2026-05-12T10:50:48.830+07:00  INFO 22388 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8084 (http)
+2026-05-12T10:50:48.838+07:00  INFO 22388 --- [log-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-12T10:50:48.838+07:00  INFO 22388 --- [log-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-05-12T10:50:48.875+07:00  INFO 22388 --- [log-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-12T10:50:48.875+07:00  INFO 22388 --- [log-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 823 ms
+2026-05-12T10:50:49.379+07:00  INFO 22388 --- [log-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+2026-05-12T10:50:49.441+07:00  INFO 22388 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8084 (http) with context path ''
+2026-05-12T10:50:49.444+07:00  INFO 22388 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-05-12T10:50:49.485+07:00  INFO 22388 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#35e98af:0/SimpleConnection@5203c80f [delegate=amqp://guest@127.0.0.1:5672/, localPort=59726]
+2026-05-12T10:50:49.555+07:00  INFO 22388 --- [log-service] [main] com.chatsever.log.LogApplication         : Started LogApplication in 1.837 seconds (process running for 2.249)
+2026-05-12T10:50:49.977+07:00  INFO 22388 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-12T10:50:49.978+07:00  INFO 22388 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-12T10:50:49.979+07:00  INFO 22388 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-12T11:08:30.385+07:00  INFO 22388 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2026-05-12T11:08:31.319+07:00  INFO 22388 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+2026-05-12T11:08:58.118+07:00  INFO 26288 --- [log-service] [main] com.chatsever.log.LogApplication         : Starting LogApplication using Java 17.0.18 with PID 26288 (D:\UIT\SE330\Do an\chat-server-microservices\log-service\target\classes started by Admin in D:\UIT\SE330\Do an\chat-server-microservices)
+2026-05-12T11:08:58.122+07:00  INFO 26288 --- [log-service] [main] com.chatsever.log.LogApplication         : No active profile set, falling back to 1 default profile: "default"
+2026-05-12T11:09:01.121+07:00  INFO 26288 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8084 (http)
+2026-05-12T11:09:01.157+07:00  INFO 26288 --- [log-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-12T11:09:01.158+07:00  INFO 26288 --- [log-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-05-12T11:09:01.278+07:00  INFO 26288 --- [log-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-12T11:09:01.279+07:00  INFO 26288 --- [log-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3081 ms
+2026-05-12T11:09:03.352+07:00  INFO 26288 --- [log-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+2026-05-12T11:09:03.569+07:00  INFO 26288 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8084 (http) with context path ''
+2026-05-12T11:09:03.578+07:00  INFO 26288 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-05-12T11:09:03.892+07:00  INFO 26288 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#6b8d54da:0/SimpleConnection@4b4a2fa8 [delegate=amqp://guest@127.0.0.1:5672/, localPort=49233]
+2026-05-12T11:09:04.176+07:00  INFO 26288 --- [log-service] [main] com.chatsever.log.LogApplication         : Started LogApplication in 6.964 seconds (process running for 8.422)
+2026-05-12T11:09:04.722+07:00  INFO 26288 --- [log-service] [RMI TCP Connection(1)-192.168.100.181] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-12T11:09:04.722+07:00  INFO 26288 --- [log-service] [RMI TCP Connection(1)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-12T11:09:04.727+07:00  INFO 26288 --- [log-service] [RMI TCP Connection(1)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+2026-05-12T11:10:52.588+07:00  INFO 26288 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2026-05-12T11:10:52.957+07:00  INFO 26288 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+2026-05-12T11:13:45.309+07:00  INFO 28976 --- [log-service] [main] com.chatsever.log.LogApplication         : Starting LogApplication using Java 17.0.18 with PID 28976 (D:\UIT\SE330\Do an\chat-server-microservices\log-service\target\classes started by Admin in D:\UIT\SE330\Do an\chat-server-microservices)
+2026-05-12T11:13:45.312+07:00  INFO 28976 --- [log-service] [main] com.chatsever.log.LogApplication         : No active profile set, falling back to 1 default profile: "default"
+2026-05-12T11:13:46.469+07:00  INFO 28976 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8084 (http)
+2026-05-12T11:13:46.490+07:00  INFO 28976 --- [log-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-12T11:13:46.491+07:00  INFO 28976 --- [log-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-05-12T11:13:46.586+07:00  INFO 28976 --- [log-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-12T11:13:46.588+07:00  INFO 28976 --- [log-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1241 ms
+2026-05-12T11:13:47.554+07:00  INFO 28976 --- [log-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+2026-05-12T11:13:47.660+07:00  INFO 28976 --- [log-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8084 (http) with context path ''
+2026-05-12T11:13:47.664+07:00  INFO 28976 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-05-12T11:13:47.711+07:00  INFO 28976 --- [log-service] [main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#650aa077:0/SimpleConnection@5f56424d [delegate=amqp://guest@127.0.0.1:5672/, localPort=54854]
+2026-05-12T11:13:47.773+07:00  INFO 28976 --- [log-service] [main] com.chatsever.log.LogApplication         : Started LogApplication in 2.829 seconds (process running for 3.305)
+2026-05-12T11:13:48.235+07:00  INFO 28976 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-12T11:13:48.235+07:00  INFO 28976 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-12T11:13:48.236+07:00  INFO 28976 --- [log-service] [RMI TCP Connection(3)-192.168.100.181] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-12T11:22:39.781+07:00  INFO 28976 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2026-05-12T11:22:39.950+07:00  INFO 28976 --- [log-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.

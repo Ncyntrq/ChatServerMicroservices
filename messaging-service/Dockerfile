@@ -14,6 +14,7 @@ COPY log-service log-service
 COPY messaging-service messaging-service
 COPY presence-service presence-service
 COPY server-service server-service
+COPY channel-service channel-service
 
 # --- SỬA TÊN MODULE TẠI ĐÂY ---
 RUN ./mvnw -pl messaging-service -am clean package -DskipTests

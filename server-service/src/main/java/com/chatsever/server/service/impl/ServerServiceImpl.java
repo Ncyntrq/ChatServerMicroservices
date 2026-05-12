@@ -2,6 +2,7 @@ package com.chatsever.server.service.impl;
 
 import com.chatsever.server.model.*;
 import com.chatsever.server.repository.*;
+import com.chatsever.server.client.ChannelClient;
 import com.chatsever.server.service.ServerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import java.util.*;
 public class ServerServiceImpl implements ServerService {
     private final ServerRepository serverRepository;
     private final MemberRepository memberRepository;
-    private final ChannelRepository channelRepository;
+    private final ChannelClient channelClient;
 
     @Override
     @Transactional
@@ -39,7 +40,7 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findById(serverId).orElseThrow();
         Map<String, Object> details = new HashMap<>();
         details.put("server", s);
-        details.put("channels", channelRepository.findByServerId(serverId));
+        details.put("channels", channelClient.getChannelsByServerId(serverId));
         details.put("members", memberRepository.findByServerId(serverId));
         return details;
     }
@@ -59,7 +60,7 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findById(id).orElseThrow();
         if(!s.getOwnerId().equals(uid)) throw new RuntimeException("No permission");
         memberRepository.deleteByServerId(id);
-        channelRepository.deleteByServerId(id);
+        channelClient.deleteChannelsByServerId(id);
         serverRepository.delete(s);
     }
 

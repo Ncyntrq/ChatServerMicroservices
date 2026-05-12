@@ -16,7 +16,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: chat_server_db
     ports:
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - chat-net
 
@@ -38,7 +38,16 @@ services:
       context: .
       dockerfile: gateway-service/Dockerfile
     ports:
-      - "8080:8080"  # Cánh cửa chính của toàn hệ thống
+      - "8080:8080" # Cánh cửa chính của toàn hệ thống
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - SERVER_SERVICE_URL=http://server-service:8085
+      - CHANNEL_SERVICE_URL=http://channel-service:8086
+      - MESSAGING_SERVICE_URL=http://messaging-service:8082
+      - MESSAGING_WS_URL=ws://messaging-service:8082
+      - PRESENCE_SERVICE_URL=http://presence-service:8083
+      - FILE_SERVICE_URL=http://file-service:8084
+      - LOG_SERVICE_URL=http://log-service:8084
     depends_on:
       - auth-service
       - messaging-service
@@ -61,10 +70,28 @@ services:
     networks:
       - chat-net
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL8Dialect
+      - CHANNEL_SERVICE_URL=http://channel-service:8086
+    depends_on:
+      - mysql-db
+      - channel-service
+
+  channel-service:
+    build:
+      context: .
+      dockerfile: channel-service/Dockerfile
+    networks:
+      - chat-net
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL8Dialect
+      - MYSQL_HOST=mysql-db
+      - MYSQL_PASSWORD=root
     depends_on:
       - mysql-db
 
@@ -87,7 +114,7 @@ services:
       - MYSQL_HOST=mysql-db
       - MYSQL_PASSWORD=root
     depends_on:
-        - mysql-db
+      - mysql-db
 
   log-service:
     build:

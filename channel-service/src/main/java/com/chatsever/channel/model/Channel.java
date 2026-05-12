@@ -1,4 +1,4 @@
-package com.chatsever.server.model;
+package com.chatsever.channel.model;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -6,7 +6,7 @@ import com.chatsever.log.service.LogService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ class LogControllerTest {
     @Autowired
     MockMvc mvc;
 
-    @MockitoBean
+    @MockBean
     LogService logService;
 
     // Test: gọi GET /history → trả về đúng format PagedResponse

@@ -5,9 +5,9 @@ spring:
   application:
     name: server-service
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/chat_server_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
     username: root
-    password: ${MYSQL_PASSWORD:root}
+    password: Nn3832143
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:

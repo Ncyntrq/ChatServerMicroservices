@@ -1,10 +1,10 @@
-package com.chatsever.server.repository;
+package com.chatsever.channel.repository;
 
-import com.chatsever.server.model.Channel;
+import com.chatsever.channel.model.Channel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ChannelRepository extends JpaRepository<Channel, Long> {
     List<Channel> findByServerId(Long serverId);
-    void deleteByServerId(Long serverId); // Dùng để dọn rác khi xóa server
+    void deleteByServerId(Long serverId);
 }

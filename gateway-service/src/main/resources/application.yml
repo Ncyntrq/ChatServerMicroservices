@@ -9,49 +9,55 @@ spring:
       routes:
         # 1. Dịch vụ Xác thực & Cấp token (Auth Service)
         - id: auth-service
-          uri: http://auth-service:8081
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
 
         # 2. Dịch vụ Quản lý Nhóm/Server (Người D)
         - id: server-service
-          uri: http://server-service:8085
+          uri: ${SERVER_SERVICE_URL:http://localhost:8085}
           predicates:
             - Path=/api/servers/**
 
         # 3. Dịch vụ Nhắn tin & Kênh (Messaging & Channel - Người C)
         - id: messaging-service
-          uri: http://messaging-service:8082
+          uri: ${MESSAGING_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/messages/**, /api/channels/**
+            - Path=/api/messages/**
+
+        # 8. Dịch vụ Kênh (Channel Service)
+        - id: channel-service
+          uri: ${CHANNEL_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/channels/**
 
         # 4. Dịch vụ Websocket (Dùng cho Real-time chat)
         - id: messaging-ws
-          uri: ws://messaging-service:8082
+          uri: ${MESSAGING_WS_URL:ws://localhost:8082}
           predicates:
             - Path=/ws/**
 
         # 5. Dịch vụ Trạng thái (Presence Service - nâng cấp)
         - id: presence-service
-          uri: http://presence-service:8083
+          uri: ${PRESENCE_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/presence/**
 
         # 6. Dịch vụ File & Thông báo (Người A)
         - id: asset-service
-          uri: http://file-service:8084
+          uri: ${FILE_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/files/**, /api/notifications/**
 
         # 7. Dịch vụ Log (Vẫn giữ từ V1)
         - id: log-service
-          uri: http://log-service:8084
+          uri: ${LOG_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/logs/**
 
 # Cấu hình bảo mật để JwtAuthFilter sử dụng
 jwt:
-  secret: chatsever-jwt-secret-key-2026
+  secret: chatsever-jwt-secret-key-2026-safe-key
 
 # Cấu hình Health Check (G3)
 management:
