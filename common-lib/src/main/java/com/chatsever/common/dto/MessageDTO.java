@@ -18,7 +18,10 @@ public class MessageDTO {
     private String sender;          // Người gửi
     private String receiver;        // Người nhận (null nếu broadcast)
     private String content;         // Nội dung tin nhắn
-
+    private Long channelId;         // ID của channel
+    private Long serverId;          // ID của server
+    private Boolean isEdited;       // Cờ đánh dấu tin nhắn đã chỉnh sửa
+    private Long messageId;         // ID của tin nhắn (dùng cho EDIT/DELETE)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
 
@@ -49,4 +52,16 @@ public class MessageDTO {
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public Long getChannelId() { return channelId; }
+    public void setChannelId(Long channelId) { this.channelId = channelId; }
+
+    public Long getServerId() { return serverId; }
+    public void setServerId(Long serverId) { this.serverId = serverId; }
+
+    public Boolean getIsEdited() { return isEdited; }
+    public void setIsEdited(Boolean isEdited) { this.isEdited = isEdited; }
+
+    public Long getMessageId() { return messageId; }
+    public void setMessageId(Long messageId) { this.messageId = messageId; }
 }

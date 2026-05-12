@@ -10,5 +10,8 @@ public enum MessageType {
     JOIN,       // User vào phòng
     LEAVE,      // User rời phòng
     PING,       // Heartbeat từ client
-    PONG        // Server trả lời heartbeat
+    PONG,       // Server trả lời heartbeat
+    EDIT,       // Sửa tin nhắn
+    DELETE,     // Xóa tin nhắn
+    TYPING      // Đang gõ phím
 }

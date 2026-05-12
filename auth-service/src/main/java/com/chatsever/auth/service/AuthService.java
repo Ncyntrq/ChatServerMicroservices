@@ -14,11 +14,15 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -49,10 +53,7 @@ public class AuthService {
         }
 
         String token = generateToken(user.getUsername());
-        return AuthResponse.builder()
-                .token(token)
-                .username(user.getUsername())
-                .build();
+        return new AuthResponse(token, user.getUsername());
     }
 
     private String generateToken(String username) {
@@ -72,10 +73,7 @@ public class AuthService {
                     .getPayload()
                     .getSubject();
 
-            return AuthResponse.builder()
-                    .token(token)
-                    .username(username)
-                    .build();
+            return new AuthResponse(token, username);
         } catch (Exception e) {
             throw new RuntimeException("Token không hợp lệ hoặc đã hết hạn!");
         }

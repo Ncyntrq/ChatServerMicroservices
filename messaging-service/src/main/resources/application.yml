@@ -8,6 +8,17 @@ spring:
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: 5672
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+
 services:
   auth-url: ${AUTH_SERVICE_URL:http://localhost:8081}
   presence-url: ${PRESENCE_SERVICE_URL:http://localhost:8083}
+  server-url: ${SERVER_SERVICE_URL:http://localhost:8085}
