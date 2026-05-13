@@ -1,7 +1,7 @@
 package com.chatsever.file.controller;
 
 import com.chatsever.file.dto.FileMetadataDTO;
-import com.chatsever.file.model.FileMetadata;
+
 import com.chatsever.file.service.FileStorageService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;

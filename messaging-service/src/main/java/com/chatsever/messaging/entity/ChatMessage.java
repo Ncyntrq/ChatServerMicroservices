@@ -2,7 +2,7 @@ package com.chatsever.messaging.entity;
 
 import com.chatsever.common.enums.MessageType;
 import jakarta.persistence.*;
-import lombok.*;
+
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,6 @@
 package com.chatsever.file.service;
 
-import com.chatsever.file.exception.FileTooLargeException;
+
 import com.chatsever.file.model.FileMetadata;
 import com.chatsever.file.repository.FileMetadataRepository;
 import io.minio.BucketExistsArgs;

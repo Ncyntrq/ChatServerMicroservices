@@ -2,7 +2,7 @@ package com.chatsever.messaging.controller;
 
 import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.repository.MessageRepository;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class MessageController {
     }
     
     @GetMapping("/{channelId}/messages")
-    public ResponseEntity<?> getMessages(
+    public ResponseEntity<List<ChatMessage>> getMessages(
             @PathVariable Long channelId,
             @RequestParam(required = false) Long before,
             @RequestParam(defaultValue = "50") int limit) {

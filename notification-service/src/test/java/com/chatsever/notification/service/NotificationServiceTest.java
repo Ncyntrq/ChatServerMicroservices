@@ -26,6 +26,7 @@ import static org.mockito.Mockito.*;
  * Unit test cho NotificationService.
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class NotificationServiceTest {
 
     @Mock

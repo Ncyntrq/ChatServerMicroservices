@@ -3,6 +3,8 @@ package com.chatsever.server.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "members")
@@ -14,11 +16,17 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String userId;
     private Long serverId;
 
-    @Enumerated(EnumType.STRING)
-    private MemberRole role;
+    // Hibernate sẽ tự tạo bảng "member_role_ids" để lưu danh sách ID này
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "member_role_ids", joinColumns = @JoinColumn(name = "member_id"))
+    @Column(name = "role_id")
+    @Builder.Default
+    private List<Long> roleIds = new ArrayList<>();
+
     private LocalDateTime joinedAt;
 
     @PrePersist

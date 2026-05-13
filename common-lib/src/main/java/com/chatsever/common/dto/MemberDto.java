@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,6 +16,7 @@ public class MemberDto {
     private Long id;
     private String userId;
     private Long serverId;
-    private String role; // OWNER, ADMIN, MEMBER
+    // Đã thay thế Enum bằng List<Long> để lưu ID quyền từ role-service
+    private List<Long> roleIds;
     private LocalDateTime joinedAt;
 }

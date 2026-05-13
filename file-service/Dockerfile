@@ -6,9 +6,8 @@
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /build
 
-# Copy Maven Wrapper + parent POM trước → tận dụng Docker cache layer
-COPY mvnw mvnw.cmd pom.xml ./
-COPY .mvn .mvn
+# COPY đầy đủ các module để không bị lỗi thiếu dependencies
+COPY . .
 
 # Copy source code 2 module cần thiết
 COPY common-lib common-lib

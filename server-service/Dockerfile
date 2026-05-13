@@ -7,14 +7,7 @@ COPY .mvn .mvn
 RUN chmod +x mvnw && sed -i 's/\r$//' mvnw
 
 # COPY đầy đủ các module để không bị lỗi thiếu dependencies
-COPY common-lib common-lib
-COPY auth-service auth-service
-COPY gateway-service gateway-service
-COPY log-service log-service
-COPY messaging-service messaging-service
-COPY presence-service presence-service
-COPY server-service server-service
-COPY channel-service channel-service
+COPY . .
 
 # --- SỬA TÊN MODULE TẠI ĐÂY ---
 RUN ./mvnw -pl server-service -am clean package -DskipTests

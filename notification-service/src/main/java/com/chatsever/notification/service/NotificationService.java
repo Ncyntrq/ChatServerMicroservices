@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
  * - Đánh dấu đã đọc
  */
 @Service
+@SuppressWarnings("null")
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);

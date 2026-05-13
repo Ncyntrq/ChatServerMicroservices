@@ -3,7 +3,7 @@ package com.chatsever.auth.controller;
 import com.chatsever.common.dto.AuthRequest;
 import com.chatsever.common.dto.AuthResponse;
 import com.chatsever.auth.service.AuthService;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

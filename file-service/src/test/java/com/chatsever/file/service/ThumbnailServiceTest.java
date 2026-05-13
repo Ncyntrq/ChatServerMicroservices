@@ -1,7 +1,7 @@
 package com.chatsever.file.service;
 
 import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,8 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+
 
 /**
  * Unit test cho ThumbnailService.

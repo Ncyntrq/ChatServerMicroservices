@@ -1,7 +1,7 @@
 package com.chatsever.messaging.handler;
 
 import com.chatsever.common.dto.MessageDTO;
-import com.chatsever.common.dto.LogEntry;
+
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.messaging.service.MessageService;
 import com.chatsever.messaging.entity.ChatMessage;
@@ -20,15 +20,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@SuppressWarnings("null")
 public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageService messageService;
     private final RestTemplate restTemplate;
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
-    @Value("${services.auth-url}") private String authUrl;
+    private final String authUrl;
 
-    public ChatWebSocketHandler(MessageService messageService, RestTemplate restTemplate) {
+    public ChatWebSocketHandler(MessageService messageService, RestTemplate restTemplate, @Value("${services.auth-url}") String authUrl) {
         this.messageService = messageService;
         this.restTemplate = restTemplate;
+        this.authUrl = authUrl;
     }
 
     @Override
@@ -106,6 +108,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private String extractToken(WebSocketSession session) {
+        if (session.getUri() == null) return "";
         String query = session.getUri().getQuery();
         return (query != null && query.startsWith("token=")) ? query.substring(6) : "";
     }

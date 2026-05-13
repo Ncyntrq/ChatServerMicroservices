@@ -2,6 +2,8 @@ package com.chatsever.presence.service;
 
 import com.chatsever.presence.model.UserStatus;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,19 +13,19 @@ import java.util.stream.Collectors;
 
 @Service
 public class PresenceService {
-
+    private static final Logger logger = LoggerFactory.getLogger(PresenceService.class);
     private final Map<String, UserStatus> userStatusMap = new ConcurrentHashMap<>();
 
     public void connect(String username) {
         UserStatus status = new UserStatus(username, UserStatus.Status.ONLINE, LocalDateTime.now());
         userStatusMap.put(username, status);
-        System.out.println("[Presence] User connected: " + username);
+        logger.info("[Presence] User connected: {}", username);
     }
 
     public void disconnect(String username) {
         UserStatus status = new UserStatus(username, UserStatus.Status.OFFLINE, LocalDateTime.now());
         userStatusMap.put(username, status);
-        System.out.println("[Presence] User disconnected: " + username);
+        logger.info("[Presence] User disconnected: {}", username);
     }
 
     public List<String> getOnlineUsers() {
@@ -50,6 +52,6 @@ public class PresenceService {
         status.setStatus(customStatus);
         status.setLastSeen(LocalDateTime.now());
         userStatusMap.put(username, status);
-        System.out.println("[Presence] User " + username + " changed status to: " + customStatus);
+        logger.info("[Presence] User {} changed status to: {}", username, customStatus);
     }
 }

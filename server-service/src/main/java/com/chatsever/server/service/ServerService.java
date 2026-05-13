@@ -10,7 +10,7 @@ public interface ServerService {
     Map<String, Object> getServerDetails(Long serverId);
     Server updateServer(Long serverId, Server serverDetails, String userId);
     void deleteServer(Long serverId, String userId);
-    void joinServer(String inviteCode, String userId);
+    void joinServer(Long serverId, String inviteCode, String userId);
     void leaveServer(Long serverId, String userId);
     String generateNewInviteCode(Long serverId, String userId);
 }

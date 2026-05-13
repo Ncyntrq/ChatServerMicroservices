@@ -16,6 +16,7 @@ public class Server {
     private Long id;
     private String name;
     private String description;
+    private String icon;
     private String ownerId;
     private String inviteCode;
     private LocalDateTime createdAt;

@@ -9,65 +9,98 @@ spring:
   cloud:
     gateway:
       routes:
-        # 1. Dịch vụ Xác thực & Cấp token (Auth Service)
+        # =========================================================
+        # NHÓM 1: CÁC ROUTE CỤ THỂ LỒNG NHAU (PHẢI ĐẶT LÊN TRÊN)
+        # =========================================================
+
+        # Nhắn tin: Lấy tin nhắn của channel
+        - id: messaging-messages
+          uri: ${MESSAGING_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/channels/*/messages/**
+
+        # Thông báo: Đánh dấu đã đọc
+        - id: notification-ack
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8088}
+          predicates:
+            - Path=/api/channels/*/ack/**
+
+        # Quản lý Kênh: Tạo/xem danh sách kênh của server
+        - id: channel-nested
+          uri: ${CHANNEL_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/servers/*/channels/**
+
+        # Phân quyền
+        # Đặt ở đây để không bị server-service "nuốt" mất
+        - id: role-service-nested
+          uri: ${ROLE_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/servers/*/roles/**, /api/servers/*/members/*/roles/**, /api/servers/*/permissions/**, /api/servers/*/kick/**, /api/servers/*/ban/**
+
+        # =========================================================
+        # NHÓM 2: CÁC ROUTE TỔNG QUÁT (ĐẶT BÊN DƯỚI)
+        # =========================================================
+
+        # 1. Dịch vụ Xác thực & Cấp token
         - id: auth-service
           uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
 
-        # 2. Dịch vụ Quản lý Nhóm/Server (Người D)
+        # 2. Dịch vụ Hồ sơ người dùng
+        - id: user-profile-service
+          uri: ${USER_PROFILE_URL:http://localhost:8089}
+          predicates:
+            - Path=/api/users/**
+
+        # 3. Dịch vụ Quản lý Nhóm/Server
         - id: server-service
           uri: ${SERVER_SERVICE_URL:http://localhost:8085}
           predicates:
             - Path=/api/servers/**
 
-        # 3. Dịch vụ Nhắn tin & Kênh (Messaging & Channel - Người C)
-        - id: messaging-service
-          uri: ${MESSAGING_SERVICE_URL:http://localhost:8082}
-          predicates:
-            - Path=/api/messages/**
-
-        # 8. Dịch vụ Kênh (Channel Service)
+        # 4. Dịch vụ Kênh (Channel Service)
         - id: channel-service
           uri: ${CHANNEL_SERVICE_URL:http://localhost:8086}
           predicates:
             - Path=/api/channels/**
 
-        # 4. Dịch vụ Websocket (Dùng cho Real-time chat)
+        # 5. Dịch vụ Nhắn tin
+        - id: messaging-service
+          uri: ${MESSAGING_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/messages/**
+
+        # 6. Dịch vụ Websocket (Real-time chat)
         - id: messaging-ws
           uri: ${MESSAGING_WS_URL:ws://localhost:8082}
           predicates:
             - Path=/ws/**
 
-        # 5. Dịch vụ Trạng thái (Presence Service - nâng cấp)
+        # 7. Dịch vụ Trạng thái
         - id: presence-service
           uri: ${PRESENCE_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/presence/**
 
-        # 6. Dịch vụ File & Thông báo (Người A)
-        - id: asset-service
-          uri: ${FILE_SERVICE_URL:http://localhost:8084}
-          predicates:
-            - Path=/api/files/**, /api/notifications/**
-
-        # 7. Dịch vụ Log (Vẫn giữ từ V1)
-        - id: log-service
-          uri: ${LOG_SERVICE_URL:http://localhost:8084}
-          predicates:
-            - Path=/api/logs/**
-
-        # Dịch vụ Thông báo (Notification) - Merge thêm từ nhánh của bạn
+        # 8. Dịch vụ Thông báo tổng quát
         - id: notification-service
           uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8088}
           predicates:
-            - Path=/api/notifications/**,/api/channels/*/ack
+            - Path=/api/notifications/**
 
-        # Dịch vụ Quản lý File - Merge thêm từ nhánh của bạn
-        - id: file-service-v2
-          uri: ${FILE_SERVICE_URL_V2:http://localhost:8089}
+        # 9. Dịch vụ Quản lý File
+        - id: file-service
+          uri: ${FILE_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/files/**
+
+        # 10. Dịch vụ Log
+        - id: log-service
+          uri: ${LOG_SERVICE_URL:http://localhost:8090}
+          predicates:
+            - Path=/api/logs/**
 
 # Cấu hình bảo mật để JwtAuthFilter sử dụng
 jwt:

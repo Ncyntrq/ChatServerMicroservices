@@ -12,6 +12,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
  */
 @Configuration
 @EnableWebSocket
+@SuppressWarnings("null")
 public class WebSocketConfig implements WebSocketConfigurer {
 
     // Handler xử lý tin nhắn WebSocket (nhận/gửi message)

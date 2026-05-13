@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class ChannelServiceImpl implements ChannelService {
     
     private final ChannelRepository channelRepository;

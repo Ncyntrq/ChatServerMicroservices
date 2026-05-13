@@ -6,7 +6,7 @@ import com.chatsever.auth.model.User;
 import com.chatsever.auth.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 
 @Service
+@SuppressWarnings("null")
 public class AuthService {
 
     private final UserRepository userRepository;
