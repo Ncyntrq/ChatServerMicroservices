@@ -54,7 +54,7 @@ Mọi request API từ client nên đi qua **API Gateway** (thường chạy ở
 ### Bước 1: Đăng ký / Đăng nhập để lấy Token (Auth Service)
 1. **Đăng ký (Register)**
    - **Method:** POST
-   - **URL:** `http://localhost:8080/api/v1/auth/register`
+   - **URL:** `http://localhost:8080/api/auth/register`
    - **Body (JSON):**
      ```json
      {
@@ -65,7 +65,7 @@ Mọi request API từ client nên đi qua **API Gateway** (thường chạy ở
      ```
 2. **Đăng nhập (Login)**
    - **Method:** POST
-   - **URL:** `http://localhost:8080/api/v1/auth/login`
+   - **URL:** `http://localhost:8080/api/auth/login`
    - **Body (JSON):**
      ```json
      {
@@ -83,7 +83,7 @@ Mọi request API từ client nên đi qua **API Gateway** (thường chạy ở
 
 **Ví dụ: Tạo một Server mới (Server Service)**
 - **Method:** POST
-- **URL:** `http://localhost:8080/api/v1/servers`
+- **URL:** `http://localhost:8080/api/servers`
 - **Body (JSON):**
   ```json
   {
