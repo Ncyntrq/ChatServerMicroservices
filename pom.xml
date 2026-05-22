@@ -21,6 +21,7 @@
         <module>file-service</module>
         <module>user-profile-service</module>
         <module>role-service</module>
+        <module>client-app</module>
     </modules>
 
     <properties>
