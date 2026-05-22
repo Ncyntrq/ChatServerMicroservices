@@ -1,0 +1,66 @@
+package gui.components.channels;
+
+import gui.theme.AppColors;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+public class ChannelListItem extends JPanel {
+    private boolean isHovered = false;
+    private final boolean isVoice;
+    private final JLabel nameLabel;
+
+    public ChannelListItem(String channelName, boolean isVoice) {
+        this.isVoice = isVoice;
+
+        setLayout(new BorderLayout(8, 0));
+        setPreferredSize(new Dimension(224, 34));
+        setMaximumSize(new Dimension(224, 34));
+        setOpaque(false);
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+
+        // Prefix Icon (# for text, 🔊 for voice)
+        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "＃");
+        prefixLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
+        prefixLabel.setForeground(AppColors.TEXT_MUTED);
+
+        // Channel Name
+        nameLabel = new JLabel(channelName);
+        nameLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        nameLabel.setForeground(AppColors.TEXT_MUTED);
+
+        add(prefixLabel, BorderLayout.WEST);
+        add(nameLabel, BorderLayout.CENTER);
+
+        // Hover Animation logic
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                isHovered = true;
+                nameLabel.setForeground(AppColors.TEXT_WHITE);
+                repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                isHovered = false;
+                nameLabel.setForeground(AppColors.TEXT_MUTED);
+                repaint();
+            }
+        });
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        if (isHovered) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(AppColors.BG_HOVER); // Discord hover overlay gray
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+            g2.dispose();
+        }
+        super.paintComponent(g);
+    }
+}
