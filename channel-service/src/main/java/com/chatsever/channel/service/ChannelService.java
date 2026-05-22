@@ -7,14 +7,14 @@ import com.chatsever.channel.model.PinnedMessage;
 import java.util.List;
 
 public interface ChannelService {
-    ChannelDto createChannel(ChannelRequest request);
+    ChannelDto createChannel(ChannelRequest request, String userId);
     List<ChannelDto> getChannelsByServerId(Long serverId);
-    ChannelDto updateChannel(Long id, ChannelRequest request); // CH3
-    void deleteChannel(Long id);
+    ChannelDto updateChannel(Long id, ChannelRequest request, String userId); // CH3
+    void deleteChannel(Long id, String userId);
     void deleteChannelsByServerId(Long serverId);
 
     // CH6, CH7 — Pin messages
     PinnedMessage pinMessage(Long channelId, Long messageId, String pinnedBy);
-    void unpinMessage(Long channelId, Long messageId);
+    void unpinMessage(Long channelId, Long messageId, String userId);
     List<PinnedMessage> getPinnedMessages(Long channelId);
 }

@@ -8,6 +8,7 @@ import com.chatsever.channel.repository.PinnedMessageRepository;
 import com.chatsever.channel.service.ChannelService;
 import com.chatsever.common.dto.ChannelDto;
 import com.chatsever.channel.dto.ChannelRequest;
+import com.chatsever.channel.client.RoleClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +22,13 @@ public class ChannelServiceImpl implements ChannelService {
 
     private final ChannelRepository channelRepository;
     private final PinnedMessageRepository pinnedMessageRepository;
+    private final RoleClient roleClient;
 
     @Override
     @Transactional
-    public ChannelDto createChannel(ChannelRequest request) {
+    public ChannelDto createChannel(ChannelRequest request, String userId) {
+        checkPermission(request.getServerId(), userId, 8); // MANAGE_CHANNEL
+        
         Channel channel = Channel.builder()
                 .name(request.getName())
                 .serverId(request.getServerId())
@@ -47,9 +51,11 @@ public class ChannelServiceImpl implements ChannelService {
     // CH3 — Cập nhật channel (đổi tên, topic, slowmode, category)
     @Override
     @Transactional
-    public ChannelDto updateChannel(Long id, ChannelRequest request) {
+    public ChannelDto updateChannel(Long id, ChannelRequest request, String userId) {
         Channel channel = channelRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Channel not found: " + id));
+
+        checkPermission(channel.getServerId(), userId, 8); // MANAGE_CHANNEL
 
         if (request.getName() != null) channel.setName(request.getName());
         if (request.getTopic() != null) channel.setTopic(request.getTopic());
@@ -62,7 +68,10 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     @Transactional
-    public void deleteChannel(Long id) {
+    public void deleteChannel(Long id, String userId) {
+        Channel channel = channelRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Channel not found: " + id));
+        checkPermission(channel.getServerId(), userId, 8); // MANAGE_CHANNEL
         channelRepository.deleteById(id);
     }
 
@@ -76,6 +85,10 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     @Transactional
     public PinnedMessage pinMessage(Long channelId, Long messageId, String pinnedBy) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new RuntimeException("Channel not found: " + channelId));
+        checkPermission(channel.getServerId(), pinnedBy, 4); // MANAGE_MESSAGES
+        
         // Check if already pinned
         if (pinnedMessageRepository.findByChannelIdAndMessageId(channelId, messageId).isPresent()) {
             throw new RuntimeException("Tin nhắn đã được ghim");
@@ -86,7 +99,11 @@ public class ChannelServiceImpl implements ChannelService {
     // CH6 — Bỏ ghim
     @Override
     @Transactional
-    public void unpinMessage(Long channelId, Long messageId) {
+    public void unpinMessage(Long channelId, Long messageId, String userId) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new RuntimeException("Channel not found: " + channelId));
+        checkPermission(channel.getServerId(), userId, 4); // MANAGE_MESSAGES
+        
         pinnedMessageRepository.deleteByChannelIdAndMessageId(channelId, messageId);
     }
 
@@ -106,5 +123,23 @@ public class ChannelServiceImpl implements ChannelService {
                 .slowmode(channel.getSlowmode())
                 .category(channel.getCategory())
                 .build();
+    }
+
+    private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
+        try {
+            java.util.Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
+            if (perms != null && perms.containsKey("permissionBitmask")) {
+                int bitmask = (int) perms.get("permissionBitmask");
+                // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
+                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                    return; // Có quyền
+                }
+            }
+            throw new RuntimeException("Bạn không có đủ quyền (cần " + requiredPermissionBit + " hoặc ADMIN)");
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi kiểm tra phân quyền: " + e.getMessage());
+        }
     }
 }

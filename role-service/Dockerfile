@@ -16,15 +16,15 @@ COPY file-service/pom.xml file-service/pom.xml
 COPY user-profile-service/pom.xml user-profile-service/pom.xml
 COPY role-service/pom.xml role-service/pom.xml
 
-RUN mvn dependency:go-offline -pl notification-service -am -q || true
+RUN mvn dependency:go-offline -pl role-service -am -q || true
 
 COPY . .
-RUN mvn -pl notification-service -am clean package -DskipTests -q
+RUN mvn -pl role-service -am clean package -DskipTests -q
 
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-COPY --from=build /build/notification-service/target/notification-service-1.0.0-SNAPSHOT.jar app.jar
+COPY --from=build /build/role-service/target/role-service-1.0.0-SNAPSHOT.jar app.jar
 
 ENV TZ=Asia/Ho_Chi_Minh
-EXPOSE 8088
+EXPOSE 8091
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]

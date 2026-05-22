@@ -34,7 +34,7 @@ spring:
         # Phân quyền
         # Đặt ở đây để không bị server-service "nuốt" mất
         - id: role-service-nested
-          uri: ${ROLE_SERVICE_URL:http://localhost:8087}
+          uri: ${ROLE_SERVICE_URL:http://localhost:8091}
           predicates:
             - Path=/api/servers/*/roles/**, /api/servers/*/members/*/roles/**, /api/servers/*/permissions/**, /api/servers/*/kick/**, /api/servers/*/ban/**
 
@@ -50,7 +50,7 @@ spring:
 
         # 2. Dịch vụ Hồ sơ người dùng
         - id: user-profile-service
-          uri: ${USER_PROFILE_URL:http://localhost:8089}
+          uri: ${USER_PROFILE_URL:http://localhost:8090}
           predicates:
             - Path=/api/users/**
 

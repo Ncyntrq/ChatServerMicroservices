@@ -13,6 +13,8 @@ COPY log-service/pom.xml log-service/pom.xml
 COPY gateway-service/pom.xml gateway-service/pom.xml
 COPY notification-service/pom.xml notification-service/pom.xml
 COPY file-service/pom.xml file-service/pom.xml
+COPY user-profile-service/pom.xml user-profile-service/pom.xml
+COPY role-service/pom.xml role-service/pom.xml
 
 RUN mvn dependency:go-offline -pl log-service -am -q || true
 

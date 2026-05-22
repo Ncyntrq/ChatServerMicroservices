@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -14,6 +15,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ServerController {
     private final ServerService serverService;
+
+    // R2 — API nội bộ: cập nhật roleIds cho member (gọi từ role-service)
+    @SuppressWarnings("unchecked")
+    @PutMapping("/{serverId}/members/{userId}/roles")
+    public ResponseEntity<Map<String, String>> updateMemberRoles(
+            @PathVariable Long serverId,
+            @PathVariable String userId,
+            @RequestBody Map<String, Object> payload) {
+        List<Number> roleIdNumbers = (List<Number>) payload.get("roleIds");
+        List<Long> roleIds = roleIdNumbers.stream().map(Number::longValue).toList();
+        serverService.updateMemberRoles(serverId, userId, roleIds);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật roles thành công"));
+    }
 
     @PostMapping
     public ResponseEntity<Server> create(@RequestBody Server s, @RequestHeader("X-User-Id") String uid) {
@@ -39,7 +53,8 @@ public class ServerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Server> update(@PathVariable Long id, @RequestBody Server s, @RequestHeader("X-User-Id") String uid) {
+    public ResponseEntity<Server> update(@PathVariable Long id, @RequestBody Server s,
+            @RequestHeader("X-User-Id") String uid) {
         return ResponseEntity.ok(serverService.updateServer(id, s, uid));
     }
 
@@ -50,7 +65,8 @@ public class ServerController {
     }
 
     @PostMapping("/{id}/join")
-    public ResponseEntity<Map<String, String>> join(@PathVariable Long id, @RequestParam String code, @RequestHeader("X-User-Id") String uid) {
+    public ResponseEntity<Map<String, String>> join(@PathVariable Long id, @RequestParam String code,
+            @RequestHeader("X-User-Id") String uid) {
         serverService.joinServer(id, code, uid);
         return ResponseEntity.ok(Map.of("message", "Gia nhập thành công"));
     }
@@ -62,7 +78,8 @@ public class ServerController {
     }
 
     @PostMapping("/{id}/invite")
-    public ResponseEntity<Map<String, String>> createInvite(@PathVariable Long id, @RequestHeader("X-User-Id") String uid) {
+    public ResponseEntity<Map<String, String>> createInvite(@PathVariable Long id,
+            @RequestHeader("X-User-Id") String uid) {
         return ResponseEntity.ok(Map.of("inviteCode", serverService.generateNewInviteCode(id, uid)));
     }
 }

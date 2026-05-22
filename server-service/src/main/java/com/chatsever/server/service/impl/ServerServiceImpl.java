@@ -5,6 +5,7 @@ import com.chatsever.server.model.Server;
 import com.chatsever.server.repository.MemberRepository;
 import com.chatsever.server.repository.ServerRepository;
 import com.chatsever.server.client.ChannelClient;
+import com.chatsever.server.client.RoleClient;
 import com.chatsever.server.service.ServerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ public class ServerServiceImpl implements ServerService {
     private final ServerRepository serverRepository;
     private final MemberRepository memberRepository;
     private final ChannelClient channelClient;
+    private final RoleClient roleClient;
 
     @Override
     @Transactional
@@ -38,6 +40,14 @@ public class ServerServiceImpl implements ServerService {
                 .userId(ownerId)
                 .roleIds(new ArrayList<>())
                 .build());
+                
+        // Khởi tạo các Role mặc định cho Server mới (SV1)
+        try {
+            roleClient.initDefaultRoles(saved.getId());
+        } catch (Exception e) {
+            // Log lỗi nhưng không hủy việc tạo server
+        }
+        
         return saved;
     }
 
@@ -74,7 +84,9 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Server not found"));
 
-        if(!s.getOwnerId().equals(uid)) throw new RuntimeException("No permission");
+        if (!s.getOwnerId().equals(uid)) {
+            checkPermission(id, uid, 8); // 8 = MANAGE_CHANNEL bitmask (or ADMIN)
+        }
 
         s.setName(details.getName());
         s.setDescription(details.getDescription());
@@ -88,7 +100,9 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Server not found"));
 
-        if(!s.getOwnerId().equals(uid)) throw new RuntimeException("No permission");
+        if (!s.getOwnerId().equals(uid)) {
+            checkPermission(id, uid, 128); // 128 = ADMIN bitmask
+        }
 
         memberRepository.deleteByServerId(id);
         // Gọi API qua channel-service để dọn dẹp các kênh liên quan
@@ -103,6 +117,18 @@ public class ServerServiceImpl implements ServerService {
         
         if(!code.equals(s.getInviteCode())) {
             throw new RuntimeException("Invalid invite code");
+        }
+
+        // R6 - Kiểm tra xem user có bị ban khỏi server này không
+        try {
+            Map<String, Object> banCheck = roleClient.checkBanned(id, uid);
+            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
+                throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            // Log lỗi
         }
 
         if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
@@ -140,5 +166,33 @@ public class ServerServiceImpl implements ServerService {
 
         s.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
         return serverRepository.save(s).getInviteCode();
+    }
+
+    // R2 — Cập nhật roleIds cho member (gọi từ role-service)
+    @Override
+    @Transactional
+    public void updateMemberRoles(Long serverId, String userId, List<Long> roleIds) {
+        Member member = memberRepository.findByServerIdAndUserId(serverId, userId)
+                .orElseThrow(() -> new RuntimeException("Member not found: " + userId + " in server " + serverId));
+        member.setRoleIds(roleIds);
+        memberRepository.save(member);
+    }
+    
+    private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
+        try {
+            Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
+            if (perms != null && perms.containsKey("permissionBitmask")) {
+                int bitmask = (int) perms.get("permissionBitmask");
+                // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
+                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                    return; // Có quyền
+                }
+            }
+            throw new RuntimeException("Bạn không có đủ quyền (cần " + requiredPermissionBit + " hoặc ADMIN)");
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi kiểm tra phân quyền: " + e.getMessage());
+        }
     }
 }

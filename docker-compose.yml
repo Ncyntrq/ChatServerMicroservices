@@ -15,7 +15,7 @@ services:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 15
     networks:
       - chat-net
 
@@ -52,7 +52,7 @@ services:
       test: [ "CMD", "mc", "ready", "local" ]
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 15
     networks:
       - chat-net
 
@@ -76,8 +76,8 @@ services:
       - FILE_SERVICE_URL=http://file-service:8089
       - LOG_SERVICE_URL=http://log-service:8084
       - NOTIFICATION_SERVICE_URL=http://notification-service:8088
-      - ROLE_SERVICE_URL=http://role-service:8090
-      - USER_PROFILE_URL=http://user-profile-service:8091
+      - ROLE_SERVICE_URL=http://role-service:8091
+      - USER_PROFILE_URL=http://user-profile-service:8090
     depends_on:
       auth-service:
         condition: service_started
@@ -237,34 +237,40 @@ services:
         condition: service_healthy
     networks:
       - chat-net
-  # --- (Có thể bỏ comment khi làm xong) ---
-  # role-service:
-  #   build:
-  #     context: .
-  #     dockerfile: role-service/Dockerfile
-  #   networks:
-  #     - chat-net
-  #   environment:
-  #     - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&useSSL=false
-  #     - SPRING_DATASOURCE_USERNAME=root
-  #     - SPRING_DATASOURCE_PASSWORD=root
-  #   depends_on:
-  #     mysql-db:
-  #       condition: service_healthy
-  #
-  # user-profile-service:
-  #   build:
-  #     context: .
-  #     dockerfile: user-profile-service/Dockerfile
-  #   networks:
-  #     - chat-net
-  #   environment:
-  #     - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&useSSL=false
-  #     - SPRING_DATASOURCE_USERNAME=root
-  #     - SPRING_DATASOURCE_PASSWORD=root
-  #   depends_on:
-  #     mysql-db:
-  #       condition: service_healthy
+  # --- Role Service (R1-R6) - DB riêng: chat_role_db ---
+  role-service:
+    build:
+      context: .
+      dockerfile: role-service/Dockerfile
+    networks:
+      - chat-net
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_DDL_AUTO=update
+      - SERVER_SERVICE_URL=http://server-service:8085
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  # --- User Profile Service (UP1-UP5) - DB riêng: chat_profile_db ---
+  user-profile-service:
+    build:
+      context: .
+      dockerfile: user-profile-service/Dockerfile
+    networks:
+      - chat-net
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_DDL_AUTO=update
+    depends_on:
+      mysql-db:
+        condition: service_healthy
 
 networks:
   chat-net:

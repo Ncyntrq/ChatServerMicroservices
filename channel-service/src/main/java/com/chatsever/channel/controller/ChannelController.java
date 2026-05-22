@@ -20,8 +20,10 @@ public class ChannelController {
 
     // CH1 — Tạo channel
     @PostMapping
-    public ResponseEntity<ChannelDto> createChannel(@RequestBody ChannelRequest request) {
-        return ResponseEntity.ok(channelService.createChannel(request));
+    public ResponseEntity<ChannelDto> createChannel(
+            @RequestBody ChannelRequest request,
+            @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
+        return ResponseEntity.ok(channelService.createChannel(request, userId));
     }
 
     // CH2 — Xem danh sách channels của server
@@ -34,14 +36,17 @@ public class ChannelController {
     @PutMapping("/{channelId}")
     public ResponseEntity<ChannelDto> updateChannel(
             @PathVariable Long channelId,
-            @RequestBody ChannelRequest request) {
-        return ResponseEntity.ok(channelService.updateChannel(channelId, request));
+            @RequestBody ChannelRequest request,
+            @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
+        return ResponseEntity.ok(channelService.updateChannel(channelId, request, userId));
     }
 
     // CH4 — Xóa channel
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteChannel(@PathVariable Long id) {
-        channelService.deleteChannel(id);
+    public ResponseEntity<Void> deleteChannel(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
+        channelService.deleteChannel(id, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -65,8 +70,9 @@ public class ChannelController {
     @DeleteMapping("/{channelId}/pins/{messageId}")
     public ResponseEntity<Map<String, String>> unpinMessage(
             @PathVariable Long channelId,
-            @PathVariable Long messageId) {
-        channelService.unpinMessage(channelId, messageId);
+            @PathVariable Long messageId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
+        channelService.unpinMessage(channelId, messageId, userId);
         return ResponseEntity.ok(Map.of("message", "Đã bỏ ghim tin nhắn"));
     }
 

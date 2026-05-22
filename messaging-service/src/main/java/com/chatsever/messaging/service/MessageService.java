@@ -3,6 +3,7 @@ package com.chatsever.messaging.service;
 import com.chatsever.common.dto.LogEntry;
 import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
+import com.chatsever.messaging.client.RoleClient;
 import com.chatsever.messaging.client.ServerServiceClient;
 import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.repository.MessageRepository;
@@ -31,14 +32,16 @@ public class MessageService {
     private final ObjectMapper objectMapper;
     private final ServerServiceClient serverServiceClient;
     private final MessageRepository messageRepository;
+    private final RoleClient roleClient;
     private final String presenceUrl;
 
-    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, @Value("${services.presence-url}") String presenceUrl) {
+    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, RoleClient roleClient, @Value("${services.presence-url}") String presenceUrl) {
         this.restTemplate = restTemplate;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
         this.serverServiceClient = serverServiceClient;
         this.messageRepository = messageRepository;
+        this.roleClient = roleClient;
         this.presenceUrl = presenceUrl;
     }
 
@@ -167,5 +170,25 @@ public class MessageService {
     public boolean isMessageOwner(Long messageId, String username) {
         ChatMessage entity = messageRepository.findById(messageId).orElse(null);
         return entity != null && username.equals(entity.getSender());
+    }
+
+    // M7: Kiểm tra quyền xóa tin nhắn (Owner HOẶC có quyền MANAGE_MESSAGES/ADMIN)
+    public boolean canDeleteMessage(Long messageId, String username, Long serverId) {
+        if (isMessageOwner(messageId, username)) {
+            return true;
+        }
+        if (serverId != null) {
+            try {
+                Map<String, Object> perms = roleClient.getPermissions(serverId, username);
+                if (perms != null && perms.containsKey("permissionBitmask")) {
+                    int bitmask = (int) perms.get("permissionBitmask");
+                    // MANAGE_MESSAGES (4), ADMIN (128), OWNER (255)
+                    return (bitmask & 4) != 0 || (bitmask & 128) != 0 || bitmask == 255;
+                }
+            } catch (Exception e) {
+                logger.error("Error checking delete permission: {}", e.getMessage());
+            }
+        }
+        return false;
     }
 }

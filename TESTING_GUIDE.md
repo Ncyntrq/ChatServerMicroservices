@@ -105,9 +105,9 @@ Messaging Service xử lý chat realtime qua WebSocket. **Luôn kết nối qua 
    - **Ví dụ Payload:**
      ```json
      {
-       "channelId": "123",
-       "content": "Hello World!",
-       "type": "CHAT"
+       "type": "CHAT",
+       "channelId": "1",
+       "content": "hello"
      }
      ```
 

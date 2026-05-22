@@ -16,4 +16,5 @@ public interface ServerService {
     void joinServer(Long serverId, String inviteCode, String userId);
     void leaveServer(Long serverId, String userId);
     String generateNewInviteCode(Long serverId, String userId);
+    void updateMemberRoles(Long serverId, String userId, List<Long> roleIds);
 }

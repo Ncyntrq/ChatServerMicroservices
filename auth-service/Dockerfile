@@ -14,6 +14,8 @@ COPY log-service/pom.xml log-service/pom.xml
 COPY gateway-service/pom.xml gateway-service/pom.xml
 COPY notification-service/pom.xml notification-service/pom.xml
 COPY file-service/pom.xml file-service/pom.xml
+COPY user-profile-service/pom.xml user-profile-service/pom.xml
+COPY role-service/pom.xml role-service/pom.xml
 
 # Download dependencies (cached layer)
 RUN mvn dependency:go-offline -pl auth-service -am -q || true

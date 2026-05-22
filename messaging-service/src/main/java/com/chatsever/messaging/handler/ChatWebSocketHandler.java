@@ -87,8 +87,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
             case DELETE -> {
                 if (msg.getMessageId() != null) {
-                    // M7: Người gửi hoặc Admin có thể xóa (Admin check cần Role Service)
-                    if (!messageService.isMessageOwner(msg.getMessageId(), sender)) {
+                    // M7: Người gửi hoặc Admin có thể xóa
+                    if (!messageService.canDeleteMessage(msg.getMessageId(), sender, msg.getServerId())) {
                         messageService.sendError(session, "Không có quyền xóa tin nhắn này");
                         return;
                     }
