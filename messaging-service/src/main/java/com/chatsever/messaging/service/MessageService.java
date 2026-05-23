@@ -45,7 +45,7 @@ public class MessageService {
         this.presenceUrl = presenceUrl;
     }
 
-    // Kiểm tra quyền của User
+    // Kiểm tra quyền của User — nếu chưa là member, tự động thêm vào server
     @SuppressWarnings("unchecked")
     public boolean hasPermission(Long serverId, String username) {
         try {
@@ -58,6 +58,10 @@ public class MessageService {
                     }
                 }
             }
+            // User chưa là member → tự động thêm vào server
+            logger.info("User {} chưa là member của server {} → tự động thêm", username, serverId);
+            serverServiceClient.ensureMember(serverId, username);
+            return true;
         } catch (Exception e) {
             logger.error("Error checking permission: {}", e.getMessage(), e);
         }

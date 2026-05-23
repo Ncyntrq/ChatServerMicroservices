@@ -82,4 +82,12 @@ public class ServerController {
             @RequestHeader("X-User-Id") String uid) {
         return ResponseEntity.ok(Map.of("inviteCode", serverService.generateNewInviteCode(id, uid)));
     }
+
+    // Internal API: messaging-service gọi để đảm bảo user là member trước khi chat
+    @PostMapping("/{id}/ensure-member")
+    public ResponseEntity<Map<String, String>> ensureMember(@PathVariable Long id,
+            @RequestParam String userId) {
+        serverService.ensureMember(id, userId);
+        return ResponseEntity.ok(Map.of("message", "OK"));
+    }
 }

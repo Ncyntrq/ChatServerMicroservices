@@ -177,6 +177,21 @@ public class ServerServiceImpl implements ServerService {
         member.setRoleIds(roleIds);
         memberRepository.save(member);
     }
+
+    // Auto-join: đảm bảo user là member của server (nếu chưa thì tự thêm)
+    @Override
+    @Transactional
+    public void ensureMember(Long serverId, String userId) {
+        serverRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found: " + serverId));
+        if (!memberRepository.existsByServerIdAndUserId(serverId, userId)) {
+            memberRepository.save(Member.builder()
+                    .serverId(serverId)
+                    .userId(userId)
+                    .roleIds(new ArrayList<>())
+                    .build());
+        }
+    }
     
     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
         try {

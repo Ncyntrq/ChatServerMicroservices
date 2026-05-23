@@ -3,7 +3,6 @@ package network;
 import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +18,6 @@ public class RawChatMessage {
     public String content;
     public Long channelId;
     public Long serverId;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime timestamp;
     public MessageType type;
     public Boolean isEdited;
