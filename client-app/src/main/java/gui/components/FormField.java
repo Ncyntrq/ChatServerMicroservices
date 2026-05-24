@@ -1,5 +1,8 @@
 package gui.components;
 
+import gui.theme.AppColors;
+import gui.theme.AppFonts;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -8,17 +11,24 @@ public class FormField extends JPanel {
 
     public FormField(String labelText, String placeholder, boolean isPassword) {
         setLayout(new BorderLayout(0, 8));
-        setBackground(Color.decode("#313338"));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        setBackground(AppColors.BG_PRIMARY);
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 74));
 
-        // label
-        String htmlLabel = "<html><font color='#B5BAC1' face='sans-serif' size='3'><b>"
-                + labelText.toUpperCase()
-                + "</b></font> <font color='#F23F42'>*</font></html>";
+        // Label with required asterisk
+        JLabel label = new JLabel(labelText.toUpperCase());
+        label.setFont(AppFonts.CAPTION_BOLD);
+        label.setForeground(AppColors.TEXT_MUTED);
 
-        JLabel label = new JLabel(htmlLabel);
+        JLabel asterisk = new JLabel(" *");
+        asterisk.setFont(AppFonts.CAPTION_BOLD);
+        asterisk.setForeground(AppColors.DANGER);
 
-        // textField
+        JPanel labelRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        labelRow.setOpaque(false);
+        labelRow.add(label);
+        labelRow.add(asterisk);
+
+        // Input field
         if (isPassword) {
             textField = new JPasswordField(20);
         } else {
@@ -26,14 +36,18 @@ public class FormField extends JPanel {
         }
 
         textField.putClientProperty("JTextField.placeholderText", placeholder);
-        textField.setBackground(Color.decode("#1E1F22"));
-        textField.setForeground(Color.decode("#DBDEE1"));
-        textField.setCaretColor(Color.WHITE);
-        textField.setBorder(BorderFactory.createEmptyBorder(12, 10, 12, 10));
-        textField.setMargin(new Insets(12, 20, 12, 20));
-        textField.putClientProperty("JComponent.arc", 50);
+        textField.putClientProperty("JComponent.arc", 8);
+        textField.setBackground(AppColors.BG_TERTIARY);
+        textField.setForeground(AppColors.TEXT_NORMAL);
+        textField.setCaretColor(AppColors.TEXT_WHITE);
+        textField.setFont(AppFonts.BODY);
+        textField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppColors.SEPARATOR, 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        textField.setSelectionColor(AppColors.BRAND_PRIMARY);
 
-        add(label, BorderLayout.NORTH);
+        add(labelRow, BorderLayout.NORTH);
         add(textField, BorderLayout.CENTER);
     }
 

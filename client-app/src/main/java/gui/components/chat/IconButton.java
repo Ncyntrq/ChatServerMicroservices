@@ -1,6 +1,7 @@
 package gui.components.chat;
 
 import gui.theme.AppColors;
+import gui.theme.AppFonts;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,41 +10,52 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class IconButton extends JButton {
+    private boolean isHovered = false;
+
     public IconButton(String iconText, ActionListener onClick) {
         super(iconText);
 
-        // Base styling for a transparent, borderless icon
         setForeground(AppColors.TEXT_MUTED);
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
-        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        setFont(AppFonts.EMOJI);
+        setPreferredSize(new Dimension(34, 34));
 
-        // Use a font that guarantees Emoji/Symbol support
-        setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-
-        // --- HOVER EFFECT ---
-        // Make the icon light up to white when moused over, just like Discord
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
+                isHovered = true;
                 setForeground(AppColors.TEXT_WHITE);
+                repaint();
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
+                isHovered = false;
                 setForeground(AppColors.TEXT_MUTED);
+                repaint();
             }
         });
 
-        // Attach click event if provided
         if (onClick != null) {
             addActionListener(onClick);
         }
     }
 
-    // Overload constructor for when you don't need a click event right away
     public IconButton(String iconText) {
         this(iconText, null);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        if (isHovered) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(255, 255, 255, 15));
+            g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
+            g2.dispose();
+        }
+        super.paintComponent(g);
     }
 }

@@ -1,48 +1,66 @@
 package gui.components;
 
+import gui.theme.AppColors;
+import gui.theme.AppFonts;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class AuthHeader extends JPanel {
     public AuthHeader(String titleText, String subtitleText) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBackground(Color.decode("#313338"));
+        setBackground(AppColors.BG_PRIMARY);
 
-        // Logo placeholder
-        JLabel logoLabel = new JLabel(" 🚀 ", SwingConstants.CENTER) {
+        // Logo — circular gradient icon
+        JPanel logoCircle = new JPanel() {
             @Override
-            public void paintComponent(Graphics g) {
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+
+                int size = Math.min(getWidth(), getHeight());
+                int x = (getWidth() - size) / 2;
+                int y = (getHeight() - size) / 2;
+
+                // Gradient background
+                GradientPaint gp = new GradientPaint(x, y, AppColors.BRAND_PRIMARY,
+                        x + size, y + size, Color.decode("#EB459E"));
+                g2.setPaint(gp);
+                g2.fillOval(x, y, size, size);
+
+                // Icon text
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+                FontMetrics fm = g2.getFontMetrics();
+                String icon = "💬";
+                int tx = (getWidth() - fm.stringWidth(icon)) / 2;
+                int ty = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
+                g2.drawString(icon, tx, ty);
+
                 g2.dispose();
-                super.paintComponent(g);
             }
         };
+        logoCircle.setPreferredSize(new Dimension(64, 64));
+        logoCircle.setMaximumSize(new Dimension(64, 64));
+        logoCircle.setOpaque(false);
+        logoCircle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        logoLabel.setOpaque(false);
-        logoLabel.setBackground(Color.decode("#5865F2"));
-        logoLabel.setForeground(Color.WHITE);
-        logoLabel.setFont(new Font("SansSerif", Font.BOLD, 30));
-        logoLabel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // 2. Title
+        // Title
         JLabel title = new JLabel(titleText);
-        title.setForeground(Color.WHITE);
-        title.setFont(new Font("SansSerif", Font.BOLD, 22));
+        title.setForeground(AppColors.TEXT_HEADER);
+        title.setFont(AppFonts.HEADING_LG);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // 3. Subtitle
+        // Subtitle
         JLabel subtitle = new JLabel(subtitleText);
-        subtitle.setForeground(Color.decode("#B5BAC1"));
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        subtitle.setForeground(AppColors.TEXT_MUTED);
+        subtitle.setFont(AppFonts.BODY);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Assemble
-        add(logoLabel);
-        add(Box.createVerticalStrut(15));
+        add(logoCircle);
+        add(Box.createVerticalStrut(16));
         add(title);
         add(Box.createVerticalStrut(8));
         add(subtitle);
