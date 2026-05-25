@@ -274,8 +274,7 @@ services:
 
 networks:
   chat-net:
-    driver: bridge
-    name: chat-net
+    external: true
 
 volumes:
   mysql-data: # Dữ liệu MySQL (users, servers, channels, messages)
