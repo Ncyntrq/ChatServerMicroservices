@@ -5,6 +5,7 @@ ARG SERVICE_NAME
 WORKDIR /build
 
 COPY pom.xml ./
+COPY client-app/pom.xml client-app/pom.xml
 COPY common-lib/pom.xml common-lib/pom.xml
 COPY log-service/pom.xml log-service/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
