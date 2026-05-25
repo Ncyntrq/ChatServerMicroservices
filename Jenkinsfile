@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY    = "${env.DOCKER_REGISTRY ?: 'your-dockerhub-username'}"
+        DOCKER_REGISTRY    = "hoangnguyen1007"
         IMAGE_TAG          = "${env.BUILD_NUMBER}"
         SONAR_PROJECT_KEY  = 'chat-server-microservices'
         COMPOSE_FILE_APP   = 'docker-compose.yml'
