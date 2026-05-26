@@ -66,6 +66,7 @@ services:
     build:
       context: .
       dockerfile: gateway-service/Dockerfile
+    image: hoangnguyen1007/gateway-service:${IMAGE_TAG:-latest}
     container_name: gateway-service
     ports:
       - "8080:8080"
@@ -99,6 +100,7 @@ services:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
+    image: hoangnguyen1007/auth-service:${IMAGE_TAG:-latest}
     container_name: auth-service
     networks:
       - chat-net
@@ -118,6 +120,7 @@ services:
     build:
       context: .
       dockerfile: server-service/Dockerfile
+    image: hoangnguyen1007/server-service:${IMAGE_TAG:-latest}
     container_name: server-service
     networks:
       - chat-net
@@ -138,6 +141,7 @@ services:
     build:
       context: .
       dockerfile: channel-service/Dockerfile
+    image: hoangnguyen1007/channel-service:${IMAGE_TAG:-latest}
     container_name: channel-service
     networks:
       - chat-net
@@ -154,6 +158,7 @@ services:
     build:
       context: .
       dockerfile: messaging-service/Dockerfile
+    image: hoangnguyen1007/messaging-service:${IMAGE_TAG:-latest}
     container_name: messaging-service
     networks:
       - chat-net
@@ -176,6 +181,7 @@ services:
     build:
       context: .
       dockerfile: presence-service/Dockerfile
+    image: hoangnguyen1007/presence-service:${IMAGE_TAG:-latest}
     container_name: presence-service
     networks:
       - chat-net
@@ -192,6 +198,7 @@ services:
     build:
       context: .
       dockerfile: log-service/Dockerfile
+    image: hoangnguyen1007/log-service:${IMAGE_TAG:-latest}
     container_name: log-service
     networks:
       - chat-net
@@ -208,6 +215,7 @@ services:
     build:
       context: .
       dockerfile: notification-service/Dockerfile
+    image: hoangnguyen1007/notification-service:${IMAGE_TAG:-latest}
     container_name: notification-service
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
@@ -232,6 +240,7 @@ services:
     build:
       context: .
       dockerfile: file-service/Dockerfile
+    image: hoangnguyen1007/file-service:${IMAGE_TAG:-latest}
     container_name: file-service
     environment:
       - MINIO_ENDPOINT=http://minio:9000
@@ -254,6 +263,7 @@ services:
     build:
       context: .
       dockerfile: role-service/Dockerfile
+    image: hoangnguyen1007/role-service:${IMAGE_TAG:-latest}
     container_name: role-service
     networks:
       - chat-net
@@ -273,6 +283,7 @@ services:
     build:
       context: .
       dockerfile: user-profile-service/Dockerfile
+    image: hoangnguyen1007/user-profile-service:${IMAGE_TAG:-latest}
     container_name: user-profile-service
     networks:
       - chat-net
