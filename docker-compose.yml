@@ -6,6 +6,7 @@ services:
   # =========================================================
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -21,6 +22,7 @@ services:
 
   mysql-db:
     image: mysql:8.0
+    container_name: mysql-db
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: chat_server_db
@@ -39,6 +41,7 @@ services:
 
   minio:
     image: minio/minio
+    container_name: minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: admin
@@ -63,6 +66,7 @@ services:
     build:
       context: .
       dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
     ports:
       - "8080:8080"
     environment:
@@ -95,6 +99,7 @@ services:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
+    container_name: auth-service
     networks:
       - chat-net
     environment:
@@ -113,6 +118,7 @@ services:
     build:
       context: .
       dockerfile: server-service/Dockerfile
+    container_name: server-service
     networks:
       - chat-net
     environment:
@@ -132,6 +138,7 @@ services:
     build:
       context: .
       dockerfile: channel-service/Dockerfile
+    container_name: channel-service
     networks:
       - chat-net
     environment:
@@ -147,6 +154,7 @@ services:
     build:
       context: .
       dockerfile: messaging-service/Dockerfile
+    container_name: messaging-service
     networks:
       - chat-net
     environment:
@@ -168,6 +176,7 @@ services:
     build:
       context: .
       dockerfile: presence-service/Dockerfile
+    container_name: presence-service
     networks:
       - chat-net
     environment:
@@ -183,6 +192,7 @@ services:
     build:
       context: .
       dockerfile: log-service/Dockerfile
+    container_name: log-service
     networks:
       - chat-net
     environment:
@@ -198,6 +208,7 @@ services:
     build:
       context: .
       dockerfile: notification-service/Dockerfile
+    container_name: notification-service
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
@@ -221,6 +232,7 @@ services:
     build:
       context: .
       dockerfile: file-service/Dockerfile
+    container_name: file-service
     environment:
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=admin
@@ -242,6 +254,7 @@ services:
     build:
       context: .
       dockerfile: role-service/Dockerfile
+    container_name: role-service
     networks:
       - chat-net
     environment:
@@ -260,6 +273,7 @@ services:
     build:
       context: .
       dockerfile: user-profile-service/Dockerfile
+    container_name: user-profile-service
     networks:
       - chat-net
     environment:
@@ -275,6 +289,7 @@ services:
 networks:
   chat-net:
     external: true
+    name: chat-net
 
 volumes:
   mysql-data: # Dữ liệu MySQL (users, servers, channels, messages)
