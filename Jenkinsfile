@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-        stage('Dockerization') {
+        stage('Dockerization & Push') {
             steps {
                 script {
                     def services = env.SERVICES.trim().split('\\s+')
@@ -89,80 +89,36 @@ pipeline {
                         'user-profile-service' : '8090',
                         'role-service'         : '8091'
                     ]
+
+                    def buildTasks = [:]
+
                     services.each { svc ->
                         def port = portMap[svc] ?: '8080'
-                        echo "Building Docker image for: ${svc}"
-                        sh """
-                            docker build \
-                                --build-arg SERVICE_NAME="${svc}" \
-                                --build-arg EXPOSED_PORT="${port}" \
-                                -f Dockerfile.template \
-                                -t "${DOCKER_REGISTRY}/${svc}:${IMAGE_TAG}" \
-                                -t "${DOCKER_REGISTRY}/${svc}:latest" \
-                                .
-                        """
-                    }
-                }
-            }
-        }
-
-//         stage('API Testing') {
-//             steps {
-//                 script {
-//                     sh 'npm install -g newman newman-reporter-htmlextra --quiet'
-//                     def testFiles = sh(
-//                         script: "find \"${NEWMAN_TEST_DIR}\" -name '*.json' 2>/dev/null || echo ''",
-//                         returnStdout: true
-//                     ).trim()
-//
-//                     if (testFiles) {
-//                         testFiles.split('\n').each { collectionFile ->
-//                             def reportName = collectionFile.replaceAll('/', '_').replaceAll('\\.json$', '')
-//                             sh """
-//                                 newman run "${collectionFile}" \
-//                                     --env-var "baseUrl=http://gateway-service:8080" \
-//                                     --reporters cli,htmlextra \
-//                                     --reporter-htmlextra-export "reports/newman-${reportName}.html" \
-//                                     --bail
-//                             """
-//                         }
-//                     } else {
-//                         echo "No Postman collection (.json) files found in ${NEWMAN_TEST_DIR}. Skipping API tests."
-//                     }
-//                 }
-//             }
-//             post {
-//                 always {
-//                     publishHTML(target: [
-//                         allowMissing: true,
-//                         alwaysLinkToLastBuild: true,
-//                         keepAll: true,
-//                         reportDir: 'reports',
-//                         reportFiles: 'newman-*.html',
-//                         reportName: 'Newman API Test Report'
-//                     ])
-//                 }
-//                 failure {
-//                     error 'API tests failed. Aborting deployment.'
-//                 }
-//             }
-//         }
-
-        stage('Push Images') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh 'echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin'
-                        def services = env.SERVICES.trim().split('\\s+')
-                        services.each { svc ->
-                            sh "docker push \"${DOCKER_REGISTRY}/${svc}:${IMAGE_TAG}\""
-                            sh "docker push \"${DOCKER_REGISTRY}/${svc}:latest\""
+                        buildTasks[svc] = {
+                            stage("Build & Push ${svc}") {
+                                sh """
+                                    docker build \
+                                        --build-arg SERVICE_NAME="${svc}" \
+                                        --build-arg EXPOSED_PORT="${port}" \
+                                        -f Dockerfile.template \
+                                        -t "${DOCKER_REGISTRY}/${svc}:${IMAGE_TAG}" \
+                                        -t "${DOCKER_REGISTRY}/${svc}:latest" \
+                                        .
+                                """
+                                withCredentials([usernamePassword(
+                                    credentialsId: 'dockerhub-credentials',
+                                    usernameVariable: 'DOCKER_USER',
+                                    passwordVariable: 'DOCKER_PASS'
+                                )]) {
+                                    sh 'echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin'
+                                    sh "docker push \"${DOCKER_REGISTRY}/${svc}:${IMAGE_TAG}\""
+                                    sh "docker push \"${DOCKER_REGISTRY}/${svc}:latest\""
+                                }
+                            }
                         }
                     }
+
+                    parallel buildTasks
                 }
             }
             post {
