@@ -61,7 +61,9 @@ public class LoginPanel extends JPanel {
                     try {
                         String username = get();
                         Window window = SwingUtilities.getWindowAncestor(LoginPanel.this);
+                        Window owner = window != null ? window.getOwner() : null;
                         if (window != null) window.dispose();
+                        if (owner != null) owner.dispose(); // đóng LandingFrame nếu có
 
                         ChatClientGUI mainGui = new ChatClientGUI(username);
                         mainGui.setVisible(true);

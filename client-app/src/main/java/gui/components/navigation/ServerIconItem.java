@@ -12,6 +12,12 @@ public class ServerIconItem extends JPanel {
     private boolean hasUnread = false;
     private final JLabel iconLabel;
 
+    private Runnable onClick;            // left-click → chọn server
+    private Runnable onContextMenu;      // right-click → mở context menu (settings)
+
+    public void setOnClick(Runnable onClick) { this.onClick = onClick; }
+    public void setOnContextMenu(Runnable onContextMenu) { this.onContextMenu = onContextMenu; }
+
     public ServerIconItem(String iconSymbol) {
         setPreferredSize(new Dimension(72, 58));
         setMaximumSize(new Dimension(72, 58));
@@ -43,6 +49,14 @@ public class ServerIconItem extends JPanel {
                 isHovered = false;
                 updateStyles();
                 repaint();
+            }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    if (onContextMenu != null) onContextMenu.run();
+                } else if (onClick != null) {
+                    onClick.run();
+                }
             }
         });
     }

@@ -1,6 +1,7 @@
 package gui.auth;
 
 import javax.swing.*;
+import java.awt.Window;
 import java.awt.geom.RoundRectangle2D;
 
 public class AuthDialog extends JDialog {
@@ -8,6 +9,11 @@ public class AuthDialog extends JDialog {
     private final JTabbedPane tabbedPane;
 
     public AuthDialog() {
+        this((Window) null);
+    }
+
+    public AuthDialog(Window owner) {
+        super(owner, ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         setTitle("Authentication");
         setModal(true);

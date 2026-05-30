@@ -2,6 +2,7 @@ package gui.components.channels;
 
 import gui.components.AvatarBadge;
 import gui.components.chat.IconButton;
+import gui.profile.UserSettingsDialog;
 import gui.theme.AppColors;
 import javax.swing.*;
 import java.awt.*;
@@ -39,7 +40,9 @@ public class UserFooterPanel extends JPanel {
         controlsWrapper.add(new IconButton("🎙️")); // Mute mic
         controlsWrapper.add(new IconButton("🎧")); // Deafen audio
         controlsWrapper.add(new IconButton("⚙️", e -> {
-            System.out.println("Opening Modal Profile & Settings..."); // Core requirement hook
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            UserSettingsDialog dialog = new UserSettingsDialog(owner);
+            dialog.setVisible(true);
         }));
 
         add(identityWrapper, BorderLayout.WEST);

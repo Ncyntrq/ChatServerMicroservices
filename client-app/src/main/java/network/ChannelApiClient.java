@@ -10,10 +10,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
- * REST client để lấy lịch sử tin nhắn của 1 channel.
- * Endpoint: GET /api/channels/{channelId}/messages?limit=50&before={id}
+ * REST client cho channel-service (đi qua gateway).
+ * - Lấy lịch sử tin nhắn: GET /api/channels/{channelId}/messages
+ * - CRUD channel: GET /api/channels/server/{serverId}, POST /api/channels, PUT /api/channels/{id}, DELETE /api/channels/{id}
  *
  * Gateway dùng JWT từ Authorization header → inject X-User-Id.
  */
@@ -53,5 +55,153 @@ public class ChannelApiClient {
         } catch (Exception e) {
             throw new ApiException("Lỗi gọi " + url + ": " + e.getMessage(), e);
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Channel CRUD
+    // ---------------------------------------------------------------
+
+    /** CH2 — Lấy danh sách channels của 1 server */
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> getChannelsByServer(long serverId) {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/channels/server/" + serverId;
+        HttpResponse<String> resp = sendGet(url);
+        try {
+            return json.readValue(resp.body(), new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            throw new ApiException("Lỗi parse danh sách channel: " + e.getMessage(), e);
+        }
+    }
+
+    /** CH1 — Tạo channel mới */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> createChannel(long serverId, String name, String type) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("serverId", serverId);
+        body.put("name", name);
+        body.put("type", type != null ? type : "TEXT");
+        return postJson("/api/channels", body);
+    }
+
+    /** CH3 — Cập nhật channel (đổi tên, topic) */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> updateChannel(long channelId, String name, String topic) {
+        Map<String, String> body = new java.util.HashMap<>();
+        if (name != null) body.put("name", name);
+        if (topic != null) body.put("topic", topic);
+        return putJson("/api/channels/" + channelId, body);
+    }
+
+    /** CH4 — Xóa channel */
+    public void deleteChannel(long channelId) {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/channels/" + channelId;
+        sendDelete(url);
+    }
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+
+    private HttpResponse<String> sendGet(String url) {
+        String token = SessionManager.get().getAccessToken();
+        if (token == null) throw new ApiException("Chưa đăng nhập — không có token");
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "Bearer " + token)
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = HttpClientHolder.get().send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+            return resp;
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Không gọi được " + url + ": " + e.getMessage(), e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> postJson(String path, Object body) {
+        String url = ApiConfig.GATEWAY_HTTP + path;
+        try {
+            String payload = json.writeValueAsString(body);
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.get().getAccessToken())
+                    .POST(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> resp = HttpClientHolder.get().send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+            return json.readValue(resp.body(), new TypeReference<Map<String, Object>>() {});
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Lỗi gọi " + url + ": " + e.getMessage(), e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> putJson(String path, Object body) {
+        String url = ApiConfig.GATEWAY_HTTP + path;
+        try {
+            String payload = json.writeValueAsString(body);
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.get().getAccessToken())
+                    .PUT(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> resp = HttpClientHolder.get().send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+            return json.readValue(resp.body(), new TypeReference<Map<String, Object>>() {});
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Lỗi gọi " + url + ": " + e.getMessage(), e);
+        }
+    }
+
+    private void sendDelete(String url) {
+        String token = SessionManager.get().getAccessToken();
+        if (token == null) throw new ApiException("Chưa đăng nhập — không có token");
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "Bearer " + token)
+                    .DELETE()
+                    .build();
+            HttpResponse<String> resp = HttpClientHolder.get().send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Không gọi được " + url + ": " + e.getMessage(), e);
+        }
+    }
+
+    private String parseError(String body) {
+        if (body == null || body.isBlank()) return "Lỗi từ server";
+        try {
+            Map<?, ?> m = json.readValue(body, Map.class);
+            Object msg = m.get("message");
+            if (msg != null) return msg.toString();
+            Object err = m.get("error");
+            if (err != null) return err.toString();
+        } catch (Exception ignore) {}
+        return body;
     }
 }

@@ -1,63 +1,219 @@
 package gui.components.channels;
 
+import gui.channel.CreateChannelDialog;
+import gui.channel.EditChannelDialog;
+import gui.components.chat.IconButton;
 import gui.components.chat.SidebarCategoryHeader;
 import gui.theme.AppColors;
+import network.ApiConfig;
+import network.ChannelApiClient;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.Map;
+import java.util.function.LongConsumer;
 
+/**
+ * Thanh channel (240px). Load channels của server đang chọn từ API và render động.
+ * - Click channel → callback onChannelSelected(channelId)
+ * - Right-click channel → menu Sửa / Xóa
+ * - Nút ➕ ở header → tạo channel mới
+ */
 public class ChannelSidebar extends JPanel {
+
+    private final ChannelApiClient channelApi = new ChannelApiClient();
+    private final JLabel titleLabel;
+    private final JPanel listPanel;
+
+    private long activeServerId = ApiConfig.DEFAULT_SERVER_ID;
+    private LongConsumer onChannelSelected;
+
+    public void setOnChannelSelected(LongConsumer onChannelSelected) {
+        this.onChannelSelected = onChannelSelected;
+    }
+
+    public long getActiveServerId() { return activeServerId; }
 
     public ChannelSidebar(String sessionUsername) {
         setLayout(new BorderLayout());
         setBackground(AppColors.BG_SECONDARY);
-        setPreferredSize(new Dimension(240, 0)); // Fixed 240px width layout
+        setPreferredSize(new Dimension(240, 0));
 
-        // --- 1. TOP HEADER: SERVER NAME ---
+        // --- HEADER: tên server + nút ➕ ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(AppColors.BG_SECONDARY);
         headerPanel.setPreferredSize(new Dimension(240, 48));
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_PRIMARY));
 
-        JLabel titleLabel = new JLabel("Nhóm Cứng - Workspace");
+        titleLabel = new JLabel("Chọn một server");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
         titleLabel.setForeground(AppColors.TEXT_WHITE);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
 
-        // --- 2. MIDDLE: CHANNELS LIST (WITH NORTH PIN) ---
-        JPanel listPanel = new JPanel();
+        IconButton addChannelBtn = new IconButton("➕", e -> {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            new CreateChannelDialog(owner, activeServerId,
+                    () -> loadChannels(activeServerId, titleLabel.getText())).setVisible(true);
+        });
+        JPanel addWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        addWrap.setOpaque(false);
+        addWrap.add(addChannelBtn);
+        headerPanel.add(addWrap, BorderLayout.EAST);
+
+        // --- CHANNEL LIST ---
+        listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(AppColors.BG_SECONDARY);
         listPanel.setBorder(BorderFactory.createEmptyBorder(10, 8, 10, 8));
 
-        // Text Channels Category
-        listPanel.add(new SidebarCategoryHeader("KÊNH CHỮ"));
-        listPanel.add(Box.createVerticalStrut(4));
-        listPanel.add(new ChannelListItem("thao-luan-chung", false));
-        listPanel.add(Box.createVerticalStrut(4));
-        listPanel.add(new ChannelListItem("tai-lieu-giao-dien", false));
-        listPanel.add(Box.createVerticalStrut(16));
-
-        // Voice Channels Category
-        listPanel.add(new SidebarCategoryHeader("KÊNH THOẠI"));
-        listPanel.add(Box.createVerticalStrut(4));
-        listPanel.add(new ChannelListItem("Phòng Họp Midterm", true));
-
-        // This wrapper panel forces the listPanel components to stay pinned at the top
         JPanel scrollContentWrapper = new JPanel(new BorderLayout());
         scrollContentWrapper.setBackground(AppColors.BG_SECONDARY);
-        scrollContentWrapper.add(listPanel, BorderLayout.NORTH); // THE MAGIC PIN!
+        scrollContentWrapper.add(listPanel, BorderLayout.NORTH);
 
         JScrollPane scrollPane = new JScrollPane(scrollContentWrapper);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // --- 3. BOTTOM: ACCOUNT FOOTER BAR ---
+        // --- FOOTER ---
         UserFooterPanel accountFooter = new UserFooterPanel(sessionUsername);
 
-        // Assemble the structural layers
         add(headerPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(accountFooter, BorderLayout.SOUTH);
+    }
+
+    /** Tải channels của server và render. serverName dùng cho tiêu đề. */
+    public void loadChannels(long serverId, String serverName) {
+        this.activeServerId = serverId;
+        if (serverName != null) titleLabel.setText(serverName);
+
+        new SwingWorker<List<Map<String, Object>>, Void>() {
+            @Override
+            protected List<Map<String, Object>> doInBackground() {
+                return channelApi.getChannelsByServer(serverId);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    renderChannels(get());
+                } catch (Exception ex) {
+                    listPanel.removeAll();
+                    JLabel err = new JLabel("Không tải được channels");
+                    err.setForeground(AppColors.TEXT_MUTED);
+                    listPanel.add(err);
+                    listPanel.revalidate();
+                    listPanel.repaint();
+                }
+            }
+        }.execute();
+    }
+
+    private void renderChannels(List<Map<String, Object>> channels) {
+        listPanel.removeAll();
+
+        boolean addedTextHeader = false;
+        boolean addedVoiceHeader = false;
+
+        // Kênh chữ trước
+        for (Map<String, Object> ch : channels) {
+            if (!"VOICE".equalsIgnoreCase(str(ch.get("type")))) {
+                if (!addedTextHeader) {
+                    listPanel.add(new SidebarCategoryHeader("KÊNH CHỮ"));
+                    listPanel.add(Box.createVerticalStrut(4));
+                    addedTextHeader = true;
+                }
+                listPanel.add(buildItem(ch, false));
+                listPanel.add(Box.createVerticalStrut(4));
+            }
+        }
+
+        // Kênh thoại
+        for (Map<String, Object> ch : channels) {
+            if ("VOICE".equalsIgnoreCase(str(ch.get("type")))) {
+                if (!addedVoiceHeader) {
+                    listPanel.add(Box.createVerticalStrut(12));
+                    listPanel.add(new SidebarCategoryHeader("KÊNH THOẠI"));
+                    listPanel.add(Box.createVerticalStrut(4));
+                    addedVoiceHeader = true;
+                }
+                listPanel.add(buildItem(ch, true));
+                listPanel.add(Box.createVerticalStrut(4));
+            }
+        }
+
+        if (!addedTextHeader && !addedVoiceHeader) {
+            JLabel empty = new JLabel("Chưa có channel — nhấn ➕ để tạo");
+            empty.setForeground(AppColors.TEXT_MUTED);
+            listPanel.add(empty);
+        }
+
+        listPanel.revalidate();
+        listPanel.repaint();
+    }
+
+    private ChannelListItem buildItem(Map<String, Object> ch, boolean isVoice) {
+        long id = asLong(ch.get("id"));
+        String name = str(ch.get("name"));
+        String topic = str(ch.get("topic"));
+        ChannelListItem item = new ChannelListItem(name != null ? name : "channel", isVoice);
+        item.setOnClick(() -> {
+            if (onChannelSelected != null) onChannelSelected.accept(id);
+        });
+        item.setOnContextMenu(() -> showChannelMenu(item, id, name, topic));
+        return item;
+    }
+
+    private void showChannelMenu(Component anchor, long channelId, String name, String topic) {
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem editItem = new JMenuItem("Sửa");
+        JMenuItem deleteItem = new JMenuItem("Xóa");
+        Window owner = SwingUtilities.getWindowAncestor(this);
+
+        editItem.addActionListener(e ->
+                new EditChannelDialog(owner, channelId, name, topic,
+                        () -> loadChannels(activeServerId, titleLabel.getText())).setVisible(true));
+
+        deleteItem.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Xóa channel \"" + name + "\"?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+            new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() {
+                    channelApi.deleteChannel(channelId);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        loadChannels(activeServerId, titleLabel.getText());
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(ChannelSidebar.this,
+                                "Lỗi xóa channel: " + ex.getMessage());
+                    }
+                }
+            }.execute();
+        });
+
+        menu.add(editItem);
+        menu.add(deleteItem);
+        menu.show(anchor, 0, anchor.getHeight());
+    }
+
+    private static long asLong(Object o) {
+        if (o instanceof Number n) return n.longValue();
+        if (o != null) {
+            try { return Long.parseLong(o.toString()); } catch (NumberFormatException ignore) {}
+        }
+        return -1;
+    }
+
+    private static String str(Object o) {
+        return o != null ? o.toString() : null;
     }
 }
