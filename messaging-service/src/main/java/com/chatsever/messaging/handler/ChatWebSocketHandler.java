@@ -105,6 +105,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
             case TYPING -> messageService.broadcastToChannel(msg, sessions);
             case PRIVATE -> {
+                ChatMessage saved = messageService.saveMessage(msg);
+                msg.setMessageId(saved.getId());
                 messageService.sendPrivate(msg, session, sessions);
                 // Publish DM notification
                 messageService.publishNotificationEvent(msg);

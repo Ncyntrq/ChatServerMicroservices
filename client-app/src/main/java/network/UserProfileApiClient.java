@@ -43,6 +43,24 @@ public class UserProfileApiClient {
         return putJson("/api/users/status", body);
     }
 
+    // UP3 — Upload avatar sử dụng file-service và update avatarUrl
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> uploadAvatar(java.io.File file) {
+        try {
+            // 1. Upload ảnh lên file-service (MinIO)
+            String uploadedUrl = new network.FileApiClient().uploadAvatar(file);
+            
+            // 2. Cập nhật URL vào User Profile
+            Map<String, String> body = new java.util.HashMap<>();
+            body.put("avatarUrl", uploadedUrl);
+            return putJson("/api/users/profile", body);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Lỗi upload avatar: " + e.getMessage(), e);
+        }
+    }
+
     // UP5 — Tìm kiếm user
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> searchUsers(String keyword) {

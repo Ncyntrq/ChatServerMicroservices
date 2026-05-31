@@ -19,10 +19,11 @@ public class ServerApiClient {
     private final ObjectMapper json = JsonMapper.get();
 
     // SV1 — Tạo server mới
-    public Map<String, Object> createServer(String name, String description) {
+    public Map<String, Object> createServer(String name, String description, String iconUrl) {
         Map<String, String> body = new java.util.HashMap<>();
         body.put("name", name);
         if (description != null) body.put("description", description);
+        if (iconUrl != null) body.put("icon", iconUrl);
         return postJson("/api/servers", body);
     }
 
@@ -64,10 +65,11 @@ public class ServerApiClient {
     }
 
     // SV4 — Cập nhật server (đổi tên, mô tả)
-    public Map<String, Object> updateServer(long serverId, String name, String description) {
+    public Map<String, Object> updateServer(long serverId, String name, String description, String iconUrl) {
         Map<String, String> body = new java.util.HashMap<>();
         if (name != null) body.put("name", name);
         if (description != null) body.put("description", description);
+        if (iconUrl != null) body.put("icon", iconUrl);
         return putJson("/api/servers/" + serverId, body);
     }
 
@@ -80,6 +82,11 @@ public class ServerApiClient {
     // SV6 — Tham gia server bằng invite code
     public void joinServer(long serverId, String inviteCode) {
         String url = ApiConfig.GATEWAY_HTTP + "/api/servers/" + serverId + "/join?code=" + inviteCode;
+        sendPost(url, "");
+    }
+
+    public void joinServerByCode(String inviteCode) {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/servers/join?code=" + inviteCode;
         sendPost(url, "");
     }
 

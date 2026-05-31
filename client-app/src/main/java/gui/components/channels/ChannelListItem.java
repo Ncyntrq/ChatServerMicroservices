@@ -28,7 +28,7 @@ public class ChannelListItem extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 
         // Prefix Icon (# for text, 🔊 for voice)
-        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "＃");
+        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "#");
         prefixLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
         prefixLabel.setForeground(AppColors.TEXT_MUTED);
 

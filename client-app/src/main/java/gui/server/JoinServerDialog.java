@@ -35,17 +35,12 @@ public class JoinServerDialog extends JDialog {
         root.add(title);
         root.add(Box.createVerticalStrut(8));
 
-        JLabel subtitle = new JLabel("Nhập ID server và mã mời để tham gia");
+        JLabel subtitle = new JLabel("Nhập mã mời để tham gia");
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
         subtitle.setForeground(AppColors.TEXT_MUTED);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         root.add(subtitle);
         root.add(Box.createVerticalStrut(20));
-
-        FormField serverIdField = new FormField("SERVER ID", "Nhập ID server", false);
-        serverIdField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(serverIdField);
-        root.add(Box.createVerticalStrut(15));
 
         FormField codeField = new FormField("MÃ MỜI", "Nhập invite code", false);
         codeField.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -58,19 +53,10 @@ public class JoinServerDialog extends JDialog {
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         PrimaryButton joinBtn = new PrimaryButton("Tham gia Server", e -> {
-            String idText = serverIdField.getText().trim();
             String code = codeField.getText().trim();
-            if (idText.isEmpty() || code.isEmpty()) {
+            if (code.isEmpty()) {
                 statusLabel.setForeground(AppColors.DANGER);
-                statusLabel.setText("Vui lòng nhập đầy đủ ID và mã mời");
-                return;
-            }
-            long serverId;
-            try {
-                serverId = Long.parseLong(idText);
-            } catch (NumberFormatException ex) {
-                statusLabel.setForeground(AppColors.DANGER);
-                statusLabel.setText("Server ID phải là số");
+                statusLabel.setText("Vui lòng nhập mã mời");
                 return;
             }
             statusLabel.setForeground(AppColors.TEXT_MUTED);
@@ -79,7 +65,7 @@ public class JoinServerDialog extends JDialog {
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
-                    serverApi.joinServer(serverId, code);
+                    serverApi.joinServerByCode(code);
                     return null;
                 }
 

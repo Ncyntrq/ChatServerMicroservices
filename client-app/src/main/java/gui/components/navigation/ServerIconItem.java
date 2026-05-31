@@ -80,12 +80,45 @@ public class ServerIconItem extends JPanel {
         }
     }
 
+    private Image serverImage;
+
+    public void loadServerIconFromUrl(String urlString) {
+        new SwingWorker<Image, Void>() {
+            @Override protected Image doInBackground() {
+                try {
+                    String token = network.SessionManager.get().getAccessToken();
+                    java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create(urlString))
+                            .header("Authorization", "Bearer " + token)
+                            .GET()
+                            .build();
+                    java.net.http.HttpResponse<byte[]> resp = network.HttpClientHolder.get().send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                    if (resp.statusCode() == 200) {
+                        return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
+                    }
+                } catch(Exception e) {}
+                return null;
+            }
+            @Override protected void done() {
+                try {
+                    Image img = get();
+                    if(img != null) {
+                        serverImage = img;
+                        iconLabel.setVisible(false);
+                        repaint();
+                    }
+                } catch(Exception ignore){}
+            }
+        }.execute();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
         // --- 1. DETERMINE DYNAMIC LOOKS ---
         Color backgroundColor;
@@ -102,8 +135,17 @@ public class ServerIconItem extends JPanel {
         int x = (getWidth() - size) / 2;
         int y = (getHeight() - size) / 2;
 
-        g2.setColor(backgroundColor);
-        g2.fillRoundRect(x, y, size, size, cornerRadius, cornerRadius);
+        if (serverImage != null) {
+            g2.setClip(new java.awt.geom.RoundRectangle2D.Float(x, y, size, size, cornerRadius, cornerRadius));
+            g2.drawImage(serverImage, x, y, size, size, this);
+            g2.setClip(null);
+            // Draw a subtle border so it blends well
+            g2.setColor(new Color(255, 255, 255, 20));
+            g2.drawRoundRect(x, y, size, size, cornerRadius, cornerRadius);
+        } else {
+            g2.setColor(backgroundColor);
+            g2.fillRoundRect(x, y, size, size, cornerRadius, cornerRadius);
+        }
 
         // --- 3. DRAW LEFT SIDE STATUS INDICATOR PILL ---
         g2.setColor(Color.WHITE);

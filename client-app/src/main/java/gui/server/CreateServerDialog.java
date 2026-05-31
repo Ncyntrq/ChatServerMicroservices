@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public class CreateServerDialog extends JDialog {
 
+    private String uploadedIconUrl;
+
     public CreateServerDialog(Window owner, Runnable onSuccess) {
         super(owner, "Tạo Server Mới", ModalityType.APPLICATION_MODAL);
         setSize(440, 360);
@@ -67,6 +69,34 @@ public class CreateServerDialog extends JDialog {
         statusLabel.setForeground(AppColors.TEXT_MUTED);
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        PrimaryButton uploadBtn = new PrimaryButton("Upload Server Icon", e -> {
+            JFileChooser fc = new JFileChooser();
+            fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Ảnh (JPEG, PNG)", "jpg", "jpeg", "png"));
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                java.io.File file = fc.getSelectedFile();
+                statusLabel.setForeground(AppColors.TEXT_MUTED);
+                statusLabel.setText("Đang upload icon...");
+                new SwingWorker<String, Void>() {
+                    @Override protected String doInBackground() {
+                        return new network.FileApiClient().uploadAvatar(file);
+                    }
+                    @Override protected void done() {
+                        try {
+                            uploadedIconUrl = get();
+                            statusLabel.setForeground(AppColors.SUCCESS);
+                            statusLabel.setText("Upload thành công!");
+                        } catch(Exception ex) {
+                            statusLabel.setForeground(AppColors.DANGER);
+                            statusLabel.setText("Lỗi upload: " + ex.getMessage());
+                        }
+                    }
+                }.execute();
+            }
+        });
+        uploadBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        root.add(uploadBtn);
+        root.add(Box.createVerticalStrut(15));
+
         PrimaryButton createBtn = new PrimaryButton("Tạo Server", e -> {
             String name = nameField.getText().trim();
             if (name.isEmpty()) {
@@ -81,7 +111,7 @@ public class CreateServerDialog extends JDialog {
             new SwingWorker<Map<String, Object>, Void>() {
                 @Override
                 protected Map<String, Object> doInBackground() {
-                    return serverApi.createServer(name, desc.isEmpty() ? null : desc);
+                    return serverApi.createServer(name, desc.isEmpty() ? null : desc, uploadedIconUrl);
                 }
 
                 @Override

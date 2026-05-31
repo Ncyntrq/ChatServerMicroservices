@@ -26,7 +26,7 @@ public class ChannelSidebar extends JPanel {
     private final JLabel titleLabel;
     private final JPanel listPanel;
 
-    private long activeServerId = ApiConfig.DEFAULT_SERVER_ID;
+    private long activeServerId = -1;
     private LongConsumer onChannelSelected;
 
     public void setOnChannelSelected(LongConsumer onChannelSelected) {
@@ -51,16 +51,6 @@ public class ChannelSidebar extends JPanel {
         titleLabel.setForeground(AppColors.TEXT_WHITE);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
-
-        IconButton addChannelBtn = new IconButton("➕", e -> {
-            Window owner = SwingUtilities.getWindowAncestor(this);
-            new CreateChannelDialog(owner, activeServerId,
-                    () -> loadChannels(activeServerId, titleLabel.getText())).setVisible(true);
-        });
-        JPanel addWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
-        addWrap.setOpaque(false);
-        addWrap.add(addChannelBtn);
-        headerPanel.add(addWrap, BorderLayout.EAST);
 
         // --- CHANNEL LIST ---
         listPanel = new JPanel();
@@ -121,7 +111,11 @@ public class ChannelSidebar extends JPanel {
         for (Map<String, Object> ch : channels) {
             if (!"VOICE".equalsIgnoreCase(str(ch.get("type")))) {
                 if (!addedTextHeader) {
-                    listPanel.add(new SidebarCategoryHeader("KÊNH CHỮ"));
+                    listPanel.add(new SidebarCategoryHeader("KÊNH CHAT", () -> {
+                        Window owner = SwingUtilities.getWindowAncestor(this);
+                        new CreateChannelDialog(owner, activeServerId,
+                                () -> loadChannels(activeServerId, titleLabel.getText())).setVisible(true);
+                    }));
                     listPanel.add(Box.createVerticalStrut(4));
                     addedTextHeader = true;
                 }

@@ -68,4 +68,24 @@ public class PrimaryButton extends JPanel {
 
         add(button, BorderLayout.CENTER);
     }
+
+    public void setText(String text) {
+        button.setText(text);
+        repaint();
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        button.setEnabled(enabled);
+        // Optional: change opacity or background when disabled
+        if (!enabled) {
+            button.setBackground(AppColors.BG_SECONDARY);
+            button.setForeground(AppColors.TEXT_MUTED);
+        } else {
+            button.setBackground(AppColors.BRAND_PRIMARY);
+            button.setForeground(Color.WHITE);
+        }
+        repaint();
+    }
 }

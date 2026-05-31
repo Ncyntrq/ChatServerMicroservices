@@ -24,6 +24,9 @@ public class ChatInputContainer extends JPanel {
         IconButton plusButton = new IconButton("+", e -> {
             System.out.println("Plus button clicked! Open attachment menu.");
         });
+        JPanel leftWrap = new JPanel(new GridBagLayout());
+        leftWrap.setOpaque(false);
+        leftWrap.add(plusButton);
 
         // --- 2. Main text field ---
         inputField = new JTextField();
@@ -82,10 +85,14 @@ public class ChatInputContainer extends JPanel {
 
         rightPanel.add(sendButton);
 
+        JPanel rightWrap = new JPanel(new GridBagLayout());
+        rightWrap.setOpaque(false);
+        rightWrap.add(rightPanel);
+
         // --- Assemble ---
-        add(plusButton, BorderLayout.WEST);
+        add(leftWrap, BorderLayout.WEST);
         add(inputField, BorderLayout.CENTER);
-        add(rightPanel, BorderLayout.EAST);
+        add(rightWrap, BorderLayout.EAST);
     }
 
     @Override

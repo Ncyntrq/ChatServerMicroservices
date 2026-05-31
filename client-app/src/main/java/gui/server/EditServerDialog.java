@@ -15,12 +15,16 @@ import java.util.Map;
  */
 public class EditServerDialog extends JDialog {
 
+    private String uploadedIconUrl;
+
     public EditServerDialog(Window owner, long serverId, String currentName,
-                            String currentDescription, Runnable onSuccess) {
+                            String currentDescription, String currentIconUrl, Runnable onSuccess) {
         super(owner, "Sửa Server", ModalityType.APPLICATION_MODAL);
         setSize(440, 360);
         setLocationRelativeTo(owner);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        this.uploadedIconUrl = currentIconUrl;
 
         ServerApiClient serverApi = new ServerApiClient();
 
@@ -69,6 +73,34 @@ public class EditServerDialog extends JDialog {
         statusLabel.setForeground(AppColors.TEXT_MUTED);
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        PrimaryButton uploadBtn = new PrimaryButton("Upload Server Icon", e -> {
+            JFileChooser fc = new JFileChooser();
+            fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Ảnh (JPEG, PNG)", "jpg", "jpeg", "png"));
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                java.io.File file = fc.getSelectedFile();
+                statusLabel.setForeground(AppColors.TEXT_MUTED);
+                statusLabel.setText("Đang upload icon...");
+                new SwingWorker<String, Void>() {
+                    @Override protected String doInBackground() {
+                        return new network.FileApiClient().uploadAvatar(file);
+                    }
+                    @Override protected void done() {
+                        try {
+                            uploadedIconUrl = get();
+                            statusLabel.setForeground(AppColors.SUCCESS);
+                            statusLabel.setText("Upload thành công!");
+                        } catch(Exception ex) {
+                            statusLabel.setForeground(AppColors.DANGER);
+                            statusLabel.setText("Lỗi upload: " + ex.getMessage());
+                        }
+                    }
+                }.execute();
+            }
+        });
+        uploadBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        root.add(uploadBtn);
+        root.add(Box.createVerticalStrut(15));
+
         PrimaryButton saveBtn = new PrimaryButton("Lưu", e -> {
             String name = nameField.getText().trim();
             if (name.isEmpty()) {
@@ -83,7 +115,7 @@ public class EditServerDialog extends JDialog {
             new SwingWorker<Map<String, Object>, Void>() {
                 @Override
                 protected Map<String, Object> doInBackground() {
-                    return serverApi.updateServer(serverId, name, desc.isEmpty() ? null : desc);
+                    return serverApi.updateServer(serverId, name, desc.isEmpty() ? null : desc, uploadedIconUrl);
                 }
 
                 @Override

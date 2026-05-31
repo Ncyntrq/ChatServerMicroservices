@@ -8,7 +8,7 @@ pipeline {
         COMPOSE_FILE_APP   = 'docker-compose.yml'
         COMPOSE_FILE_DEV   = 'docker-compose.devops.yml'
         NEWMAN_TEST_DIR    = 'tnguyen/test'
-        SERVICES           = 'gateway-service auth-service server-service channel-service messaging-service presence-service log-service notification-service file-service role-service user-profile-service'
+        SERVICES           = 'gateway-service auth-service server-service channel-service messaging-service presence-service log-service notification-service file-service role-service user-profile-service friend-service'
     }
 
     tools {
@@ -87,7 +87,8 @@ pipeline {
                         'notification-service' : '8088',
                         'file-service'         : '8089',
                         'user-profile-service' : '8090',
-                        'role-service'         : '8091'
+                        'role-service'         : '8091',
+                        'friend-service'       : '8092'
                     ]
 
                     def buildTasks = [:]

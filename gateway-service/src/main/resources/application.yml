@@ -66,7 +66,7 @@ spring:
           predicates:
             - Path=/api/channels/**
 
-        # 5. Dịch vụ Nhắn tin
+        # 5. Dịch vụ Tin nhắn (Messaging)
         - id: messaging-service
           uri: ${MESSAGING_SERVICE_URL:http://localhost:8082}
           predicates:
@@ -101,6 +101,12 @@ spring:
           uri: ${LOG_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/logs/**
+
+        # 11. Dịch vụ Bạn bè
+        - id: friend-service
+          uri: ${FRIEND_SERVICE_URL:http://localhost:8092}
+          predicates:
+            - Path=/api/friends/**
 
 # Cấu hình bảo mật để JwtAuthFilter sử dụng
 jwt:

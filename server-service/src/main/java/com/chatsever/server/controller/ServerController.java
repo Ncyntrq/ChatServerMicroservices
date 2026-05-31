@@ -71,6 +71,13 @@ public class ServerController {
         return ResponseEntity.ok(Map.of("message", "Gia nhập thành công"));
     }
 
+    @PostMapping("/join")
+    public ResponseEntity<Map<String, String>> joinByCode(@RequestParam String code,
+            @RequestHeader("X-User-Id") String uid) {
+        serverService.joinServerByCode(code, uid);
+        return ResponseEntity.ok(Map.of("message", "Gia nhập thành công"));
+    }
+
     @PostMapping("/{id}/leave")
     public ResponseEntity<Map<String, String>> leave(@PathVariable Long id, @RequestHeader("X-User-Id") String uid) {
         serverService.leaveServer(id, uid);

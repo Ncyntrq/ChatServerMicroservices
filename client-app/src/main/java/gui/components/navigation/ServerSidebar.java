@@ -10,6 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.LongConsumer;
 
 /**
@@ -23,10 +24,10 @@ public class ServerSidebar extends JPanel {
     private final JPanel listPanel;
     private final ServerApiClient serverApi = new ServerApiClient();
 
-    private LongConsumer onServerSelected;
+    private BiConsumer<Long, String> onServerSelected;
     private long activeServerId = -1;
 
-    public void setOnServerSelected(LongConsumer onServerSelected) {
+    public void setOnServerSelected(BiConsumer<Long, String> onServerSelected) {
         this.onServerSelected = onServerSelected;
     }
 
@@ -70,6 +71,11 @@ public class ServerSidebar extends JPanel {
         ServerIconItem homeBtn = new ServerIconItem("💬");
         homeBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         homeBtn.setActive(activeServerId == -1);
+        homeBtn.setOnClick(() -> {
+            activeServerId = -1;
+            if (onServerSelected != null) onServerSelected.accept(-1L, null);
+            refreshActiveStates();
+        });
         listPanel.add(homeBtn);
 
         listPanel.add(Box.createVerticalStrut(5));
@@ -91,9 +97,16 @@ public class ServerSidebar extends JPanel {
             ServerIconItem item = new ServerIconItem(symbol);
             item.setAlignmentX(Component.CENTER_ALIGNMENT);
             item.setActive(id == activeServerId);
+            
+            String iconUrl = str(server.get("icon"));
+            if (iconUrl != null && !iconUrl.isBlank()) {
+                if (!iconUrl.startsWith("http")) iconUrl = network.ApiConfig.GATEWAY_HTTP + iconUrl;
+                item.loadServerIconFromUrl(iconUrl);
+            }
+
             item.setOnClick(() -> {
                 activeServerId = id;
-                if (onServerSelected != null) onServerSelected.accept(id);
+                if (onServerSelected != null) onServerSelected.accept(id, name);
                 refreshActiveStates();
             });
             item.setOnContextMenu(() -> {
@@ -112,6 +125,16 @@ public class ServerSidebar extends JPanel {
         listPanel.add(Box.createVerticalGlue());
         listPanel.revalidate();
         listPanel.repaint();
+        
+        // Notify ChatClientGUI of the latest name if a server is currently active
+        if (activeServerId != -1 && onServerSelected != null) {
+            for (Map<String, Object> server : servers) {
+                if (asLong(server.get("id")) == activeServerId) {
+                    onServerSelected.accept(activeServerId, str(server.get("name")));
+                    break;
+                }
+            }
+        }
     }
 
     private void refreshActiveStates() {

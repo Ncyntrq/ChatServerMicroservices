@@ -49,10 +49,18 @@ public class AvatarBadge extends JPanel {
     public void loadAvatarFromUrl(String urlString) {
         new Thread(() -> {
             try {
-                URL url = new URL(urlString);
-                Image downloadedImage = ImageIO.read(url);
-                if (downloadedImage != null) {
-                    SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
+                String token = network.SessionManager.get().getAccessToken();
+                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(urlString))
+                        .header("Authorization", "Bearer " + token)
+                        .GET()
+                        .build();
+                java.net.http.HttpResponse<byte[]> resp = network.HttpClientHolder.get().send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                if (resp.statusCode() == 200) {
+                    Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
+                    if (downloadedImage != null) {
+                        SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("Failed to load avatar from URL: " + urlString);

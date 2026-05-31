@@ -21,8 +21,10 @@ public class ServerSettingsDialog extends JDialog {
     private final JLabel nameValue = new JLabel("...");
     private final JLabel descValue = new JLabel("...");
     private final JLabel statusLabel = new JLabel(" ");
+    private JLabel titleLabel;
     private String loadedName;
     private String loadedDesc;
+    private String loadedIconUrl;
 
     public ServerSettingsDialog(Window owner, long serverId, Runnable onChange) {
         super(owner, "Cài đặt Server", ModalityType.APPLICATION_MODAL);
@@ -38,6 +40,7 @@ public class ServerSettingsDialog extends JDialog {
         root.setBorder(BorderFactory.createEmptyBorder(28, 36, 28, 36));
 
         JLabel title = new JLabel("Cài đặt Server");
+        this.titleLabel = title; // Store reference to update later
         title.setFont(new Font("SansSerif", Font.BOLD, 20));
         title.setForeground(AppColors.TEXT_WHITE);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -50,12 +53,18 @@ public class ServerSettingsDialog extends JDialog {
         root.add(Box.createVerticalStrut(20));
 
         PrimaryButton editBtn = new PrimaryButton("Sửa thông tin", e ->
-                new EditServerDialog(this, serverId, loadedName, loadedDesc, () -> {
+                new EditServerDialog(this, serverId, loadedName, loadedDesc, loadedIconUrl, () -> {
                     if (onChange != null) onChange.run();
                     loadDetails();
                 }).setVisible(true));
         editBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         root.add(editBtn);
+        root.add(Box.createVerticalStrut(8));
+
+        PrimaryButton manageRoleBtn = new PrimaryButton("Quản lý Role", e ->
+                new RoleManagementDialog(this, serverId).setVisible(true));
+        manageRoleBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        root.add(manageRoleBtn);
         root.add(Box.createVerticalStrut(8));
 
         PrimaryButton inviteBtn = new PrimaryButton("Tạo Invite Code", e -> createInvite());
@@ -107,11 +116,18 @@ public class ServerSettingsDialog extends JDialog {
             @Override
             protected void done() {
                 try {
-                    Map<String, Object> details = get();
+                    Map<String, Object> response = get();
+                    Map<String, Object> details = (Map<String, Object>) response.get("server");
+                    if (details == null) details = response; // Fallback in case API changes
+
                     loadedName = str(details.get("name"));
                     loadedDesc = str(details.get("description"));
+                    loadedIconUrl = str(details.get("icon"));
                     nameValue.setText(loadedName != null ? loadedName : "(không tên)");
                     descValue.setText(loadedDesc != null && !loadedDesc.isBlank() ? loadedDesc : "(không có mô tả)");
+                    if (titleLabel != null) {
+                        titleLabel.setText("Cài đặt: " + (loadedName != null ? loadedName : ""));
+                    }
                 } catch (Exception ex) {
                     statusLabel.setForeground(AppColors.WARNING);
                     statusLabel.setText("Không tải được chi tiết server");

@@ -41,11 +41,18 @@ public class ServerServiceImpl implements ServerService {
                 .roleIds(new ArrayList<>())
                 .build());
                 
-        // Khởi tạo các Role mặc định cho Server mới (SV1)
+        // Không khởi tạo 4 Role mặc định nữa theo yêu cầu của user (bỏ role null)
+        // roleClient.initDefaultRoles(saved.getId());
+
+        // Tạo kênh chat mặc định: "General"
         try {
-            roleClient.initDefaultRoles(saved.getId());
+            java.util.Map<String, Object> req = new java.util.HashMap<>();
+            req.put("name", "General");
+            req.put("serverId", saved.getId());
+            req.put("type", "TEXT");
+            channelClient.createChannel(req, ownerId);
         } catch (Exception e) {
-            // Log lỗi nhưng không hủy việc tạo server
+            // Không hủy tiến trình nếu tạo kênh lỗi
         }
         
         return saved;
@@ -133,6 +140,32 @@ public class ServerServiceImpl implements ServerService {
 
         if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
             // Khởi tạo danh sách roleIds rỗng, loại bỏ MemberRole.MEMBER
+            memberRepository.save(Member.builder()
+                    .serverId(s.getId())
+                    .userId(uid)
+                    .roleIds(new ArrayList<>())
+                    .build());
+        }
+    }
+
+    @Override
+    public void joinServerByCode(String code, String uid) {
+        Server s = serverRepository.findByInviteCode(code)
+                .orElseThrow(() -> new RuntimeException("Invite code không hợp lệ"));
+        
+        // R6 - Kiểm tra xem user có bị ban khỏi server này không
+        try {
+            Map<String, Object> banCheck = roleClient.checkBanned(s.getId(), uid);
+            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
+                throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            // Log lỗi
+        }
+
+        if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
             memberRepository.save(Member.builder()
                     .serverId(s.getId())
                     .userId(uid)
