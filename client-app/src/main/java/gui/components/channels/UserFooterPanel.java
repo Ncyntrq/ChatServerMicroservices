@@ -2,6 +2,7 @@ package gui.components.channels;
 
 import gui.components.AvatarBadge;
 import gui.components.chat.IconButton;
+import gui.profile.UserSettingsDialog;
 import gui.theme.AppColors;
 import javax.swing.*;
 import java.awt.*;
@@ -23,6 +24,28 @@ public class UserFooterPanel extends JPanel {
         AvatarBadge userAvatar = new AvatarBadge(initial);
         userAvatar.setPreferredSize(new Dimension(36, 36));
 
+        // Asynchronously load avatar if available
+        new SwingWorker<java.util.Map<String, Object>, Void>() {
+            @Override
+            protected java.util.Map<String, Object> doInBackground() {
+                return new network.UserProfileApiClient().getProfile(username);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    java.util.Map<String, Object> profile = get();
+                    if (profile != null && profile.get("avatarUrl") != null) {
+                        String url = profile.get("avatarUrl").toString();
+                        if (!url.startsWith("http")) {
+                            url = network.ApiConfig.GATEWAY_HTTP + url;
+                        }
+                        userAvatar.loadAvatarFromUrl(url);
+                    }
+                } catch (Exception ignore) {}
+            }
+        }.execute();
+
         // Name Details
         JLabel nameLabel = new JLabel(username);
         nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
@@ -36,10 +59,12 @@ public class UserFooterPanel extends JPanel {
         controlsWrapper.setOpaque(false);
 
         // Reusing your standalone IconButton component with custom offsets
-        controlsWrapper.add(new IconButton("🎙️")); // Mute mic
+        controlsWrapper.add(new IconButton("🎙")); // Mute mic
         controlsWrapper.add(new IconButton("🎧")); // Deafen audio
-        controlsWrapper.add(new IconButton("⚙️", e -> {
-            System.out.println("Opening Modal Profile & Settings..."); // Core requirement hook
+        controlsWrapper.add(new IconButton("⚙", e -> {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            UserSettingsDialog dialog = new UserSettingsDialog(owner);
+            dialog.setVisible(true);
         }));
 
         add(identityWrapper, BorderLayout.WEST);

@@ -47,10 +47,11 @@ public class UserProfileService {
     }
 
     // UP2 — Cập nhật hồ sơ
-    public UserProfile updateProfile(String username, String displayName, String bio) {
+    public UserProfile updateProfile(String username, String displayName, String bio, String avatarUrl) {
         UserProfile profile = getProfile(username);
         if (displayName != null) profile.setDisplayName(displayName);
         if (bio != null) profile.setBio(bio);
+        if (avatarUrl != null) profile.setAvatarUrl(avatarUrl);
         return repository.save(profile);
     }
 

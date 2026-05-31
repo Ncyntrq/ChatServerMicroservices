@@ -11,6 +11,12 @@ public class ChannelListItem extends JPanel {
     private final boolean isVoice;
     private final JLabel nameLabel;
 
+    private Runnable onClick;          // left-click → chọn channel
+    private Runnable onContextMenu;    // right-click → edit/delete
+
+    public void setOnClick(Runnable onClick) { this.onClick = onClick; }
+    public void setOnContextMenu(Runnable onContextMenu) { this.onContextMenu = onContextMenu; }
+
     public ChannelListItem(String channelName, boolean isVoice) {
         this.isVoice = isVoice;
 
@@ -22,7 +28,7 @@ public class ChannelListItem extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 
         // Prefix Icon (# for text, 🔊 for voice)
-        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "＃");
+        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "#");
         prefixLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
         prefixLabel.setForeground(AppColors.TEXT_MUTED);
 
@@ -48,6 +54,15 @@ public class ChannelListItem extends JPanel {
                 isHovered = false;
                 nameLabel.setForeground(AppColors.TEXT_MUTED);
                 repaint();
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    if (onContextMenu != null) onContextMenu.run();
+                } else if (onClick != null) {
+                    onClick.run();
+                }
             }
         });
     }

@@ -1,7 +1,8 @@
 package gui;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import gui.auth.AuthDialog;
+import gui.landing.LandingFrame;
+import network.SessionManager;
 
 import javax.swing.*;
 
@@ -14,8 +15,14 @@ public class ClientApplication {
         }
 
         SwingUtilities.invokeLater(() -> {
-            AuthDialog auth = new AuthDialog();
-            auth.setVisible(true);
+            // Có session hợp lệ → vào thẳng chat; chưa có → hiển thị landing.
+            if (SessionManager.get().isAuthenticated()) {
+                ChatClientGUI gui = new ChatClientGUI(SessionManager.get().getUsername());
+                gui.setVisible(true);
+                gui.startSession();
+            } else {
+                new LandingFrame().setVisible(true);
+            }
         });
     }
 }

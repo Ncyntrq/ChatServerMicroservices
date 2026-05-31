@@ -1,11 +1,35 @@
 package gui.components.navigation;
 
+import gui.server.CreateServerDialog;
+import gui.server.JoinServerDialog;
+import gui.server.ServerSettingsDialog;
 import gui.theme.AppColors;
+import network.ServerApiClient;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.LongConsumer;
 
+/**
+ * Thanh server bên trái (72px). Load danh sách server từ API và render động.
+ * - Click icon server → callback onServerSelected(serverId)
+ * - Right-click icon → mở ServerSettingsDialog
+ * - Nút ➕ → popup Tạo / Tham gia server
+ */
 public class ServerSidebar extends JPanel {
+
     private final JPanel listPanel;
+    private final ServerApiClient serverApi = new ServerApiClient();
+
+    private BiConsumer<Long, String> onServerSelected;
+    private long activeServerId = -1;
+
+    public void setOnServerSelected(BiConsumer<Long, String> onServerSelected) {
+        this.onServerSelected = onServerSelected;
+    }
 
     public ServerSidebar() {
         setLayout(new BorderLayout());
@@ -16,43 +40,130 @@ public class ServerSidebar extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(AppColors.BG_TERTIARY);
 
-        // --- 1. HOME ICON (Direct Messages Context) ---
+        add(listPanel, BorderLayout.CENTER);
+        renderServers(List.of()); // khung rỗng ban đầu (HOME + ➕)
+    }
+
+    /** Tải danh sách server từ API rồi render lại. */
+    public void loadServers() {
+        new SwingWorker<List<Map<String, Object>>, Void>() {
+            @Override
+            protected List<Map<String, Object>> doInBackground() {
+                return serverApi.getMyServers();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    renderServers(get());
+                } catch (Exception ex) {
+                    renderServers(List.of());
+                }
+            }
+        }.execute();
+    }
+
+    /** Render lại toàn bộ: HOME, separator, từng server, nút ➕. */
+    private void renderServers(List<Map<String, Object>> servers) {
+        listPanel.removeAll();
+
         listPanel.add(Box.createVerticalStrut(10));
-        ServerIconItem homeBtn = new ServerIconItem("💬"); // Chat bubble icon for DMs
-        homeBtn.setActive(true);
+        ServerIconItem homeBtn = new ServerIconItem("💬");
         homeBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        homeBtn.setActive(activeServerId == -1);
+        homeBtn.setOnClick(() -> {
+            activeServerId = -1;
+            if (onServerSelected != null) onServerSelected.accept(-1L, null);
+            refreshActiveStates();
+        });
         listPanel.add(homeBtn);
 
-        // --- 2. SEPARATOR LINE ---
         listPanel.add(Box.createVerticalStrut(5));
         JPanel separator = new JPanel() {
-            @Override public Dimension getPreferredSize() { return new Dimension(32, 2); } // ADD
-            @Override public Dimension getMinimumSize()   { return new Dimension(32, 2); } // ADD
+            @Override public Dimension getPreferredSize() { return new Dimension(32, 2); }
+            @Override public Dimension getMinimumSize()   { return new Dimension(32, 2); }
             @Override public Dimension getMaximumSize()   { return new Dimension(32, 2); }
         };
-        separator.setAlignmentX(Component.CENTER_ALIGNMENT); // ADD THIS
-        separator.setBackground(AppColors.BG_HOVER);
         separator.setAlignmentX(Component.CENTER_ALIGNMENT);
+        separator.setBackground(AppColors.BG_HOVER);
         listPanel.add(separator);
         listPanel.add(Box.createVerticalStrut(5));
 
-        // --- 3. SERVER CHANNELS ICONS ---
-        ServerIconItem srv1 = new ServerIconItem("🛠️"); // Wrench icon for team server
-        srv1.setHasUnread(true);
-        srv1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        listPanel.add(srv1);
+        for (Map<String, Object> server : servers) {
+            long id = asLong(server.get("id"));
+            String name = str(server.get("name"));
+            String symbol = (name == null || name.isBlank()) ? "?" : name.substring(0, 1).toUpperCase();
 
-        ServerIconItem srv2 = new ServerIconItem("🚀"); // Rocket icon for alternate environment
-        srv2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        listPanel.add(srv2);
+            ServerIconItem item = new ServerIconItem(symbol);
+            item.setAlignmentX(Component.CENTER_ALIGNMENT);
+            item.setActive(id == activeServerId);
+            
+            String iconUrl = str(server.get("icon"));
+            if (iconUrl != null && !iconUrl.isBlank()) {
+                if (!iconUrl.startsWith("http")) iconUrl = network.ApiConfig.GATEWAY_HTTP + iconUrl;
+                item.loadServerIconFromUrl(iconUrl);
+            }
 
-        // --- 4. ACTION INTERFACE (Add New Server) ---
+            item.setOnClick(() -> {
+                activeServerId = id;
+                if (onServerSelected != null) onServerSelected.accept(id, name);
+                refreshActiveStates();
+            });
+            item.setOnContextMenu(() -> {
+                Window owner = SwingUtilities.getWindowAncestor(this);
+                new ServerSettingsDialog(owner, id, this::loadServers).setVisible(true);
+            });
+            listPanel.add(item);
+        }
+
         listPanel.add(Box.createVerticalStrut(5));
-        ServerIconItem addBtn = new ServerIconItem("➕"); // Plus icon
+        ServerIconItem addBtn = new ServerIconItem("➕");
         addBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        addBtn.setOnClick(() -> showAddServerMenu(addBtn));
         listPanel.add(addBtn);
 
         listPanel.add(Box.createVerticalGlue());
-        add(listPanel, BorderLayout.CENTER);
+        listPanel.revalidate();
+        listPanel.repaint();
+        
+        // Notify ChatClientGUI of the latest name if a server is currently active
+        if (activeServerId != -1 && onServerSelected != null) {
+            for (Map<String, Object> server : servers) {
+                if (asLong(server.get("id")) == activeServerId) {
+                    onServerSelected.accept(activeServerId, str(server.get("name")));
+                    break;
+                }
+            }
+        }
+    }
+
+    private void refreshActiveStates() {
+        loadServers();
+    }
+
+    private void showAddServerMenu(Component anchor) {
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem createItem = new JMenuItem("Tạo Server Mới");
+        JMenuItem joinItem = new JMenuItem("Tham Gia Server");
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        createItem.addActionListener(e ->
+                new CreateServerDialog(owner, this::loadServers).setVisible(true));
+        joinItem.addActionListener(e ->
+                new JoinServerDialog(owner, this::loadServers).setVisible(true));
+        menu.add(createItem);
+        menu.add(joinItem);
+        menu.show(anchor, anchor.getWidth(), 0);
+    }
+
+    private static long asLong(Object o) {
+        if (o instanceof Number n) return n.longValue();
+        if (o != null) {
+            try { return Long.parseLong(o.toString()); } catch (NumberFormatException ignore) {}
+        }
+        return -1;
+    }
+
+    private static String str(Object o) {
+        return o != null ? o.toString() : null;
     }
 }

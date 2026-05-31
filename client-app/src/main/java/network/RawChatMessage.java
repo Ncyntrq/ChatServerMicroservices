@@ -16,6 +16,7 @@ public class RawChatMessage {
     public Long id;
     public String sender;
     public String content;
+    public String receiver;
     public Long channelId;
     public Long serverId;
     public LocalDateTime timestamp;
@@ -26,7 +27,7 @@ public class RawChatMessage {
         MessageDTO dto = new MessageDTO(
                 type != null ? type : MessageType.CHAT,
                 sender,
-                null,
+                receiver,
                 content,
                 timestamp
         );

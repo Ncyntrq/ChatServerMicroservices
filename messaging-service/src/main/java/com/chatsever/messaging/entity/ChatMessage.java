@@ -18,6 +18,8 @@ public class ChatMessage {
     @Column(columnDefinition = "TEXT")
     private String content;
     
+    private String receiver; // For private messages
+    
     private Long channelId;
     private Long serverId;
     
@@ -36,6 +38,8 @@ public class ChatMessage {
     public void setSender(String sender) { this.sender = sender; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public String getReceiver() { return receiver; }
+    public void setReceiver(String receiver) { this.receiver = receiver; }
     public Long getChannelId() { return channelId; }
     public void setChannelId(Long channelId) { this.channelId = channelId; }
     public Long getServerId() { return serverId; }
