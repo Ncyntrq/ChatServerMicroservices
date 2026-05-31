@@ -5,12 +5,10 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
+      - "5672:5672"  
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
