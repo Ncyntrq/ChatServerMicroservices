@@ -27,7 +27,9 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     @Transactional
     public ChannelDto createChannel(ChannelRequest request, String userId) {
-        checkPermission(request.getServerId(), userId, 8); // MANAGE_CHANNEL
+        if (!"system".equals(userId)) {
+            checkPermission(request.getServerId(), userId, 8); // MANAGE_CHANNEL
+        }
         
         Channel channel = Channel.builder()
                 .name(request.getName())

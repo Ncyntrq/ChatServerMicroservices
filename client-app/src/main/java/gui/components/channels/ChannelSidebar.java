@@ -139,7 +139,13 @@ public class ChannelSidebar extends JPanel {
         }
 
         if (!addedTextHeader && !addedVoiceHeader) {
-            JLabel empty = new JLabel("Chưa có channel — nhấn ➕ để tạo");
+            listPanel.add(new SidebarCategoryHeader("KÊNH CHAT", () -> {
+                Window owner = SwingUtilities.getWindowAncestor(this);
+                new CreateChannelDialog(owner, activeServerId,
+                        () -> loadChannels(activeServerId, titleLabel.getText())).setVisible(true);
+            }));
+            listPanel.add(Box.createVerticalStrut(4));
+            JLabel empty = new JLabel("Chưa có channel");
             empty.setForeground(AppColors.TEXT_MUTED);
             listPanel.add(empty);
         }

@@ -50,7 +50,7 @@ public class ServerServiceImpl implements ServerService {
             req.put("name", "General");
             req.put("serverId", saved.getId());
             req.put("type", "TEXT");
-            channelClient.createChannel(req, ownerId);
+            channelClient.createChannel(req, "system");
         } catch (Exception e) {
             // Không hủy tiến trình nếu tạo kênh lỗi
         }
