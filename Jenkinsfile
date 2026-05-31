@@ -12,8 +12,8 @@ pipeline {
     }
 
     tools {
-        maven 'Maven-3.9'
-        nodejs 'NodeJS-20'
+        maven 'Maven3'
+        jdk 'Java17'
     }
 
     options {
