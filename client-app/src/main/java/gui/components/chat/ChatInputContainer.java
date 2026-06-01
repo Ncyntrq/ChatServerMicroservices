@@ -12,6 +12,12 @@ import java.util.Map;
 public class ChatInputContainer extends JPanel {
     private final JTextField inputField;
     private final JButton sendButton;
+    private Runnable onAttach = () -> {};
+
+    /** Gắn handler khi bấm nút đính kèm (+). */
+    public void setOnAttach(Runnable r) {
+        this.onAttach = r != null ? r : () -> {};
+    }
 
     public ChatInputContainer() {
         setLayout(new BorderLayout(8, 0));
@@ -22,9 +28,7 @@ public class ChatInputContainer extends JPanel {
         putClientProperty("JComponent.arc", 12);
 
         // --- 1. Left icon (Plus/Attach) ---
-        IconButton plusButton = new IconButton("+", e -> {
-            System.out.println("Plus button clicked! Open attachment menu.");
-        });
+        IconButton plusButton = new IconButton("+", e -> onAttach.run());
         JPanel leftWrap = new JPanel(new GridBagLayout());
         leftWrap.setOpaque(false);
         leftWrap.add(plusButton);

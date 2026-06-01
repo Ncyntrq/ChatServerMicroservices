@@ -28,9 +28,15 @@ public class ChannelSidebar extends JPanel {
 
     private long activeServerId = -1;
     private LongConsumer onChannelSelected;
+    private final java.util.Map<Long, String> channelNames = new java.util.HashMap<>();
 
     public void setOnChannelSelected(LongConsumer onChannelSelected) {
         this.onChannelSelected = onChannelSelected;
+    }
+
+    /** Tên kênh theo id (dùng cho header vùng chat). */
+    public String getChannelName(long id) {
+        return channelNames.get(id);
     }
 
     public long getActiveServerId() { return activeServerId; }
@@ -170,6 +176,7 @@ public class ChannelSidebar extends JPanel {
         long id = asLong(ch.get("id"));
         String name = str(ch.get("name"));
         String topic = str(ch.get("topic"));
+        if (name != null) channelNames.put(id, name);
         ChannelListItem item = new ChannelListItem(name != null ? name : "channel", isVoice);
         item.setOnClick(() -> {
             if (onChannelSelected != null) onChannelSelected.accept(id);

@@ -10,6 +10,8 @@ import gui.components.friends.FriendSidebar;
 import gui.components.mini.MiniSidebar;
 import gui.components.navigation.ServerSidebar;
 import gui.theme.AppColors;
+import gui.theme.AppFonts;
+import gui.components.dialogs.PinnedMessagesDialog;
 import network.ApiConfig;
 import network.ChannelApiClient;
 import network.ChatWebSocketClient;
@@ -17,6 +19,7 @@ import network.PresenceApiClient;
 import network.ServerApiClient;
 import network.SessionManager;
 import network.PrivateMessageApiClient;
+import network.FileApiClient;
 import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
@@ -26,6 +29,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 public class ChatClientGUI extends JFrame {
     private final JPanel chatHistoryPanel;
@@ -38,6 +44,7 @@ public class ChatClientGUI extends JFrame {
     private final PresenceApiClient presenceApi = new PresenceApiClient();
     private final ServerApiClient serverApi = new ServerApiClient();
     private final PrivateMessageApiClient privateMessageApi = new PrivateMessageApiClient();
+    private final FileApiClient fileApi = new FileApiClient();
     private final network.NotificationApiClient notificationApi = new network.NotificationApiClient();
 
     private final ServerSidebar serverSidebar = new ServerSidebar();
@@ -48,10 +55,26 @@ public class ChatClientGUI extends JFrame {
     private final JPanel eastContainer;
     private final ChatInputContainer chatInput = new ChatInputContainer();
 
+    // Header vùng chat (tiêu đề kênh + icon ghim 📌) — feature #8
+    private JLabel channelTitleLabel;
+    private JPanel channelHeaderPanel;
+
     private long activeServerId = -1;
     private long activeChannelId = -1;
     private String activePrivateUser = null;
     private String lastSender = null;
+
+    // Theo dõi item theo messageId để cập nhật/xóa tại chỗ khi nhận EDIT/DELETE
+    private final Map<Long, ChatMessageItem> messageItems = new LinkedHashMap<>();
+    // Tin nhắn đã ghim của kênh đang mở (panel danh sách ghim ở feature #8)
+    private final List<MessageDTO> pinnedMessages = new ArrayList<>();
+
+    // Callback các thao tác trên tin nhắn (Sửa / Xóa / Ghim)
+    private final ChatMessageItem.MessageActions messageActions = new ChatMessageItem.MessageActions() {
+        @Override public void onEdit(MessageDTO msg, String newContent) { sendEdit(msg, newContent); }
+        @Override public void onDelete(MessageDTO msg) { sendDelete(msg); }
+        @Override public void onPin(MessageDTO msg) { pinMessage(msg); }
+    };
 
     public ChatClientGUI(String sessionUsername) {
         setTitle("Chat Server v2.0 — " + sessionUsername);
@@ -140,10 +163,45 @@ public class ChatClientGUI extends JFrame {
         chatInput.setVisible(false); // Ẩn ban đầu
         chatInput.getSendButton().addActionListener(e -> sendChatFromInput());
         chatInput.getInputField().addActionListener(e -> sendChatFromInput());
+        chatInput.setOnAttach(this::chooseAndSendFile);
+        // Mũi tên Lên khi ô nhập trống → sửa nhanh tin nhắn cuối của chính mình
+        chatInput.getInputField().addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_UP
+                        && chatInput.getMessageText().isEmpty()) {
+                    editLastOwnMessage();
+                }
+            }
+        });
         bottomPanel.add(chatInput, BorderLayout.CENTER);
 
+        // --- Header kênh: tiêu đề + icon ghim 📌 ---
+        channelTitleLabel = new JLabel("");
+        channelTitleLabel.setFont(AppFonts.BODY_BOLD);
+        channelTitleLabel.setForeground(AppColors.TEXT_HEADER);
+
+        IconButton pinBtn = new IconButton("📌", e -> openPinnedDialog());
+        JPanel pinWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        pinWrap.setOpaque(false);
+        pinWrap.add(pinBtn);
+
+        channelHeaderPanel = new JPanel(new BorderLayout());
+        channelHeaderPanel.setBackground(AppColors.BG_PRIMARY);
+        channelHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_TERTIARY),
+                BorderFactory.createEmptyBorder(12, 20, 12, 16)));
+        channelHeaderPanel.add(channelTitleLabel, BorderLayout.WEST);
+        channelHeaderPanel.add(pinWrap, BorderLayout.EAST);
+        channelHeaderPanel.setVisible(false);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBackground(AppColors.BG_PRIMARY);
+        centerPanel.add(channelHeaderPanel, BorderLayout.NORTH);
+        centerPanel.add(chatScrollPane, BorderLayout.CENTER);
+
         add(westPanel, BorderLayout.WEST);
-        add(chatScrollPane, BorderLayout.CENTER);
+        add(centerPanel, BorderLayout.CENTER);
         add(eastContainer, BorderLayout.EAST);
         add(bottomPanel, BorderLayout.SOUTH);
 
@@ -161,7 +219,7 @@ public class ChatClientGUI extends JFrame {
         connectWebSocket();
         refreshUnreadCounts();
     }
-    
+
     private void refreshUnreadCounts() {
         new SwingWorker<java.util.Map<String, Object>, Void>() {
             @Override
@@ -232,8 +290,9 @@ public class ChatClientGUI extends JFrame {
             westPanel.add(friendSidebar, BorderLayout.CENTER);
             eastContainer.setVisible(false); // Ẩn thanh thành viên
             chatInput.setVisible(false); // Ẩn thanh nhập tin nhắn khi ở Home
+            setChannelHeader(null);
             clearChat();
-            setOnlineUsers(List.of()); 
+            setOnlineUsers(List.of());
             loadPresence(); 
         } else {
             this.activePrivateUser = null;
@@ -241,6 +300,7 @@ public class ChatClientGUI extends JFrame {
             westPanel.add(channelSidebar, BorderLayout.CENTER);
             eastContainer.setVisible(true); // Hiện thanh thành viên
             chatInput.setVisible(false); // Ẩn cho đến khi chọn channel
+            setChannelHeader(null);
             channelSidebar.loadChannels(serverId, serverName != null ? serverName : "Server #" + serverId);
             clearChat();
             loadServerMembersAndPresence(serverId);
@@ -257,8 +317,10 @@ public class ChatClientGUI extends JFrame {
     private void switchToChannel(long channelId) {
         this.activeChannelId = channelId;
         chatInput.setVisible(true); // Hiện thanh nhập tin nhắn
+        String name = channelSidebar.getChannelName(channelId);
+        setChannelHeader("# " + (name != null ? name : "kênh"));
         clearChat();
-        
+
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() { notificationApi.ackChannel(channelId, sessionUsername); return null; }
             @Override protected void done() { refreshUnreadCounts(); }
@@ -288,8 +350,9 @@ public class ChatClientGUI extends JFrame {
         this.activeChannelId = -1;
         this.activePrivateUser = username;
         chatInput.setVisible(true); // Hiện thanh nhập tin nhắn
+        setChannelHeader("@ " + username);
         clearChat();
-        
+
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() { notificationApi.ackDm(username, sessionUsername); return null; }
             @Override protected void done() { refreshUnreadCounts(); }
@@ -421,6 +484,63 @@ public class ChatClientGUI extends JFrame {
         chatInput.clearInput();
     }
 
+    /** Chọn 1 tệp tin, upload qua file-service rồi gửi tin nhắn đính kèm. */
+    private void chooseAndSendFile() {
+        if (!wsClient.isOpen()) { appendSystem("WebSocket chưa sẵn sàng"); return; }
+        if (activeChannelId == -1 && activePrivateUser == null) {
+            appendSystem("Hãy mở một kênh hoặc cuộc trò chuyện trước khi gửi tệp");
+            return;
+        }
+
+        JFileChooser fc = new JFileChooser();
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        final java.io.File file = fc.getSelectedFile();
+        if (file == null || !file.isFile()) return;
+
+        // Chặn sớm phía client: server giới hạn 10MB → tránh upload tốn công rồi bị từ chối
+        final long MAX_UPLOAD_BYTES = 10L * 1024 * 1024;
+        if (file.length() > MAX_UPLOAD_BYTES) {
+            appendSystem("Tệp \"" + file.getName() + "\" vượt quá 10MB, vui lòng chọn tệp nhỏ hơn");
+            return;
+        }
+
+        final long ch = activeChannelId;
+        final long sv = activeServerId;
+        final String dm = activePrivateUser;
+        appendSystem("Đang tải lên: " + file.getName() + "…");
+
+        new SwingWorker<FileApiClient.Uploaded, Void>() {
+            @Override
+            protected FileApiClient.Uploaded doInBackground() {
+                return fileApi.uploadFile(file, ch != -1 ? ch : null);
+            }
+            @Override
+            protected void done() {
+                try {
+                    FileApiClient.Uploaded up = get();
+                    String content = ChatMessageItem.encodeAttachment(
+                            up.contentType, up.size, up.thumbnailUrl, up.url, up.name);
+                    MessageDTO out;
+                    if (ch == -1 && dm != null) {
+                        out = new MessageDTO(MessageType.PRIVATE, sessionUsername, null, content, LocalDateTime.now());
+                        out.setReceiver(dm);
+                    } else {
+                        out = new MessageDTO(MessageType.CHAT, sessionUsername, null, content, LocalDateTime.now());
+                        out.setServerId(sv);
+                        out.setChannelId(ch);
+                    }
+                    wsClient.send(out).whenComplete((ws, err) -> {
+                        if (err != null) SwingUtilities.invokeLater(
+                                () -> appendSystem("Gửi tệp thất bại: " + err.getMessage()));
+                    });
+                } catch (Exception ex) {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    appendSystem("Tải tệp thất bại: " + cause.getMessage());
+                }
+            }
+        }.execute();
+    }
+
     /** Phân loại message đến và lọc theo channel đang mở. */
     private void handleIncoming(MessageDTO msg) {
         if (msg.getType() == MessageType.PRIVATE && "[SYSTEM_FRIEND_UPDATE]".equals(msg.getContent())) {
@@ -439,15 +559,20 @@ public class ChatClientGUI extends JFrame {
             return;
         }
         switch (msg.getType()) {
-            case CHAT, PRIVATE, EDIT, DELETE -> {
+            case CHAT, PRIVATE -> {
                 if (belongsToActiveChannel(msg)) {
                     appendMessage(msg);
-                    if (msg.getType() == MessageType.CHAT || msg.getType() == MessageType.PRIVATE) {
-                        ackMessage(msg);
-                    }
+                    ackMessage(msg);
                 } else {
                     refreshUnreadCounts();
                 }
+            }
+            case EDIT -> {
+                if (belongsToActiveChannel(msg)) applyEdit(msg);
+                else refreshUnreadCounts();
+            }
+            case DELETE -> {
+                if (belongsToActiveChannel(msg)) applyDelete(msg);
             }
             case JOIN, LEAVE -> loadPresence();
             case SYSTEM -> appendSystem(msg.getContent());
@@ -488,6 +613,8 @@ public class ChatClientGUI extends JFrame {
         lastSender = null;
         chatHistoryPanel.revalidate();
         chatHistoryPanel.repaint();
+        messageItems.clear();
+        pinnedMessages.clear();
     }
 
     public void appendMessage(MessageDTO message) {
@@ -504,9 +631,15 @@ public class ChatClientGUI extends JFrame {
             lastSender = null;
         }
 
+        ChatMessageItem item = new ChatMessageItem(message, isHighlighted, sessionUsername, messageActions, isConsecutive);
+
         int insertIndex = chatHistoryPanel.getComponentCount() - 1;
-        chatHistoryPanel.add(new ChatMessageItem(message, isHighlighted, isConsecutive), insertIndex);
+        chatHistoryPanel.add(item, insertIndex);
         chatHistoryPanel.add(Box.createVerticalStrut(10), insertIndex + 1);
+
+        if (message.getMessageId() != null) {
+            messageItems.put(message.getMessageId(), item);
+        }
 
         chatHistoryPanel.revalidate();
         chatHistoryPanel.repaint();
@@ -515,6 +648,117 @@ public class ChatClientGUI extends JFrame {
             JScrollBar vertical = chatScrollPane.getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
+    }
+
+    // ---------------------------------------------------------------
+    // Sửa / Xóa / Ghim tin nhắn (feature #7)
+    // ---------------------------------------------------------------
+
+    /** Gửi yêu cầu sửa tin nhắn qua WebSocket. */
+    private void sendEdit(MessageDTO original, String newContent) {
+        if (!wsClient.isOpen() || original.getMessageId() == null) return;
+        MessageDTO out = new MessageDTO(MessageType.EDIT, sessionUsername, null, newContent, LocalDateTime.now());
+        out.setMessageId(original.getMessageId());
+        out.setChannelId(original.getChannelId());
+        out.setServerId(original.getServerId());
+        out.setReceiver(original.getReceiver());
+        wsClient.send(out).whenComplete((ws, err) -> {
+            if (err != null) SwingUtilities.invokeLater(() -> appendSystem("Sửa thất bại: " + err.getMessage()));
+        });
+    }
+
+    /** Gửi yêu cầu xóa tin nhắn qua WebSocket. */
+    private void sendDelete(MessageDTO original) {
+        if (!wsClient.isOpen() || original.getMessageId() == null) return;
+        MessageDTO out = new MessageDTO(MessageType.DELETE, sessionUsername, null, null, LocalDateTime.now());
+        out.setMessageId(original.getMessageId());
+        out.setChannelId(original.getChannelId());
+        out.setServerId(original.getServerId());
+        out.setReceiver(original.getReceiver());
+        wsClient.send(out).whenComplete((ws, err) -> {
+            if (err != null) SwingUtilities.invokeLater(() -> appendSystem("Xóa thất bại: " + err.getMessage()));
+        });
+    }
+
+    /** Cập nhật tiêu đề header vùng chat; title == null sẽ ẩn header. */
+    private void setChannelHeader(String title) {
+        if (channelTitleLabel != null && title != null) channelTitleLabel.setText(title);
+        if (channelHeaderPanel != null) {
+            channelHeaderPanel.setVisible(title != null);
+            channelHeaderPanel.revalidate();
+            channelHeaderPanel.repaint();
+        }
+    }
+
+    /** Mở popup danh sách tin nhắn đã ghim của kênh đang mở. */
+    private void openPinnedDialog() {
+        PinnedMessagesDialog dlg = new PinnedMessagesDialog(this, pinnedMessages, this::unpinMessage);
+        dlg.setVisible(true);
+    }
+
+    /** Bỏ ghim 1 tin nhắn. */
+    private void unpinMessage(MessageDTO m) {
+        if (m.getMessageId() != null) {
+            pinnedMessages.removeIf(p -> m.getMessageId().equals(p.getMessageId()));
+        } else {
+            pinnedMessages.remove(m);
+        }
+    }
+
+    /** Ghim tin nhắn (hiển thị trong PinnedMessagesDialog). */
+    private void pinMessage(MessageDTO msg) {
+        if (msg.getMessageId() != null) {
+            boolean exists = pinnedMessages.stream()
+                    .anyMatch(m -> msg.getMessageId().equals(m.getMessageId()));
+            if (!exists) pinnedMessages.add(msg);
+        }
+        appendSystem("📌 Đã ghim tin nhắn của " + msg.getSender());
+    }
+
+    /** Tìm và mở chỉnh sửa tin nhắn cuối cùng của chính mình trong kênh đang mở. */
+    private void editLastOwnMessage() {
+        ChatMessageItem target = null;
+        for (ChatMessageItem item : messageItems.values()) {
+            MessageDTO m = item.getMessage();
+            if (m != null && sessionUsername.equals(m.getSender())) {
+                target = item; // LinkedHashMap giữ thứ tự chèn → cái cuối là mới nhất
+            }
+        }
+        if (target != null) target.startEditing();
+    }
+
+    /** Áp dụng broadcast EDIT: cập nhật nội dung item tại chỗ. */
+    private void applyEdit(MessageDTO msg) {
+        if (msg.getMessageId() == null) return;
+        ChatMessageItem item = messageItems.get(msg.getMessageId());
+        if (item != null) {
+            item.updateContent(msg.getContent(), true);
+            chatHistoryPanel.revalidate();
+            chatHistoryPanel.repaint();
+        }
+    }
+
+    /** Áp dụng broadcast DELETE: gỡ item khỏi danh sách hiển thị. */
+    private void applyDelete(MessageDTO msg) {
+        if (msg.getMessageId() == null) return;
+        ChatMessageItem item = messageItems.remove(msg.getMessageId());
+        if (item == null) return;
+
+        Component[] comps = chatHistoryPanel.getComponents();
+        int idx = -1;
+        for (int i = 0; i < comps.length; i++) {
+            if (comps[i] == item) { idx = i; break; }
+        }
+        if (idx < 0) return;
+        chatHistoryPanel.remove(item);
+        // Xóa luôn strut đệm ngay sau tin nhắn (nếu có)
+        if (idx < chatHistoryPanel.getComponentCount()) {
+            Component next = chatHistoryPanel.getComponent(idx);
+            if (next instanceof Box.Filler) chatHistoryPanel.remove(next);
+        }
+        pinnedMessages.removeIf(m -> msg.getMessageId().equals(m.getMessageId()));
+        chatHistoryPanel.revalidate();
+        chatHistoryPanel.repaint();
     }
 
     public void renderServerMembers(List<String> allUsers, List<String> onlineUsers, String ownerId) {

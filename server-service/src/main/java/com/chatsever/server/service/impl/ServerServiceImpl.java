@@ -32,6 +32,7 @@ public class ServerServiceImpl implements ServerService {
     public Server createServer(Server server, String ownerId) {
         server.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
         server.setOwnerId(ownerId);
+        server.setIcon(toSafeRelativeMediaUrl(server.getIcon())); // defense-in-depth: chỉ lưu path nội bộ
         Server saved = serverRepository.save(server);
 
         // Khởi tạo danh sách roleIds rỗng, loại bỏ MemberRole.OWNER
@@ -50,7 +51,7 @@ public class ServerServiceImpl implements ServerService {
             req.put("name", "General");
             req.put("serverId", saved.getId());
             req.put("type", "TEXT");
-            channelClient.createChannel(req, "system");
+            channelClient.createChannel(req, ownerId);
         } catch (Exception e) {
             // Không hủy tiến trình nếu tạo kênh lỗi
         }
@@ -97,8 +98,31 @@ public class ServerServiceImpl implements ServerService {
 
         s.setName(details.getName());
         s.setDescription(details.getDescription());
-        s.setIcon(details.getIcon());
+        s.setIcon(toSafeRelativeMediaUrl(details.getIcon())); // defense-in-depth: chỉ lưu path nội bộ
         return serverRepository.save(s);
+    }
+
+    /**
+     * Chuẩn hóa & kiểm tra URL icon trước khi lưu DB (defense-in-depth).
+     * - URL tuyệt đối / protocol-relative → chỉ giữ phần path (vô hiệu hóa host lạ).
+     * - Chỉ chấp nhận path nội bộ "/api/files/...".
+     * Trả về path tương đối an toàn, hoặc null nếu không hợp lệ.
+     * Chống lộ Bearer token khi client tải icon từ host do attacker kiểm soát.
+     */
+    private static String toSafeRelativeMediaUrl(String raw) {
+        if (raw == null) return null;
+        String v = raw.trim();
+        if (v.isEmpty()) return null;
+        if (v.contains("://") || v.startsWith("//")) {
+            try {
+                String path = java.net.URI.create(v).getPath();
+                v = path == null ? "" : path;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        if (v.startsWith("/api/files/")) return v;
+        return null;
     }
 
     @Override
