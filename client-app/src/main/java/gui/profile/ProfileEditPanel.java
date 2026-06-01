@@ -75,27 +75,28 @@ public class ProfileEditPanel extends JPanel {
             JFileChooser fc = new JFileChooser();
             fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Ảnh (JPEG, PNG)", "jpg", "jpeg", "png"));
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                java.io.File file = fc.getSelectedFile();
+                java.io.File selected = fc.getSelectedFile();
                 statusLabel.setForeground(AppColors.TEXT_MUTED);
                 statusLabel.setText("Đang upload avatar...");
 
                 new SwingWorker<Map<String, Object>, Void>() {
                     @Override
                     protected Map<String, Object> doInBackground() {
-                        return profileApi.uploadAvatar(file);
+                        return profileApi.uploadAvatar(selected);
                     }
 
                     @Override
                     protected void done() {
                         try {
-                            Map<String, Object> updatedProfile = get();
+                            Map<String, Object> profile = get();
+                            Object avatarUrl = profile.get("avatarUrl");
                             statusLabel.setForeground(AppColors.SUCCESS);
                             statusLabel.setText("Đã upload avatar thành công!");
                             if (ProfileEditPanel.this.onProfileChanged != null) ProfileEditPanel.this.onProfileChanged.run();
                         } catch (Exception ex) {
                             Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
                             statusLabel.setForeground(AppColors.DANGER);
-                            statusLabel.setText("Lỗi upload: " + cause.getMessage());
+                            statusLabel.setText("Lỗi: " + cause.getMessage());
                         }
                     }
                 }.execute();

@@ -27,6 +27,7 @@ replay_pid*
 
 # Maven build output
 target/
+dependency-reduced-pom.xml
 
 # Runtime log directory (log-service writes chat_log.txt here)
 log-service/logs/

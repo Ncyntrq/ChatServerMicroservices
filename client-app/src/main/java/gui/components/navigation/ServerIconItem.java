@@ -96,16 +96,9 @@ public class ServerIconItem extends JPanel {
         new SwingWorker<Image, Void>() {
             @Override protected Image doInBackground() {
                 try {
-                    String token = network.SessionManager.get().getAccessToken();
-                    java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
-                            .uri(java.net.URI.create(urlString))
-                            .header("Authorization", "Bearer " + token)
-                            .GET()
-                            .build();
-                    java.net.http.HttpResponse<byte[]> resp = network.HttpClientHolder.get().send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
-                    if (resp.statusCode() == 200) {
-                        return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
-                    }
+                    // download() chỉ gửi JWT (header) khi URL trỏ về gateway tin cậy → chống lộ token tới host lạ
+                    byte[] bytes = new network.FileApiClient().download(urlString);
+                    return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes));
                 } catch(Exception e) {}
                 return null;
             }

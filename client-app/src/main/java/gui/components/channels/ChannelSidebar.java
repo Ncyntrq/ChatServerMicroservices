@@ -196,6 +196,7 @@ public class ChannelSidebar extends JPanel {
         long id = asLong(ch.get("id"));
         String name = str(ch.get("name"));
         String topic = str(ch.get("topic"));
+        if (name != null) channelNames.put(id, name);
         ChannelListItem item = new ChannelListItem(name != null ? name : "channel", isVoice);
         item.setOnClick(() -> {
             if (onChannelSelected != null) onChannelSelected.accept(id);

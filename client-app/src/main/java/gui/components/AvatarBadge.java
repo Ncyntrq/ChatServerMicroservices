@@ -70,7 +70,7 @@ public class AvatarBadge extends JPanel {
                     }
                 }
             } catch (Exception e) {
-                System.err.println("Failed to load avatar from URL: " + urlString);
+                System.err.println("Failed to load avatar from URL: " + urlString + " (" + e.getMessage() + ")");
             }
         }).start();
     }
