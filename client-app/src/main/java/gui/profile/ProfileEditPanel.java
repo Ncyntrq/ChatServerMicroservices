@@ -79,27 +79,7 @@ public class ProfileEditPanel extends JPanel {
                 statusLabel.setForeground(AppColors.TEXT_MUTED);
                 statusLabel.setText("Đang upload avatar...");
 
-                new SwingWorker<Map<String, Object>, Void>() {
-                    @Override
-                    protected Map<String, Object> doInBackground() {
-                        return profileApi.uploadAvatar(selected);
-                    }
-
-                    @Override
-                    protected void done() {
-                        try {
-                            Map<String, Object> profile = get();
-                            Object avatarUrl = profile.get("avatarUrl");
-                            statusLabel.setForeground(AppColors.SUCCESS);
-                            statusLabel.setText("Đã upload avatar thành công!");
-                            if (ProfileEditPanel.this.onProfileChanged != null) ProfileEditPanel.this.onProfileChanged.run();
-                        } catch (Exception ex) {
-                            Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
-                            statusLabel.setForeground(AppColors.DANGER);
-                            statusLabel.setText("Lỗi: " + cause.getMessage());
-                        }
-                    }
-                }.execute();
+                executeProfileUpdate("Đã upload avatar thành công!", () -> profileApi.uploadAvatar(selected));
             }
         });
         avatarBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -113,26 +93,9 @@ public class ProfileEditPanel extends JPanel {
             statusLabel.setForeground(AppColors.TEXT_MUTED);
             statusLabel.setText("Đang lưu...");
 
-            new SwingWorker<Map<String, Object>, Void>() {
-                @Override
-                protected Map<String, Object> doInBackground() {
-                    return profileApi.updateProfile(dn.isEmpty() ? null : dn, bio.isEmpty() ? null : bio);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get();
-                        statusLabel.setForeground(AppColors.SUCCESS);
-                        statusLabel.setText("Đã lưu thành công!");
-                        if (ProfileEditPanel.this.onProfileChanged != null) ProfileEditPanel.this.onProfileChanged.run();
-                    } catch (Exception ex) {
-                        Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
-                        statusLabel.setForeground(AppColors.DANGER);
-                        statusLabel.setText("Lỗi: " + cause.getMessage());
-                    }
-                }
-            }.execute();
+            executeProfileUpdate("Đã lưu thành công!", () ->
+                    profileApi.updateProfile(dn.isEmpty() ? null : dn, bio.isEmpty() ? null : bio)
+            );
         });
         saveBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(saveBtn);
@@ -163,6 +126,30 @@ public class ProfileEditPanel extends JPanel {
                 } catch (Exception ex) {
                     statusLabel.setForeground(AppColors.WARNING);
                     statusLabel.setText("Không tải được hồ sơ — có thể chưa tạo");
+                }
+            }
+        }.execute();
+    }
+
+    private void executeProfileUpdate(String successMessage, java.util.concurrent.Callable<Map<String, Object>> apiCall) {
+        new SwingWorker<Map<String, Object>, Void>() {
+            @Override
+            protected Map<String, Object> doInBackground() throws Exception {
+                return apiCall.call();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    statusLabel.setForeground(AppColors.SUCCESS);
+                    statusLabel.setText(successMessage);
+                    if (onProfileChanged != null) onProfileChanged.run();
+                } catch (Exception ex) {
+                    if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
+                    Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
+                    statusLabel.setForeground(AppColors.DANGER);
+                    statusLabel.setText("Lỗi: " + cause.getMessage());
                 }
             }
         }.execute();

@@ -150,26 +150,7 @@ public class ServerServiceImpl implements ServerService {
             throw new RuntimeException("Invalid invite code");
         }
 
-        // R6 - Kiểm tra xem user có bị ban khỏi server này không
-        try {
-            Map<String, Object> banCheck = roleClient.checkBanned(id, uid);
-            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
-                throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
-            }
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            // Log lỗi
-        }
-
-        if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
-            // Khởi tạo danh sách roleIds rỗng, loại bỏ MemberRole.MEMBER
-            memberRepository.save(Member.builder()
-                    .serverId(s.getId())
-                    .userId(uid)
-                    .roleIds(new ArrayList<>())
-                    .build());
-        }
+        processJoin(s.getId(), uid);
     }
 
     @Override
@@ -177,9 +158,14 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findByInviteCode(code)
                 .orElseThrow(() -> new RuntimeException("Invite code không hợp lệ"));
         
+        processJoin(s.getId(), uid);
+        return s;
+    }
+
+    private void processJoin(Long serverId, String uid) {
         // R6 - Kiểm tra xem user có bị ban khỏi server này không
         try {
-            Map<String, Object> banCheck = roleClient.checkBanned(s.getId(), uid);
+            Map<String, Object> banCheck = roleClient.checkBanned(serverId, uid);
             if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
                 throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
             }
@@ -189,14 +175,14 @@ public class ServerServiceImpl implements ServerService {
             // Log lỗi
         }
 
-        if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
+        if(!memberRepository.existsByServerIdAndUserId(serverId, uid)) {
+            // Khởi tạo danh sách roleIds rỗng
             memberRepository.save(Member.builder()
-                    .serverId(s.getId())
+                    .serverId(serverId)
                     .userId(uid)
                     .roleIds(new ArrayList<>())
                     .build());
         }
-        return s;
     }
 
     @Override

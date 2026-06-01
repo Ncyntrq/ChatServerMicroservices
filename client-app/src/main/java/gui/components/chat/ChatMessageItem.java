@@ -579,7 +579,10 @@ public class ChatMessageItem extends JPanel {
                     ImageIcon icon = get();
                     if (icon != null) { img.setText(null); img.setIcon(icon); }
                     else img.setText("[Không tải được ảnh]");
-                } catch (Exception e) { img.setText("[Không tải được ảnh]"); }
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                    img.setText("[Không tải được ảnh]");
+                }
                 img.revalidate();
                 img.repaint();
             }
@@ -669,7 +672,10 @@ public class ChatMessageItem extends JPanel {
                     ImageIcon ic = get();
                     if (ic != null) { label.setText(null); label.setIcon(ic); }
                     else label.setText("[Không tải được ảnh]");
-                } catch (Exception e) { label.setText("[Lỗi tải ảnh]"); }
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                    label.setText("[Lỗi tải ảnh]");
+                }
             }
         }.execute();
         dlg.setVisible(true);

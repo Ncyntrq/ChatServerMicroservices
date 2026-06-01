@@ -573,6 +573,9 @@ public class ChatClientGUI extends JFrame {
                                 () -> appendSystem("Gửi tệp thất bại: " + err.getMessage()));
                     });
                 } catch (Exception ex) {
+                    if (ex instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
                     appendSystem("Tải tệp thất bại: " + cause.getMessage());
                 }
