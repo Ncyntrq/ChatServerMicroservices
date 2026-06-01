@@ -11,6 +11,12 @@ import java.awt.event.MouseEvent;
 public class ChatInputContainer extends JPanel {
     private final JTextField inputField;
     private final JButton sendButton;
+    private Runnable onAttach = () -> {};
+
+    /** Gắn handler khi bấm nút đính kèm (+). */
+    public void setOnAttach(Runnable r) {
+        this.onAttach = r != null ? r : () -> {};
+    }
 
     public ChatInputContainer() {
         setLayout(new BorderLayout(8, 0));
@@ -21,9 +27,10 @@ public class ChatInputContainer extends JPanel {
         putClientProperty("JComponent.arc", 12);
 
         // --- 1. Left icon (Plus/Attach) ---
-        IconButton plusButton = new IconButton("+", e -> {
-            System.out.println("Plus button clicked! Open attachment menu.");
-        });
+        IconButton plusButton = new IconButton("+", e -> onAttach.run());
+        JPanel leftWrap = new JPanel(new GridBagLayout());
+        leftWrap.setOpaque(false);
+        leftWrap.add(plusButton);
 
         // --- 2. Main text field ---
         inputField = new JTextField();
@@ -82,10 +89,14 @@ public class ChatInputContainer extends JPanel {
 
         rightPanel.add(sendButton);
 
+        JPanel rightWrap = new JPanel(new GridBagLayout());
+        rightWrap.setOpaque(false);
+        rightWrap.add(rightPanel);
+
         // --- Assemble ---
-        add(plusButton, BorderLayout.WEST);
+        add(leftWrap, BorderLayout.WEST);
         add(inputField, BorderLayout.CENTER);
-        add(rightPanel, BorderLayout.EAST);
+        add(rightWrap, BorderLayout.EAST);
     }
 
     @Override

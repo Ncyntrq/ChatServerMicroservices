@@ -68,6 +68,30 @@ public class RoleService {
     }
 
     // ========================================================================
+    // R1 (bonus) — Cập nhật role
+    // ========================================================================
+    @Transactional
+    public Role updateRole(String roleId, String roleName, String color, String permissions) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy role: " + roleId));
+        if (role.isDefault()) {
+            throw new RuntimeException("Không thể sửa role mặc định: " + role.getRoleName());
+        }
+        if (roleName != null && !roleName.isBlank()) {
+            role.setRoleName(roleName);
+        }
+        if (color != null) {
+            role.setColor(color);
+        }
+        if (permissions != null) {
+            role.setPermissionBitmask(Permission.fromNames(permissions));
+        }
+        Role saved = roleRepository.save(role);
+        log.info("Updated role: id={}, name={}", roleId, role.getRoleName());
+        return saved;
+    }
+
+    // ========================================================================
     // R1 (bonus) — Xóa role (chỉ custom roles, không xóa default)
     // ========================================================================
     @Transactional

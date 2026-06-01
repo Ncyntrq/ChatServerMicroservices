@@ -148,6 +148,7 @@ public class MessageService {
         ChatMessage entity = new ChatMessage();
         entity.setSender(msg.getSender());
         entity.setContent(msg.getContent());
+        entity.setReceiver(msg.getReceiver()); // Mapped receiver field
         entity.setChannelId(msg.getChannelId());
         entity.setServerId(msg.getServerId());
         entity.setTimestamp(msg.getTimestamp() != null ? msg.getTimestamp() : LocalDateTime.now());

@@ -47,11 +47,40 @@ public class UserProfileService {
     }
 
     // UP2 — Cập nhật hồ sơ
-    public UserProfile updateProfile(String username, String displayName, String bio) {
+    public UserProfile updateProfile(String username, String displayName, String bio, String avatarUrl) {
         UserProfile profile = getProfile(username);
         if (displayName != null) profile.setDisplayName(displayName);
         if (bio != null) profile.setBio(bio);
+        if (avatarUrl != null) {
+            // Defense-in-depth: chỉ lưu path tương đối nội bộ, từ chối URL tuyệt đối tới host lạ
+            String safe = toSafeRelativeMediaUrl(avatarUrl);
+            if (safe != null) profile.setAvatarUrl(safe);
+        }
         return repository.save(profile);
+    }
+
+    /**
+     * Chuẩn hóa & kiểm tra URL ảnh trước khi lưu DB (defense-in-depth).
+     * - Nếu là URL tuyệt đối / protocol-relative (chứa "://" hoặc bắt đầu "//"),
+     *   chỉ giữ lại phần path → vô hiệu hóa host do attacker kiểm soát.
+     * - Chỉ chấp nhận path nội bộ ("/api/files/..." hoặc "/api/users/avatars/...").
+     * Trả về path tương đối an toàn, hoặc null nếu không hợp lệ (bỏ qua, không ghi đè).
+     * Lý do: chống lộ Bearer token khi client tải ảnh từ host lạ (xem guard phía client).
+     */
+    private static String toSafeRelativeMediaUrl(String raw) {
+        if (raw == null) return null;
+        String v = raw.trim();
+        if (v.isEmpty()) return null;
+        if (v.contains("://") || v.startsWith("//")) {
+            try {
+                String path = java.net.URI.create(v).getPath();
+                v = path == null ? "" : path;
+            } catch (Exception e) {
+                return null; // URL dị dạng → từ chối
+            }
+        }
+        if (v.startsWith("/api/files/") || v.startsWith("/api/users/avatars/")) return v;
+        return null; // ngoài whitelist nội bộ → từ chối
     }
 
     // UP3 — Upload avatar (multipart, max 2MB, JPEG/PNG)

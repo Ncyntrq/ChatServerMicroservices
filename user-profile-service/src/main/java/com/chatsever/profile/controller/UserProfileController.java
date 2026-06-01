@@ -23,11 +23,11 @@ public class UserProfileController {
         return ResponseEntity.ok(profileService.getProfile(username));
     }
 
-    // UP2 — Cập nhật hồ sơ (displayName, bio)
+    // UP2 — Cập nhật hồ sơ (displayName, bio, avatarUrl)
     @PutMapping("/profile")
     public ResponseEntity<UserProfile> updateProfile(@RequestHeader("X-User-Id") String username,
                                                      @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(profileService.updateProfile(username, payload.get("displayName"), payload.get("bio")));
+        return ResponseEntity.ok(profileService.updateProfile(username, payload.get("displayName"), payload.get("bio"), payload.get("avatarUrl")));
     }
 
     // UP3 — Upload avatar (multipart, max 2MB, JPEG/PNG)

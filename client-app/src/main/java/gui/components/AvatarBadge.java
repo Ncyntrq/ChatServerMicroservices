@@ -49,13 +49,14 @@ public class AvatarBadge extends JPanel {
     public void loadAvatarFromUrl(String urlString) {
         new Thread(() -> {
             try {
-                URL url = new URL(urlString);
-                Image downloadedImage = ImageIO.read(url);
+                // download() chỉ gửi JWT (header) khi URL trỏ về gateway tin cậy → chống lộ token tới host lạ
+                byte[] bytes = new network.FileApiClient().download(urlString);
+                Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
                 if (downloadedImage != null) {
                     SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
                 }
             } catch (Exception e) {
-                System.err.println("Failed to load avatar from URL: " + urlString);
+                System.err.println("Failed to load avatar from URL: " + urlString + " (" + e.getMessage() + ")");
             }
         }).start();
     }

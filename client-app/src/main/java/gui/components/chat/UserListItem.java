@@ -13,8 +13,17 @@ public class UserListItem extends JPanel {
     private final Color statusColor;
     private final AvatarBadge avatar;
     private boolean isHovered = false;
+    private Runnable onContextMenu;
+
+    public void setOnContextMenu(Runnable onContextMenu) {
+        this.onContextMenu = onContextMenu;
+    }
 
     public UserListItem(String username, String customStatus, Color statusColor) {
+        this(username, customStatus, statusColor, true);
+    }
+
+    public UserListItem(String username, String customStatus, Color statusColor, boolean isOnline) {
         this.statusColor = statusColor;
 
         setLayout(new BorderLayout(10, 0));
@@ -22,7 +31,7 @@ public class UserListItem extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 10));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // Hover
+        // Hover & Right-click
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -34,11 +43,22 @@ public class UserListItem extends JPanel {
                 isHovered = false;
                 repaint();
             }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e) && onContextMenu != null) {
+                    onContextMenu.run();
+                }
+            }
         });
 
         // Avatar
         String initial = username.substring(0, 1).toUpperCase();
         avatar = new AvatarBadge(initial, 32);
+        
+        // Mute offline avatars
+        if (!isOnline) {
+            avatar.setOpaque(false); // Make avatar visually muted if supported
+        }
 
         JPanel avatarWrapper = new JPanel(new BorderLayout());
         avatarWrapper.setOpaque(false);
@@ -50,7 +70,7 @@ public class UserListItem extends JPanel {
         textPanel.setOpaque(false);
 
         JLabel nameLabel = new JLabel(username);
-        nameLabel.setForeground(AppColors.TEXT_NORMAL);
+        nameLabel.setForeground(isOnline ? AppColors.TEXT_NORMAL : AppColors.TEXT_MUTED);
         nameLabel.setFont(AppFonts.BODY_SM);
         textPanel.add(nameLabel);
 

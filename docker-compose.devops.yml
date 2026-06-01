@@ -14,7 +14,7 @@ services:
       - /usr/bin/docker:/usr/bin/docker
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx512m -Xms256m
+      - JAVA_OPTS=-Xmx1024m -Xms512m
     networks:
       - devops-net
       - chat-net
@@ -36,9 +36,9 @@ services:
       - SONAR_JDBC_USERNAME=${SONAR_DB_USER}
       - SONAR_JDBC_PASSWORD=${SONAR_DB_PASSWORD}
       - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
-      - SONAR_WEB_JAVAOPTS=-Xmx512m -Xms128m
-      - SONAR_CE_JAVAOPTS=-Xmx512m -Xms128m
-      - SONAR_SEARCH_JAVAOPTS=-Xmx512m -Xms256m
+      - SONAR_WEB_JAVAOPTS=-Xmx1024m -Xms512m
+      - SONAR_CE_JAVAOPTS=-Xmx1024m -Xms256m
+      - SONAR_SEARCH_JAVAOPTS=-Xmx1024m -Xms512m
     volumes:
       - sonar-data:/opt/sonarqube/data
       - sonar-logs:/opt/sonarqube/logs
@@ -131,7 +131,7 @@ networks:
     name: devops-net
   chat-net:
     external: true
-    name: chat-net
+    name: chat-server-microservices_chat-net
 
 volumes:
   jenkins-home:

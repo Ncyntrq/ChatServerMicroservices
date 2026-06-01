@@ -32,6 +32,7 @@ public class ServerServiceImpl implements ServerService {
     public Server createServer(Server server, String ownerId) {
         server.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
         server.setOwnerId(ownerId);
+        server.setIcon(toSafeRelativeMediaUrl(server.getIcon())); // defense-in-depth: chỉ lưu path nội bộ
         Server saved = serverRepository.save(server);
 
         // Khởi tạo danh sách roleIds rỗng, loại bỏ MemberRole.OWNER
@@ -41,11 +42,18 @@ public class ServerServiceImpl implements ServerService {
                 .roleIds(new ArrayList<>())
                 .build());
                 
-        // Khởi tạo các Role mặc định cho Server mới (SV1)
+        // Không khởi tạo 4 Role mặc định nữa theo yêu cầu của user (bỏ role null)
+        // roleClient.initDefaultRoles(saved.getId());
+
+        // Tạo kênh chat mặc định: "General"
         try {
-            roleClient.initDefaultRoles(saved.getId());
+            java.util.Map<String, Object> req = new java.util.HashMap<>();
+            req.put("name", "General");
+            req.put("serverId", saved.getId());
+            req.put("type", "TEXT");
+            channelClient.createChannel(req, ownerId);
         } catch (Exception e) {
-            // Log lỗi nhưng không hủy việc tạo server
+            // Không hủy tiến trình nếu tạo kênh lỗi
         }
         
         return saved;
@@ -90,8 +98,31 @@ public class ServerServiceImpl implements ServerService {
 
         s.setName(details.getName());
         s.setDescription(details.getDescription());
-        s.setIcon(details.getIcon());
+        s.setIcon(toSafeRelativeMediaUrl(details.getIcon())); // defense-in-depth: chỉ lưu path nội bộ
         return serverRepository.save(s);
+    }
+
+    /**
+     * Chuẩn hóa & kiểm tra URL icon trước khi lưu DB (defense-in-depth).
+     * - URL tuyệt đối / protocol-relative → chỉ giữ phần path (vô hiệu hóa host lạ).
+     * - Chỉ chấp nhận path nội bộ "/api/files/...".
+     * Trả về path tương đối an toàn, hoặc null nếu không hợp lệ.
+     * Chống lộ Bearer token khi client tải icon từ host do attacker kiểm soát.
+     */
+    private static String toSafeRelativeMediaUrl(String raw) {
+        if (raw == null) return null;
+        String v = raw.trim();
+        if (v.isEmpty()) return null;
+        if (v.contains("://") || v.startsWith("//")) {
+            try {
+                String path = java.net.URI.create(v).getPath();
+                v = path == null ? "" : path;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        if (v.startsWith("/api/files/")) return v;
+        return null;
     }
 
     @Override
@@ -133,6 +164,32 @@ public class ServerServiceImpl implements ServerService {
 
         if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
             // Khởi tạo danh sách roleIds rỗng, loại bỏ MemberRole.MEMBER
+            memberRepository.save(Member.builder()
+                    .serverId(s.getId())
+                    .userId(uid)
+                    .roleIds(new ArrayList<>())
+                    .build());
+        }
+    }
+
+    @Override
+    public void joinServerByCode(String code, String uid) {
+        Server s = serverRepository.findByInviteCode(code)
+                .orElseThrow(() -> new RuntimeException("Invite code không hợp lệ"));
+        
+        // R6 - Kiểm tra xem user có bị ban khỏi server này không
+        try {
+            Map<String, Object> banCheck = roleClient.checkBanned(s.getId(), uid);
+            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
+                throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            // Log lỗi
+        }
+
+        if(!memberRepository.existsByServerIdAndUserId(s.getId(), uid)) {
             memberRepository.save(Member.builder()
                     .serverId(s.getId())
                     .userId(uid)

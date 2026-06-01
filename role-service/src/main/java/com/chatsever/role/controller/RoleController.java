@@ -46,6 +46,22 @@ public class RoleController {
     }
 
     // ================================================================
+    // R1 (bonus) — Cập nhật role
+    // PUT /api/servers/roles/{roleId}
+    // ================================================================
+    @PutMapping("/roles/{roleId}")
+    public ResponseEntity<Role> updateRole(
+            @PathVariable String roleId,
+            @RequestBody Map<String, String> payload) {
+        return ResponseEntity.ok(roleService.updateRole(
+                roleId,
+                payload.get("roleName"),
+                payload.get("color"),
+                payload.get("permissions")
+        ));
+    }
+
+    // ================================================================
     // R1 (bonus) — Xóa role
     // DELETE /api/servers/roles/{roleId}
     // ================================================================

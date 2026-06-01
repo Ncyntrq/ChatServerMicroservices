@@ -1,15 +1,16 @@
+version: '3.8'
+
 services:
-  # =========================================================
-  # HẠ TẦNG CỐT LÕI (INFRASTRUCTURE)
-  # =========================================================
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
@@ -22,8 +23,8 @@ services:
     image: mysql:8.0
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chat_server_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3307:3306"
@@ -42,8 +43,8 @@ services:
     container_name: minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -57,9 +58,6 @@ services:
     networks:
       - chat-net
 
-  # =========================================================
-  # API GATEWAY
-  # =========================================================
   gateway-service:
     build:
       context: .
@@ -69,7 +67,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JWT_SECRET=chatsever-jwt-secret-key-2026-safe-key
+      - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:8081
       - SERVER_SERVICE_URL=http://server-service:8085
       - CHANNEL_SERVICE_URL=http://channel-service:8086
@@ -81,6 +79,7 @@ services:
       - NOTIFICATION_SERVICE_URL=http://notification-service:8088
       - ROLE_SERVICE_URL=http://role-service:8091
       - USER_PROFILE_URL=http://user-profile-service:8090
+      - FRIEND_SERVICE_URL=http://friend-service:8092
     depends_on:
       auth-service:
         condition: service_started
@@ -89,11 +88,6 @@ services:
     networks:
       - chat-net
 
-  # =========================================================
-  # CÁC MICROSERVICES
-  # =========================================================
-
-  # --- Auth Service (A1-A6) - DB riêng: chat_auth_db ---
   auth-service:
     build:
       context: .
@@ -103,17 +97,16 @@ services:
     networks:
       - chat-net
     environment:
-      - JWT_SECRET=chatsever-jwt-secret-key-2026-safe-key
+      - JWT_SECRET=${JWT_SECRET}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DDL_AUTO=update
     depends_on:
       mysql-db:
         condition: service_healthy
 
-  # --- Server Service (SV1-SV8) - DB riêng: chat_server_db ---
   server-service:
     build:
       context: .
@@ -125,16 +118,16 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL8Dialect
       - CHANNEL_SERVICE_URL=http://channel-service:8086
+      - ROLE_SERVICE_URL=http://role-service:8091
     depends_on:
       mysql-db:
         condition: service_healthy
       channel-service:
         condition: service_started
 
-  # --- Channel Service (CH1-CH7) - DB riêng: chat_channel_db ---
   channel-service:
     build:
       context: .
@@ -146,12 +139,12 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - ROLE_SERVICE_URL=http://role-service:8091
     depends_on:
       mysql-db:
         condition: service_healthy
 
-  # --- Messaging Service (M1-M10) - DB riêng: chat_messaging_db ---
   messaging-service:
     build:
       context: .
@@ -162,9 +155,11 @@ services:
       - chat-net
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_messaging_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - AUTH_SERVICE_URL=http://auth-service:8081
       - PRESENCE_SERVICE_URL=http://presence-service:8083
       - SERVER_SERVICE_URL=http://server-service:8085
@@ -174,7 +169,6 @@ services:
       mysql-db:
         condition: service_healthy
 
-  # --- Presence Service (P1-P5) - DB riêng: chat_presence_db ---
   presence-service:
     build:
       context: .
@@ -186,12 +180,11 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_presence_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
     depends_on:
       mysql-db:
         condition: service_healthy
 
-  # --- Log Service (L1-L3) ---
   log-service:
     build:
       context: .
@@ -202,13 +195,14 @@ services:
       - chat-net
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
     volumes:
       - log-data:/app/logs
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  # --- Notification Service (N1-N5) - DB riêng: chat_notification_db ---
   notification-service:
     build:
       context: .
@@ -218,12 +212,12 @@ services:
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_notification_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DDL_AUTO=update
     depends_on:
       rabbitmq:
@@ -233,7 +227,6 @@ services:
     networks:
       - chat-net
 
-  # --- File Service (F1-F4) - DB riêng: chat_file_db ---
   file-service:
     build:
       context: .
@@ -242,12 +235,12 @@ services:
     container_name: file-service
     environment:
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=admin
-      - MINIO_SECRET_KEY=password123
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_file_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DDL_AUTO=update
     depends_on:
       minio:
@@ -256,7 +249,7 @@ services:
         condition: service_healthy
     networks:
       - chat-net
-  # --- Role Service (R1-R6) - DB riêng: chat_role_db ---
+
   role-service:
     build:
       context: .
@@ -269,14 +262,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DDL_AUTO=update
       - SERVER_SERVICE_URL=http://server-service:8085
     depends_on:
       mysql-db:
         condition: service_healthy
 
-  # --- User Profile Service (UP1-UP5) - DB riêng: chat_profile_db ---
   user-profile-service:
     build:
       context: .
@@ -289,19 +281,37 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_JPA_DDL_AUTO=update
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  friend-service:
+    build:
+      context: .
+      dockerfile: friend-service/Dockerfile
+    image: hoangnguyen1007/friend-service:${IMAGE_TAG:-latest}
+    container_name: friend-service
+    networks:
+      - chat-net
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_friend_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_JPA_DDL_AUTO=update
+      - USER_PROFILE_URL=http://user-profile-service:8090
     depends_on:
       mysql-db:
         condition: service_healthy
 
 networks:
   chat-net:
-    external: true
-    name: chat-net
+    driver: bridge
 
 volumes:
-  mysql-data: # Dữ liệu MySQL (users, servers, channels, messages)
-  minio-data: # File uploads (avatars, đính kèm)
-  rabbitmq-data: # RabbitMQ queue state & config
-  log-data: # Log files (audit trail)
+  mysql-data:
+  minio-data:
+  rabbitmq-data:
+  log-data:
