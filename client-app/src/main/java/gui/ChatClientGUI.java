@@ -38,6 +38,7 @@ public class ChatClientGUI extends JFrame {
     private final PresenceApiClient presenceApi = new PresenceApiClient();
     private final ServerApiClient serverApi = new ServerApiClient();
     private final PrivateMessageApiClient privateMessageApi = new PrivateMessageApiClient();
+    private final network.NotificationApiClient notificationApi = new network.NotificationApiClient();
 
     private final ServerSidebar serverSidebar = new ServerSidebar();
     private final ChannelSidebar channelSidebar;
@@ -158,6 +159,59 @@ public class ChatClientGUI extends JFrame {
         serverSidebar.loadServers();
         onServerSelected(-1, null); // Gọi trực tiếp hàm xử lý logic Trang chủ
         connectWebSocket();
+        refreshUnreadCounts();
+    }
+    
+    private void refreshUnreadCounts() {
+        new SwingWorker<java.util.Map<String, Object>, Void>() {
+            @Override
+            protected java.util.Map<String, Object> doInBackground() {
+                try {
+                    return notificationApi.getUnreadCounts(sessionUsername);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+            @Override
+            @SuppressWarnings("unchecked")
+            protected void done() {
+                try {
+                    java.util.Map<String, Object> resp = get();
+                    if (resp == null) return;
+                    
+                    if (resp.get("unreadCounts") != null) {
+                        java.util.Map<String, Number> unreadMap = (java.util.Map<String, Number>) resp.get("unreadCounts");
+                        java.util.Map<Long, Integer> channelCounts = new java.util.HashMap<>();
+                        for (java.util.Map.Entry<String, Number> entry : unreadMap.entrySet()) {
+                            channelCounts.put(Long.parseLong(entry.getKey()), entry.getValue().intValue());
+                        }
+                        channelSidebar.updateUnreadCounts(channelCounts);
+                    }
+                    
+                    if (resp.get("privateCounts") != null) {
+                        java.util.Map<String, Number> privateMap = (java.util.Map<String, Number>) resp.get("privateCounts");
+                        java.util.Map<String, Integer> friendCounts = new java.util.HashMap<>();
+                        for (java.util.Map.Entry<String, Number> entry : privateMap.entrySet()) {
+                            friendCounts.put(entry.getKey(), entry.getValue().intValue());
+                        }
+                        friendSidebar.updateUnreadCounts(friendCounts);
+                    }
+                } catch (Exception ignore) {}
+            }
+        }.execute();
+    }
+
+    private void ackMessage(MessageDTO msg) {
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() {
+                if (msg.getType() == MessageType.PRIVATE) {
+                    notificationApi.ackDm(msg.getSender(), sessionUsername);
+                } else if (msg.getChannelId() != null) {
+                    notificationApi.ackChannel(msg.getChannelId(), sessionUsername);
+                }
+                return null;
+            }
+        }.execute();
     }
 
     // ---------------------------------------------------------------
@@ -200,6 +254,12 @@ public class ChatClientGUI extends JFrame {
         this.activeChannelId = channelId;
         chatInput.setVisible(true); // Hiện thanh nhập tin nhắn
         clearChat();
+        
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() { notificationApi.ackChannel(channelId, sessionUsername); return null; }
+            @Override protected void done() { refreshUnreadCounts(); }
+        }.execute();
+
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
@@ -225,6 +285,12 @@ public class ChatClientGUI extends JFrame {
         this.activePrivateUser = username;
         chatInput.setVisible(true); // Hiện thanh nhập tin nhắn
         clearChat();
+        
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() { notificationApi.ackDm(username, sessionUsername); return null; }
+            @Override protected void done() { refreshUnreadCounts(); }
+        }.execute();
+
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
@@ -360,12 +426,24 @@ public class ChatClientGUI extends JFrame {
         }
 
         if (msg.getType() == null) {
-            if (belongsToActiveChannel(msg)) appendMessage(msg);
+            if (belongsToActiveChannel(msg)) {
+                appendMessage(msg);
+                ackMessage(msg);
+            } else {
+                refreshUnreadCounts();
+            }
             return;
         }
         switch (msg.getType()) {
             case CHAT, PRIVATE, EDIT, DELETE -> {
-                if (belongsToActiveChannel(msg)) appendMessage(msg);
+                if (belongsToActiveChannel(msg)) {
+                    appendMessage(msg);
+                    if (msg.getType() == MessageType.CHAT || msg.getType() == MessageType.PRIVATE) {
+                        ackMessage(msg);
+                    }
+                } else {
+                    refreshUnreadCounts();
+                }
             }
             case JOIN, LEAVE -> loadPresence();
             case SYSTEM -> appendSystem(msg.getContent());

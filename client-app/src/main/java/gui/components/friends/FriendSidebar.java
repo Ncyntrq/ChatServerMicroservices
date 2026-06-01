@@ -104,8 +104,20 @@ public class FriendSidebar extends JPanel {
         }.execute();
     }
 
+    private final java.util.Map<String, UserListItem> friendItems = new java.util.HashMap<>();
+
+    public void updateUnreadCounts(java.util.Map<String, Integer> unreadCounts) {
+        SwingUtilities.invokeLater(() -> {
+            for (java.util.Map.Entry<String, UserListItem> entry : friendItems.entrySet()) {
+                Integer count = unreadCounts.get(entry.getKey());
+                entry.getValue().setUnreadCount(count != null ? count : 0);
+            }
+        });
+    }
+
     private void renderLists(List<String> friends, List<String> pending, List<String> onlineUsers) {
         listPanel.removeAll();
+        friendItems.clear();
 
         // 1. Lời mời kết bạn
         if (pending != null && !pending.isEmpty()) {
@@ -157,6 +169,7 @@ public class FriendSidebar extends JPanel {
                     if (onFriendSelected != null) onFriendSelected.accept(f);
                 }
             });
+            friendItems.put(f, item);
             listPanel.add(item);
             listPanel.add(Box.createVerticalStrut(4));
         }
@@ -173,6 +186,7 @@ public class FriendSidebar extends JPanel {
                     if (onFriendSelected != null) onFriendSelected.accept(f);
                 }
             });
+            friendItems.put(f, item);
             listPanel.add(item);
             listPanel.add(Box.createVerticalStrut(4));
         }

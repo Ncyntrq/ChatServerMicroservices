@@ -57,13 +57,21 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 4. Đánh dấu 1 notification đã đọc.
-     * PUT /api/notifications/{id}/read
-     */
     @PutMapping("/notifications/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
         notificationService.markAsRead(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notifications/ack-channel/{channelId}")
+    public ResponseEntity<Void> ackChannelUnread(@PathVariable Long channelId, @RequestParam String userId) {
+        notificationService.ackChannelUnread(userId, channelId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notifications/ack-dm/{senderUsername}")
+    public ResponseEntity<Void> ackDmUnread(@PathVariable String senderUsername, @RequestParam String userId) {
+        notificationService.ackDmUnread(userId, senderUsername);
         return ResponseEntity.ok().build();
     }
 }
