@@ -10,13 +10,15 @@ public class UnreadCountResponse {
     private String userId;
     private Map<Long, Long> unreadCounts;   // channelId → count
     private Map<String, Long> privateCounts; // senderUsername → count
+    private Map<Long, Long> serverCounts;   // serverId → total count
 
     public UnreadCountResponse() {}
 
-    public UnreadCountResponse(String userId, Map<Long, Long> unreadCounts, Map<String, Long> privateCounts) {
+    public UnreadCountResponse(String userId, Map<Long, Long> unreadCounts, Map<String, Long> privateCounts, Map<Long, Long> serverCounts) {
         this.userId = userId;
         this.unreadCounts = unreadCounts;
         this.privateCounts = privateCounts;
+        this.serverCounts = serverCounts;
     }
 
     public String getUserId() { return userId; }
@@ -27,4 +29,7 @@ public class UnreadCountResponse {
     
     public Map<String, Long> getPrivateCounts() { return privateCounts; }
     public void setPrivateCounts(Map<String, Long> privateCounts) { this.privateCounts = privateCounts; }
+
+    public Map<Long, Long> getServerCounts() { return serverCounts; }
+    public void setServerCounts(Map<Long, Long> serverCounts) { this.serverCounts = serverCounts; }
 }

@@ -92,11 +92,42 @@ public class ChatClientGUI extends JFrame {
         channelSidebar.setOnChannelSelected(this::onChannelSelected);
         friendSidebar.setOnFriendSelected(this::openDirectMessage);
         
+        Runnable onUserChanged = () -> {
+            if (wsClient.isOpen()) {
+                MessageDTO out = new MessageDTO(MessageType.CHAT, sessionUsername, null, "[SYSTEM_USER_UPDATE]", LocalDateTime.now());
+                out.setServerId(null);
+                out.setChannelId(null);
+                wsClient.send(out);
+            }
+        };
+        channelSidebar.setOnUserChanged(onUserChanged);
+        friendSidebar.setOnUserChanged(onUserChanged);
+        
         // Gửi WebSocket "thông báo" ngầm tới người kia khi thao tác bạn bè
         friendSidebar.setOnFriendAction(targetUser -> {
             if (wsClient.isOpen()) {
                 MessageDTO out = new MessageDTO(MessageType.PRIVATE, sessionUsername, null, "[SYSTEM_FRIEND_UPDATE]", LocalDateTime.now());
                 out.setReceiver(targetUser);
+                wsClient.send(out);
+            }
+        });
+
+        // Broadcast tạo/sửa/xóa channel
+        channelSidebar.setOnChannelChanged(() -> {
+            if (wsClient.isOpen() && activeServerId != -1) {
+                MessageDTO out = new MessageDTO(MessageType.CHAT, sessionUsername, null, "[SYSTEM_CHANNEL_UPDATE]", LocalDateTime.now());
+                out.setServerId(activeServerId);
+                out.setChannelId(null);
+                wsClient.send(out);
+            }
+        });
+
+        // Broadcast sửa/xóa/join server
+        serverSidebar.setOnServerChanged(changedServerId -> {
+            if (wsClient.isOpen() && changedServerId != -1) {
+                MessageDTO out = new MessageDTO(MessageType.CHAT, sessionUsername, null, "[SYSTEM_SERVER_UPDATE]", LocalDateTime.now());
+                out.setServerId(changedServerId);
+                out.setChannelId(null);
                 wsClient.send(out);
             }
         });
@@ -254,6 +285,14 @@ public class ChatClientGUI extends JFrame {
                         }
                         friendSidebar.updateUnreadCounts(friendCounts);
                     }
+                    if (resp.get("serverCounts") != null) {
+                        java.util.Map<String, Number> serverMap = (java.util.Map<String, Number>) resp.get("serverCounts");
+                        java.util.Map<Long, Integer> serverCounts = new java.util.HashMap<>();
+                        for (java.util.Map.Entry<String, Number> entry : serverMap.entrySet()) {
+                            serverCounts.put(Long.parseLong(entry.getKey()), entry.getValue().intValue());
+                        }
+                        serverSidebar.updateUnreadCounts(serverCounts);
+                    }
                 } catch (Exception ignore) {
                     if (ignore instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
@@ -329,7 +368,7 @@ public class ChatClientGUI extends JFrame {
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
-                return channelApi.fetchRecentMessages(channelId, 50);
+                return channelApi.fetchRecentMessages(channelId, 1000);
             }
 
             @Override
@@ -361,7 +400,7 @@ public class ChatClientGUI extends JFrame {
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
-                return privateMessageApi.fetchPrivateMessages(username, 50);
+                return privateMessageApi.fetchPrivateMessages(username, 1000);
             }
 
             @Override
@@ -546,6 +585,31 @@ public class ChatClientGUI extends JFrame {
         if (msg.getType() == MessageType.PRIVATE && "[SYSTEM_FRIEND_UPDATE]".equals(msg.getContent())) {
             // Tải lại danh sách bạn bè mà không in ra giao diện
             if (activeServerId == -1) loadPresence();
+            return;
+        }
+
+        if ("[SYSTEM_CHANNEL_UPDATE]".equals(msg.getContent())) {
+            if (activeServerId == msg.getServerId()) {
+                channelSidebar.loadChannels(activeServerId, null);
+            }
+            return;
+        }
+
+        if ("[SYSTEM_SERVER_UPDATE]".equals(msg.getContent())) {
+            serverSidebar.loadServers(); // Cập nhật ServerSidebar cho mọi client đang online
+            if (activeServerId == msg.getServerId()) {
+                loadPresence(); // Cập nhật danh sách thành viên nếu đang mở server này
+                channelSidebar.loadChannels(activeServerId, null); // Cập nhật UI (nếu server bị đổi tên/xóa)
+            }
+            return;
+        }
+
+        if ("[SYSTEM_USER_UPDATE]".equals(msg.getContent())) {
+            network.UserProfileCache.clear(msg.getSender());
+            loadPresence(); // Cập nhật lại tên/avatar trên danh sách thành viên hoặc bạn bè
+            serverSidebar.loadServers(); // Cập nhật lại avatar của các server nếu có liên quan
+            friendSidebar.refreshUserFooter();
+            channelSidebar.refreshUserFooter();
             return;
         }
 

@@ -10,6 +10,7 @@ public class ServerIconItem extends JPanel {
     private boolean isHovered = false;
     private boolean isActive = false;
     private boolean hasUnread = false;
+    private int unreadCount = 0;
     private final JLabel iconLabel;
 
     private Runnable onClick;            // left-click → chọn server
@@ -67,8 +68,9 @@ public class ServerIconItem extends JPanel {
         repaint();
     }
 
-    public void setHasUnread(boolean unread) {
-        this.hasUnread = unread;
+    public void setUnreadCount(int count) {
+        this.unreadCount = count;
+        this.hasUnread = (count > 0);
         repaint();
     }
 
@@ -83,6 +85,14 @@ public class ServerIconItem extends JPanel {
     private Image serverImage;
 
     public void loadServerIconFromUrl(String urlString) {
+        Image cachedImage = gui.utils.ImageCache.get(urlString);
+        if (cachedImage != null) {
+            this.serverImage = cachedImage;
+            this.iconLabel.setVisible(false);
+            repaint();
+            return;
+        }
+
         new SwingWorker<Image, Void>() {
             @Override protected Image doInBackground() {
                 try {
@@ -96,6 +106,7 @@ public class ServerIconItem extends JPanel {
                 try {
                     Image img = get();
                     if(img != null) {
+                        gui.utils.ImageCache.put(urlString, img);
                         serverImage = img;
                         iconLabel.setVisible(false);
                         repaint();
@@ -111,7 +122,8 @@ public class ServerIconItem extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
         // --- 1. DETERMINE DYNAMIC LOOKS ---
         Color backgroundColor;
@@ -155,14 +167,28 @@ public class ServerIconItem extends JPanel {
 
         // --- 4. DRAW RED UNREAD NOTIFICATION BADGE ---
         if (hasUnread) {
-            int badgeX = x + size - 12;
-            int badgeY = y;
-
+            String text = unreadCount > 99 ? "99+" : String.valueOf(unreadCount);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+            FontMetrics fm = g2.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            
+            int badgeWidth = Math.max(16, textWidth + 8);
+            int badgeHeight = 16;
+            
+            int badgeX = x + size - badgeWidth / 2 - 4;
+            int badgeY = y - 4;
+            
+            // Draw background stroke
             g2.setColor(AppColors.BG_TERTIARY);
-            g2.fillOval(badgeX - 2, badgeY - 2, 16, 16);
-
+            g2.fillRoundRect(badgeX - 2, badgeY - 2, badgeWidth + 4, badgeHeight + 4, badgeHeight + 4, badgeHeight + 4);
+            
+            // Draw red background
             g2.setColor(Color.decode("#F23F42"));
-            g2.fillOval(badgeX, badgeY, 12, 12);
+            g2.fillRoundRect(badgeX, badgeY, badgeWidth, badgeHeight, badgeHeight, badgeHeight);
+            
+            // Draw text
+            g2.setColor(Color.WHITE);
+            g2.drawString(text, badgeX + (badgeWidth - textWidth) / 2, badgeY + badgeHeight - 4);
         }
 
         g2.dispose();

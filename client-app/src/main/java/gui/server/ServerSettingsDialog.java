@@ -164,6 +164,7 @@ public class ServerSettingsDialog extends JDialog {
         if (confirm != JOptionPane.YES_OPTION) return;
         statusLabel.setForeground(AppColors.TEXT_MUTED);
         statusLabel.setText("Đang rời server...");
+        if (onChange != null) onChange.run(); // Broadcast trước khi rời
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
@@ -191,6 +192,7 @@ public class ServerSettingsDialog extends JDialog {
         if (confirm != JOptionPane.YES_OPTION) return;
         statusLabel.setForeground(AppColors.TEXT_MUTED);
         statusLabel.setText("Đang xóa...");
+        if (onChange != null) onChange.run(); // Broadcast trước khi xóa để gửi được WS
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {

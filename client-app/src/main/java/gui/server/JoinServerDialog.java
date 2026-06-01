@@ -15,7 +15,7 @@ import java.awt.*;
  */
 public class JoinServerDialog extends JDialog {
 
-    public JoinServerDialog(Window owner, Runnable onSuccess) {
+    public JoinServerDialog(Window owner, java.util.function.Consumer<Long> onSuccess) {
         super(owner, "Tham Gia Server", ModalityType.APPLICATION_MODAL);
         setSize(440, 320);
         setLocationRelativeTo(owner);
@@ -62,18 +62,17 @@ public class JoinServerDialog extends JDialog {
             statusLabel.setForeground(AppColors.TEXT_MUTED);
             statusLabel.setText("Đang tham gia...");
 
-            new SwingWorker<Void, Void>() {
+            new SwingWorker<Long, Void>() {
                 @Override
-                protected Void doInBackground() {
-                    serverApi.joinServerByCode(code);
-                    return null;
+                protected Long doInBackground() {
+                    return serverApi.joinServerByCode(code);
                 }
 
                 @Override
                 protected void done() {
                     try {
-                        get();
-                        if (onSuccess != null) onSuccess.run();
+                        long serverId = get();
+                        if (onSuccess != null) onSuccess.accept(serverId);
                         dispose();
                     } catch (Exception ex) {
                         Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;

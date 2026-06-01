@@ -23,12 +23,18 @@ public class ServerSidebar extends JPanel {
 
     private final JPanel listPanel;
     private final ServerApiClient serverApi = new ServerApiClient();
+    private final Map<Long, ServerIconItem> serverItems = new java.util.HashMap<>();
 
     private BiConsumer<Long, String> onServerSelected;
+    private java.util.function.Consumer<Long> onServerChanged;
     private long activeServerId = -1;
 
     public void setOnServerSelected(BiConsumer<Long, String> onServerSelected) {
         this.onServerSelected = onServerSelected;
+    }
+
+    public void setOnServerChanged(java.util.function.Consumer<Long> onServerChanged) {
+        this.onServerChanged = onServerChanged;
     }
 
     public ServerSidebar() {
@@ -66,6 +72,7 @@ public class ServerSidebar extends JPanel {
     /** Render lại toàn bộ: HOME, separator, từng server, nút ➕. */
     private void renderServers(List<Map<String, Object>> servers) {
         listPanel.removeAll();
+        serverItems.clear();
 
         listPanel.add(Box.createVerticalStrut(10));
         ServerIconItem homeBtn = new ServerIconItem("💬");
@@ -95,6 +102,7 @@ public class ServerSidebar extends JPanel {
             String symbol = (name == null || name.isBlank()) ? "?" : name.substring(0, 1).toUpperCase();
 
             ServerIconItem item = new ServerIconItem(symbol);
+            serverItems.put(id, item);
             item.setAlignmentX(Component.CENTER_ALIGNMENT);
             item.setActive(id == activeServerId);
             
@@ -111,7 +119,10 @@ public class ServerSidebar extends JPanel {
             });
             item.setOnContextMenu(() -> {
                 Window owner = SwingUtilities.getWindowAncestor(this);
-                new ServerSettingsDialog(owner, id, this::loadServers).setVisible(true);
+                new ServerSettingsDialog(owner, id, () -> {
+                    loadServers();
+                    if (onServerChanged != null) onServerChanged.accept(id);
+                }).setVisible(true);
             });
             listPanel.add(item);
         }
@@ -137,6 +148,15 @@ public class ServerSidebar extends JPanel {
         }
     }
 
+    public void updateUnreadCounts(Map<Long, Integer> unreadCounts) {
+        SwingUtilities.invokeLater(() -> {
+            for (Map.Entry<Long, ServerIconItem> entry : serverItems.entrySet()) {
+                Integer count = unreadCounts.get(entry.getKey());
+                entry.getValue().setUnreadCount(count != null ? count : 0);
+            }
+        });
+    }
+
     private void refreshActiveStates() {
         loadServers();
     }
@@ -147,9 +167,16 @@ public class ServerSidebar extends JPanel {
         JMenuItem joinItem = new JMenuItem("Tham Gia Server");
         Window owner = SwingUtilities.getWindowAncestor(this);
         createItem.addActionListener(e ->
-                new CreateServerDialog(owner, this::loadServers).setVisible(true));
+                new CreateServerDialog(owner, () -> {
+                    loadServers();
+                    // Tạo mới thì không có ai khác trong server, có thể broadcast với -1 hoặc bỏ qua
+                    if (onServerChanged != null) onServerChanged.accept(-1L);
+                }).setVisible(true));
         joinItem.addActionListener(e ->
-                new JoinServerDialog(owner, this::loadServers).setVisible(true));
+                new JoinServerDialog(owner, (joinedServerId) -> {
+                    loadServers();
+                    if (onServerChanged != null && joinedServerId != -1) onServerChanged.accept(joinedServerId);
+                }).setVisible(true));
         menu.add(createItem);
         menu.add(joinItem);
         menu.show(anchor, anchor.getWidth(), 0);

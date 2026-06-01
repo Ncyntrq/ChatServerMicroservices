@@ -47,13 +47,27 @@ public class AvatarBadge extends JPanel {
     }
 
     public void loadAvatarFromUrl(String urlString) {
+        Image cachedImage = gui.utils.ImageCache.get(urlString);
+        if (cachedImage != null) {
+            setAvatarImage(cachedImage);
+            return;
+        }
+
         new Thread(() -> {
             try {
-                // download() chỉ gửi JWT (header) khi URL trỏ về gateway tin cậy → chống lộ token tới host lạ
-                byte[] bytes = new network.FileApiClient().download(urlString);
-                Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                if (downloadedImage != null) {
-                    SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
+                String token = network.SessionManager.get().getAccessToken();
+                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(urlString))
+                        .header("Authorization", "Bearer " + token)
+                        .GET()
+                        .build();
+                java.net.http.HttpResponse<byte[]> resp = network.HttpClientHolder.get().send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                if (resp.statusCode() == 200) {
+                    Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
+                    if (downloadedImage != null) {
+                        gui.utils.ImageCache.put(urlString, downloadedImage);
+                        SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("Failed to load avatar from URL: " + urlString + " (" + e.getMessage() + ")");
@@ -67,7 +81,8 @@ public class AvatarBadge extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
         int w = getWidth();

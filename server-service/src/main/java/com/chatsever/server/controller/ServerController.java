@@ -65,17 +65,17 @@ public class ServerController {
     }
 
     @PostMapping("/{id}/join")
-    public ResponseEntity<Map<String, String>> join(@PathVariable Long id, @RequestParam String code,
+    public ResponseEntity<Map<String, Object>> join(@PathVariable Long id, @RequestParam String code,
             @RequestHeader("X-User-Id") String uid) {
         serverService.joinServer(id, code, uid);
-        return ResponseEntity.ok(Map.of("message", "Gia nhập thành công"));
+        return ResponseEntity.ok(Map.of("message", "Gia nhập thành công", "serverId", id));
     }
 
     @PostMapping("/join")
-    public ResponseEntity<Map<String, String>> joinByCode(@RequestParam String code,
+    public ResponseEntity<Map<String, Object>> joinByCode(@RequestParam String code,
             @RequestHeader("X-User-Id") String uid) {
-        serverService.joinServerByCode(code, uid);
-        return ResponseEntity.ok(Map.of("message", "Gia nhập thành công"));
+        com.chatsever.server.model.Server s = serverService.joinServerByCode(code, uid);
+        return ResponseEntity.ok(Map.of("message", "Gia nhập thành công", "serverId", s.getId()));
     }
 
     @PostMapping("/{id}/leave")

@@ -9,7 +9,11 @@ import java.awt.*;
 
 public class UserFooterPanel extends JPanel {
 
-    public UserFooterPanel(String username) {
+    private AvatarBadge userAvatar;
+    private String username;
+
+    public UserFooterPanel(String username, Runnable onUserChanged) {
+        this.username = username;
         setLayout(new BorderLayout(8, 0));
         setBackground(AppColors.BG_SECONDARY); // Dark mid-tone gray
         setPreferredSize(new Dimension(240, 52));
@@ -21,10 +25,39 @@ public class UserFooterPanel extends JPanel {
 
         // Reusing your clean fallback Avatar component
         String initial = username.isEmpty() ? "?" : username.substring(0, 1).toUpperCase();
-        AvatarBadge userAvatar = new AvatarBadge(initial);
+        this.userAvatar = new AvatarBadge(initial);
         userAvatar.setPreferredSize(new Dimension(36, 36));
 
         // Asynchronously load avatar if available
+        loadUserAvatar(userAvatar, username);
+
+        // Name Details
+        JLabel nameLabel = new JLabel(username);
+        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        nameLabel.setForeground(AppColors.TEXT_WHITE);
+
+        identityWrapper.add(userAvatar);
+        identityWrapper.add(nameLabel);
+
+        // Right Side: Quick System Controls
+        JPanel controlsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
+        controlsWrapper.setOpaque(false);
+
+        // Reusing your standalone IconButton component with custom offsets
+        controlsWrapper.add(new IconButton("⚙", e -> {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            UserSettingsDialog dialog = new UserSettingsDialog(owner, () -> {
+                loadUserAvatar(userAvatar, username);
+                if (onUserChanged != null) onUserChanged.run();
+            });
+            dialog.setVisible(true);
+        }));
+
+        add(identityWrapper, BorderLayout.WEST);
+        add(controlsWrapper, BorderLayout.EAST);
+    }
+
+    public void loadUserAvatar(AvatarBadge userAvatar, String username) {
         new SwingWorker<java.util.Map<String, Object>, Void>() {
             @Override
             protected java.util.Map<String, Object> doInBackground() {
@@ -45,29 +78,9 @@ public class UserFooterPanel extends JPanel {
                 } catch (Exception ignore) {}
             }
         }.execute();
+    }
 
-        // Name Details
-        JLabel nameLabel = new JLabel(username);
-        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        nameLabel.setForeground(AppColors.TEXT_WHITE);
-
-        identityWrapper.add(userAvatar);
-        identityWrapper.add(nameLabel);
-
-        // Right Side: Quick System Controls
-        JPanel controlsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
-        controlsWrapper.setOpaque(false);
-
-        // Reusing your standalone IconButton component with custom offsets
-        controlsWrapper.add(new IconButton("🎙")); // Mute mic
-        controlsWrapper.add(new IconButton("🎧")); // Deafen audio
-        controlsWrapper.add(new IconButton("⚙", e -> {
-            Window owner = SwingUtilities.getWindowAncestor(this);
-            UserSettingsDialog dialog = new UserSettingsDialog(owner);
-            dialog.setVisible(true);
-        }));
-
-        add(identityWrapper, BorderLayout.WEST);
-        add(controlsWrapper, BorderLayout.EAST);
+    public void refreshAvatar() {
+        loadUserAvatar(this.userAvatar, this.username);
     }
 }

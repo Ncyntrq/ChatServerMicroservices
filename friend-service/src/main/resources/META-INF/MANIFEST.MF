@@ -1,0 +1,71 @@
+Manifest-Version: 1.0
+Main-Class: gui.ClientApplication
+Class-Path: kotlin-stdlib-jdk7-1.9.23.jar commons-fileupload-1.5.jar spr
+ ing-expression-6.1.5.jar slf4j-api-2.0.12.jar feign-form-spring-3.8.0.j
+ ar spring-boot-actuator-3.2.4.jar annotations-13.0.jar jakarta.validati
+ on-api-3.0.2.jar jaxb-core-4.0.5.jar simpleclient_tracer_otel_agent-0.1
+ 6.0.jar tomcat-embed-el-10.1.19.jar micrometer-core-1.12.4.jar netty-co
+ dec-http2-4.1.107.Final.jar netty-handler-4.1.107.Final.jar lombok-1.18
+ .30.jar spring-jdbc-6.1.5.jar error_prone_annotations-2.21.1.jar j2objc
+ -annotations-2.8.jar jjwt-jackson-0.12.5.jar spring-context-6.1.5.jar j
+ akarta.activation-api-2.1.3.jar netty-transport-native-epoll-4.1.107.Fi
+ nal-linux-x86_64.jar netty-resolver-dns-4.1.107.Final.jar spring-data-j
+ pa-3.2.4.jar jakarta.inject-api-2.0.1.jar spring-amqp-3.1.3.jar spring-
+ cloud-starter-4.1.2.jar commons-compress-1.24.0.jar spring-boot-starter
+ -security-3.2.4.jar jakarta.annotation-api-2.1.1.jar logback-core-1.4.1
+ 4.jar jackson-databind-2.15.4.jar spring-messaging-6.1.5.jar netty-code
+ c-socks-4.1.107.Final.jar okio-3.6.0.jar jandex-3.1.2.jar HikariCP-5.0.
+ 1.jar spring-cloud-openfeign-core-4.1.1.jar jjwt-api-0.12.5.jar spring-
+ security-rsa-1.1.2.jar commons-io-2.11.0.jar spring-boot-starter-json-3
+ .2.4.jar netty-resolver-dns-native-macos-4.1.107.Final-osx-x86_64.jar s
+ pring-boot-starter-validation-3.2.4.jar jakarta.persistence-api-3.1.0.j
+ ar log4j-api-2.21.1.jar netty-resolver-dns-classes-macos-4.1.107.Final.
+ jar HdrHistogram-2.1.12.jar netty-resolver-4.1.107.Final.jar okhttp-4.1
+ 2.0.jar failureaccess-1.0.1.jar spring-boot-starter-aop-3.2.4.jar angus
+ -activation-2.0.2.jar okio-jvm-3.6.0.jar micrometer-observation-1.12.4.
+ jar checker-qual-3.37.0.jar bcprov-jdk18on-1.76.jar spring-boot-autocon
+ figure-3.2.4.jar lombok-1.18.34.jar spring-jcl-6.1.5.jar spring-securit
+ y-core-6.2.3.jar byte-buddy-1.14.12.jar spring-websocket-6.1.5.jar simp
+ leclient-0.16.0.jar feign-form-3.8.0.jar spring-webmvc-6.1.5.jar jaxb-r
+ untime-4.0.5.jar antlr4-runtime-4.13.0.jar mysql-connector-j-8.3.0.jar 
+ snakeyaml-2.2.jar netty-handler-proxy-4.1.107.Final.jar spring-core-6.1
+ .5.jar jul-to-slf4j-2.0.12.jar thumbnailator-0.4.20.jar spring-cloud-co
+ mmons-4.1.2.jar netty-codec-http-4.1.107.Final.jar spring-boot-starter-
+ webflux-3.2.4.jar netty-buffer-4.1.107.Final.jar spring-boot-3.2.4.jar 
+ LatencyUtils-2.0.3.jar guava-32.1.3-jre.jar netty-transport-classes-epo
+ ll-4.1.107.Final.jar reactor-core-3.6.4.jar netty-common-4.1.107.Final.
+ jar hibernate-validator-8.0.1.Final.jar spring-boot-actuator-autoconfig
+ ure-3.2.4.jar spring-aop-6.1.5.jar spring-tx-6.1.5.jar jackson-datatype
+ -jsr310-2.15.4.jar lombok-1.18.42.jar netty-codec-dns-4.1.107.Final.jar
+  tomcat-embed-websocket-10.1.19.jar log4j-to-slf4j-2.21.1.jar snappy-ja
+ va-1.1.10.5.jar logback-classic-1.4.14.jar jboss-logging-3.5.3.Final.ja
+ r feign-core-13.2.1.jar jackson-module-parameter-names-2.15.4.jar jakar
+ ta.xml.bind-api-4.0.2.jar spring-beans-6.1.5.jar reactor-netty-core-1.1
+ .17.jar listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar 
+ spring-boot-starter-actuator-3.2.4.jar spring-cloud-gateway-server-4.1.
+ 2.jar tomcat-embed-core-10.1.19.jar hibernate-core-6.4.4.Final.jar nett
+ y-transport-native-unix-common-4.1.107.Final.jar jsr305-3.0.2.jar sprin
+ g-cloud-starter-openfeign-4.1.1.jar minio-8.5.7.jar jackson-core-2.15.4
+ .jar micrometer-jakarta9-1.12.4.jar spring-retry-2.0.5.jar reactor-extr
+ a-3.5.1.jar spring-boot-starter-websocket-3.2.4.jar reactor-netty-http-
+ 1.1.17.jar kotlin-stdlib-common-1.9.23.jar spring-aspects-6.1.5.jar txw
+ 2-4.0.5.jar spring-boot-starter-amqp-3.2.4.jar spring-boot-starter-tomc
+ at-3.2.4.jar spring-webflux-6.1.5.jar spring-security-config-6.2.3.jar 
+ jjwt-impl-0.12.5.jar spring-boot-starter-web-3.2.4.jar simple-xml-safe-
+ 2.7.1.jar jakarta.transaction-api-2.0.1.jar spring-boot-starter-jdbc-3.
+ 2.4.jar bcprov-jdk18on-1.77.jar feign-slf4j-13.2.1.jar hibernate-common
+ s-annotations-6.0.6.Final.jar simpleclient_tracer_common-0.16.0.jar jac
+ kson-datatype-jdk8-2.15.4.jar simpleclient_common-0.16.0.jar aspectjwea
+ ver-1.9.21.jar spring-cloud-starter-gateway-4.1.2.jar spring-security-c
+ rypto-6.2.3.jar spring-data-commons-3.2.4.jar reactive-streams-1.0.4.ja
+ r micrometer-commons-1.12.4.jar spring-web-6.1.5.jar kotlin-stdlib-jdk8
+ -1.9.23.jar spring-cloud-context-4.1.2.jar spring-boot-starter-logging-
+ 3.2.4.jar netty-transport-4.1.107.Final.jar istack-commons-runtime-4.1.
+ 2.jar spring-boot-starter-reactor-netty-3.2.4.jar spring-orm-6.1.5.jar 
+ flatlaf-3.4.jar kotlin-stdlib-1.9.23.jar spring-boot-starter-3.2.4.jar 
+ spring-rabbit-3.1.3.jar micrometer-registry-prometheus-1.12.4.jar amqp-
+ client-5.19.0.jar simpleclient_tracer_otel-0.16.0.jar spring-boot-start
+ er-data-jpa-3.2.4.jar jackson-annotations-2.15.4.jar netty-codec-4.1.10
+ 7.Final.jar spring-security-web-6.2.3.jar classmate-1.6.0.jar h2-2.2.22
+ 4.jar
+

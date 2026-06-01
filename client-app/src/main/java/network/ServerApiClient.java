@@ -85,9 +85,17 @@ public class ServerApiClient {
         sendPost(url, "");
     }
 
-    public void joinServerByCode(String inviteCode) {
+    @SuppressWarnings("unchecked")
+    public long joinServerByCode(String inviteCode) {
         String url = ApiConfig.GATEWAY_HTTP + "/api/servers/join?code=" + inviteCode;
-        sendPost(url, "");
+        HttpResponse<String> resp = sendPost(url, "");
+        try {
+            Map<String, Object> body = json.readValue(resp.body(), Map.class);
+            if (body.get("serverId") != null) {
+                return Long.parseLong(body.get("serverId").toString());
+            }
+        } catch (Exception ignore) {}
+        return -1;
     }
 
     // SV7 — Rời server

@@ -173,7 +173,7 @@ public class ServerServiceImpl implements ServerService {
     }
 
     @Override
-    public void joinServerByCode(String code, String uid) {
+    public Server joinServerByCode(String code, String uid) {
         Server s = serverRepository.findByInviteCode(code)
                 .orElseThrow(() -> new RuntimeException("Invite code không hợp lệ"));
         
@@ -196,6 +196,7 @@ public class ServerServiceImpl implements ServerService {
                     .roleIds(new ArrayList<>())
                     .build());
         }
+        return s;
     }
 
     @Override

@@ -141,6 +141,7 @@ public class NotificationService {
 
         Map<Long, Long> channelCounts = new HashMap<>();
         Map<String, Long> privateCounts = new HashMap<>();
+        Map<Long, Long> serverCounts = new HashMap<>();
 
         for (UnreadCounter uc : unreadCounters) {
             if (uc.getUnreadCount() <= 0) continue;
@@ -150,9 +151,13 @@ public class NotificationService {
             } else if (uc.getSenderUsername() != null) {
                 privateCounts.put(uc.getSenderUsername(), (long) uc.getUnreadCount());
             }
+
+            if (uc.getServerId() != null) {
+                serverCounts.put(uc.getServerId(), serverCounts.getOrDefault(uc.getServerId(), 0L) + uc.getUnreadCount());
+            }
         }
 
-        return new UnreadCountResponse(userId, channelCounts, privateCounts);
+        return new UnreadCountResponse(userId, channelCounts, privateCounts, serverCounts);
     }
     
     @Transactional
@@ -174,16 +179,19 @@ public class NotificationService {
     }
 
     @Transactional
-    public void incrementUnreadCount(String userId, Long channelId, String senderUsername) {
+    public void incrementUnreadCount(String userId, Long channelId, Long serverId, String senderUsername) {
         UnreadCounter uc;
         if (channelId != null) {
             uc = unreadCounterRepository.findByUserIdAndChannelId(userId, channelId)
-                    .orElse(new UnreadCounter(userId, channelId, null, 0));
+                    .orElse(new UnreadCounter(userId, channelId, serverId, null, 0));
         } else {
             uc = unreadCounterRepository.findByUserIdAndSenderUsername(userId, senderUsername)
-                    .orElse(new UnreadCounter(userId, null, senderUsername, 0));
+                    .orElse(new UnreadCounter(userId, null, null, senderUsername, 0));
         }
         uc.setUnreadCount(uc.getUnreadCount() + 1);
+        if (uc.getServerId() == null && serverId != null) {
+            uc.setServerId(serverId);
+        }
         unreadCounterRepository.save(uc);
     }
 
@@ -193,8 +201,8 @@ public class NotificationService {
     @SuppressWarnings("unchecked")
     public List<String> getServerMembers(Long serverId) {
         try {
-            // Giả định server-service chạy ở port 8081
-            String url = "http://localhost:8081/api/servers/" + serverId;
+            // Sử dụng port 8085 của server-service thay vì 8081
+            String url = "http://localhost:8085/api/servers/" + serverId;
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.containsKey("members")) {
                 List<Map<String, Object>> members = (List<Map<String, Object>>) response.get("members");

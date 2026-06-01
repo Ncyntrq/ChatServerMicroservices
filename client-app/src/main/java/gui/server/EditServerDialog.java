@@ -82,13 +82,20 @@ public class EditServerDialog extends JDialog {
                 statusLabel.setText("Đang upload icon...");
                 new SwingWorker<String, Void>() {
                     @Override protected String doInBackground() {
-                        return new network.FileApiClient().uploadAvatar(file);
+                        // 1. Upload to MinIO
+                        String url = new network.FileApiClient().uploadAvatar(file);
+                        // 2. Auto-save to Server
+                        String currentName = nameField.getText().trim();
+                        String currentDesc = descArea.getText().trim();
+                        new ServerApiClient().updateServer(serverId, currentName, currentDesc.isEmpty() ? null : currentDesc, url);
+                        return url;
                     }
                     @Override protected void done() {
                         try {
                             uploadedIconUrl = get();
                             statusLabel.setForeground(AppColors.SUCCESS);
-                            statusLabel.setText("Upload thành công!");
+                            statusLabel.setText("Đã cập nhật Avatar Server!");
+                            if (onSuccess != null) onSuccess.run();
                         } catch(Exception ex) {
                             statusLabel.setForeground(AppColors.DANGER);
                             statusLabel.setText("Lỗi upload: " + ex.getMessage());
