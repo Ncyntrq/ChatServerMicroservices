@@ -306,7 +306,7 @@ public class ChatClientGUI extends JFrame {
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
-                return channelApi.fetchRecentMessages(channelId, 50);
+                return channelApi.fetchRecentMessages(channelId, 1000);
             }
 
             @Override
@@ -337,7 +337,7 @@ public class ChatClientGUI extends JFrame {
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override
             protected List<MessageDTO> doInBackground() {
-                return privateMessageApi.fetchPrivateMessages(username, 50);
+                return privateMessageApi.fetchPrivateMessages(username, 1000);
             }
 
             @Override
