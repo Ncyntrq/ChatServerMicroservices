@@ -94,6 +94,18 @@ public class MessageEventListener {
                     content
             );
             log.info("Tạo DM notification cho user={} từ sender={}", message.getReceiver(), sender);
+            
+            // Tăng biến đếm unread count cho tin nhắn DM
+            notificationService.incrementUnreadCount(message.getReceiver(), null, sender);
+        } else if (channelId != null && serverId != null) {
+            // Tăng biến đếm unread count cho tin nhắn Channel
+            List<String> members = notificationService.getServerMembers(serverId);
+            for (String member : members) {
+                if (!member.equals(sender)) {
+                    notificationService.incrementUnreadCount(member, channelId, null);
+                }
+            }
+            log.info("Đã tăng unread count cho channel={} ({} members)", channelId, members.size());
         }
     }
 

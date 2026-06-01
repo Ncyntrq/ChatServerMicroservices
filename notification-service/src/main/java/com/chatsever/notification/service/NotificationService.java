@@ -8,6 +8,9 @@ import com.chatsever.notification.model.NotificationType;
 import com.chatsever.notification.model.ReadStatus;
 import com.chatsever.notification.repository.NotificationRepository;
 import com.chatsever.notification.repository.ReadStatusRepository;
+import com.chatsever.notification.repository.UnreadCounterRepository;
+import com.chatsever.notification.model.UnreadCounter;
+import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -34,11 +37,15 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final ReadStatusRepository readStatusRepository;
+    private final UnreadCounterRepository unreadCounterRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public NotificationService(NotificationRepository notificationRepository,
-                               ReadStatusRepository readStatusRepository) {
+                               ReadStatusRepository readStatusRepository,
+                               UnreadCounterRepository unreadCounterRepository) {
         this.notificationRepository = notificationRepository;
         this.readStatusRepository = readStatusRepository;
+        this.unreadCounterRepository = unreadCounterRepository;
     }
 
     /**
@@ -127,21 +134,78 @@ public class NotificationService {
     }
 
     /**
-     * Đếm số notification chưa đọc mỗi channel cho userId.
+     * Đếm số notification và tin nhắn chưa đọc.
      */
     public UnreadCountResponse getUnreadCounts(String userId) {
-        List<Notification> unreadNotifications = notificationRepository
-                .findByUserIdAndIsReadFalse(userId);
+        List<UnreadCounter> unreadCounters = unreadCounterRepository.findByUserId(userId);
 
-        Map<Long, Long> counts = new HashMap<>();
-        for (Notification n : unreadNotifications) {
-            Long chId = n.getChannelId();
-            if (chId != null) {
-                counts.merge(chId, 1L, Long::sum);
+        Map<Long, Long> channelCounts = new HashMap<>();
+        Map<String, Long> privateCounts = new HashMap<>();
+
+        for (UnreadCounter uc : unreadCounters) {
+            if (uc.getUnreadCount() <= 0) continue;
+            
+            if (uc.getChannelId() != null) {
+                channelCounts.put(uc.getChannelId(), (long) uc.getUnreadCount());
+            } else if (uc.getSenderUsername() != null) {
+                privateCounts.put(uc.getSenderUsername(), (long) uc.getUnreadCount());
             }
         }
 
-        return new UnreadCountResponse(userId, counts);
+        return new UnreadCountResponse(userId, channelCounts, privateCounts);
+    }
+    
+    @Transactional
+    public void ackChannelUnread(String userId, Long channelId) {
+        unreadCounterRepository.findByUserIdAndChannelId(userId, channelId)
+            .ifPresent(uc -> {
+                uc.setUnreadCount(0);
+                unreadCounterRepository.save(uc);
+            });
+    }
+
+    @Transactional
+    public void ackDmUnread(String userId, String senderUsername) {
+        unreadCounterRepository.findByUserIdAndSenderUsername(userId, senderUsername)
+            .ifPresent(uc -> {
+                uc.setUnreadCount(0);
+                unreadCounterRepository.save(uc);
+            });
+    }
+
+    @Transactional
+    public void incrementUnreadCount(String userId, Long channelId, String senderUsername) {
+        UnreadCounter uc;
+        if (channelId != null) {
+            uc = unreadCounterRepository.findByUserIdAndChannelId(userId, channelId)
+                    .orElse(new UnreadCounter(userId, channelId, null, 0));
+        } else {
+            uc = unreadCounterRepository.findByUserIdAndSenderUsername(userId, senderUsername)
+                    .orElse(new UnreadCounter(userId, null, senderUsername, 0));
+        }
+        uc.setUnreadCount(uc.getUnreadCount() + 1);
+        unreadCounterRepository.save(uc);
+    }
+
+    /**
+     * Lấy danh sách thành viên của server từ server-service (chạy ngầm).
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getServerMembers(Long serverId) {
+        try {
+            // Giả định server-service chạy ở port 8081
+            String url = "http://localhost:8081/api/servers/" + serverId;
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            if (response != null && response.containsKey("members")) {
+                List<Map<String, Object>> members = (List<Map<String, Object>>) response.get("members");
+                return members.stream()
+                        .map(m -> (String) m.get("userId"))
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch server members for serverId={}", serverId, e);
+        }
+        return List.of();
     }
 
     /** Convert Entity → DTO */
