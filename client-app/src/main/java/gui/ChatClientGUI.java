@@ -196,7 +196,11 @@ public class ChatClientGUI extends JFrame {
                         }
                         friendSidebar.updateUnreadCounts(friendCounts);
                     }
-                } catch (Exception ignore) {}
+                } catch (Exception ignore) {
+                    if (ignore instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
         }.execute();
     }

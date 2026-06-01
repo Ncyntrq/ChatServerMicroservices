@@ -25,6 +25,9 @@ public class NotificationApiClient {
                 throw new ApiException(response.statusCode(), "Failed to get unread counts");
             }
         } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             throw new ApiException(500, e.getMessage());
         }
     }
@@ -38,6 +41,9 @@ public class NotificationApiClient {
                     .build();
             HttpClientHolder.get().send(request, HttpResponse.BodyHandlers.discarding());
         } catch (Exception ignored) {
+            if (ignored instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -50,6 +56,9 @@ public class NotificationApiClient {
                     .build();
             HttpClientHolder.get().send(request, HttpResponse.BodyHandlers.discarding());
         } catch (Exception ignored) {
+            if (ignored instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

@@ -32,18 +32,9 @@ public class UnreadCounter {
         this.unreadCount = unreadCount;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-
-    public Long getChannelId() { return channelId; }
-    public void setChannelId(Long channelId) { this.channelId = channelId; }
-
-    public String getSenderUsername() { return senderUsername; }
-    public void setSenderUsername(String senderUsername) { this.senderUsername = senderUsername; }
-
-    public int getUnreadCount() { return unreadCount; }
-    public void setUnreadCount(int unreadCount) { this.unreadCount = unreadCount; }
+    public Long getId() { return id; } public void setId(Long id) { this.id = id; }
+    public String getUserId() { return userId; } public void setUserId(String userId) { this.userId = userId; }
+    public Long getChannelId() { return channelId; } public void setChannelId(Long channelId) { this.channelId = channelId; }
+    public String getSenderUsername() { return senderUsername; } public void setSenderUsername(String senderUsername) { this.senderUsername = senderUsername; }
+    public int getUnreadCount() { return unreadCount; } public void setUnreadCount(int unreadCount) { this.unreadCount = unreadCount; }
 }

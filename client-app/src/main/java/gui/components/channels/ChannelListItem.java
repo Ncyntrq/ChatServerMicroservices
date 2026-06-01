@@ -18,17 +18,14 @@ public class ChannelListItem extends JPanel {
     public void setOnContextMenu(Runnable onContextMenu) { this.onContextMenu = onContextMenu; }
 
     private int unreadCount = 0;
-    private final JPanel badgePanel;
-    private final JLabel badgeLabel;
+    private final gui.components.chat.UnreadBadgePanel badgePanel;
 
     public void setUnreadCount(int count) {
         this.unreadCount = count;
+        badgePanel.setCount(count);
         if (count > 0) {
-            badgeLabel.setText(count > 99 ? "99+" : String.valueOf(count));
-            badgePanel.setVisible(true);
             nameLabel.setForeground(AppColors.TEXT_WHITE);
         } else {
-            badgePanel.setVisible(false);
             nameLabel.setForeground(isHovered ? AppColors.TEXT_WHITE : AppColors.TEXT_MUTED);
         }
         revalidate();
@@ -55,27 +52,8 @@ public class ChannelListItem extends JPanel {
         nameLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
         nameLabel.setForeground(AppColors.TEXT_MUTED);
         
-        // Badge Panel (Red Circle)
-        badgeLabel = new JLabel("");
-        badgeLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
-        badgeLabel.setForeground(Color.WHITE);
-        badgeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        badgePanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppColors.DANGER);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        badgePanel.setOpaque(false);
-        badgePanel.setPreferredSize(new Dimension(20, 16));
-        badgePanel.add(badgeLabel, BorderLayout.CENTER);
-        badgePanel.setVisible(false);
+        // Badge Panel
+        badgePanel = new gui.components.chat.UnreadBadgePanel();
         
         // Wrapper for badge to align vertically
         JPanel eastWrapper = new JPanel(new GridBagLayout());
