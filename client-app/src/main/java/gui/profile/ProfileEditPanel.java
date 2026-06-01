@@ -18,8 +18,10 @@ public class ProfileEditPanel extends JPanel {
     private final FormField displayNameField;
     private final JTextArea bioArea;
     private final JLabel statusLabel;
+    private final Runnable onProfileChanged;
 
-    public ProfileEditPanel(String username, UserProfileApiClient profileApi) {
+    public ProfileEditPanel(String username, UserProfileApiClient profileApi, Runnable onProfileChanged) {
+        this.onProfileChanged = onProfileChanged;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(AppColors.BG_PRIMARY);
         setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
@@ -89,7 +91,7 @@ public class ProfileEditPanel extends JPanel {
                             Map<String, Object> updatedProfile = get();
                             statusLabel.setForeground(AppColors.SUCCESS);
                             statusLabel.setText("Đã upload avatar thành công!");
-                            // TODO: Broadcast WS message để cập nhật avatar real-time
+                            if (ProfileEditPanel.this.onProfileChanged != null) ProfileEditPanel.this.onProfileChanged.run();
                         } catch (Exception ex) {
                             Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
                             statusLabel.setForeground(AppColors.DANGER);
@@ -122,6 +124,7 @@ public class ProfileEditPanel extends JPanel {
                         get();
                         statusLabel.setForeground(AppColors.SUCCESS);
                         statusLabel.setText("Đã lưu thành công!");
+                        if (ProfileEditPanel.this.onProfileChanged != null) ProfileEditPanel.this.onProfileChanged.run();
                     } catch (Exception ex) {
                         Throwable cause = ex.getCause() instanceof ApiException ? ex.getCause() : ex;
                         statusLabel.setForeground(AppColors.DANGER);

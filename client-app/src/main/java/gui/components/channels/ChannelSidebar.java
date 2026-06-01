@@ -29,6 +29,7 @@ public class ChannelSidebar extends JPanel {
     private long activeServerId = -1;
     private LongConsumer onChannelSelected;
     private Runnable onChannelChanged;
+    private Runnable onUserChanged;
 
     public void setOnChannelSelected(LongConsumer onChannelSelected) {
         this.onChannelSelected = onChannelSelected;
@@ -36,6 +37,10 @@ public class ChannelSidebar extends JPanel {
 
     public void setOnChannelChanged(Runnable onChannelChanged) {
         this.onChannelChanged = onChannelChanged;
+    }
+
+    public void setOnUserChanged(Runnable onUserChanged) {
+        this.onUserChanged = onUserChanged;
     }
 
     public long getActiveServerId() { return activeServerId; }
@@ -72,11 +77,21 @@ public class ChannelSidebar extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         // --- FOOTER ---
-        UserFooterPanel accountFooter = new UserFooterPanel(sessionUsername);
+        accountFooter = new UserFooterPanel(sessionUsername, () -> {
+            if (onUserChanged != null) onUserChanged.run();
+        });
 
         add(headerPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(accountFooter, BorderLayout.SOUTH);
+    }
+
+    private UserFooterPanel accountFooter;
+
+    public void refreshUserFooter() {
+        if (accountFooter != null) {
+            accountFooter.refreshAvatar();
+        }
     }
 
     /** Tải channels của server và render. serverName dùng cho tiêu đề. */

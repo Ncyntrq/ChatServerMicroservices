@@ -69,6 +69,17 @@ public class ChatClientGUI extends JFrame {
         channelSidebar.setOnChannelSelected(this::onChannelSelected);
         friendSidebar.setOnFriendSelected(this::openDirectMessage);
         
+        Runnable onUserChanged = () -> {
+            if (wsClient.isOpen()) {
+                MessageDTO out = new MessageDTO(MessageType.CHAT, sessionUsername, null, "[SYSTEM_USER_UPDATE]", LocalDateTime.now());
+                out.setServerId(null);
+                out.setChannelId(null);
+                wsClient.send(out);
+            }
+        };
+        channelSidebar.setOnUserChanged(onUserChanged);
+        friendSidebar.setOnUserChanged(onUserChanged);
+        
         // Gửi WebSocket "thông báo" ngầm tới người kia khi thao tác bạn bè
         friendSidebar.setOnFriendAction(targetUser -> {
             if (wsClient.isOpen()) {
@@ -470,6 +481,15 @@ public class ChatClientGUI extends JFrame {
                 loadPresence(); // Cập nhật danh sách thành viên nếu đang mở server này
                 channelSidebar.loadChannels(activeServerId, null); // Cập nhật UI (nếu server bị đổi tên/xóa)
             }
+            return;
+        }
+
+        if ("[SYSTEM_USER_UPDATE]".equals(msg.getContent())) {
+            network.UserProfileCache.clear(msg.getSender());
+            loadPresence(); // Cập nhật lại tên/avatar trên danh sách thành viên hoặc bạn bè
+            serverSidebar.loadServers(); // Cập nhật lại avatar của các server nếu có liên quan
+            friendSidebar.refreshUserFooter();
+            channelSidebar.refreshUserFooter();
             return;
         }
 

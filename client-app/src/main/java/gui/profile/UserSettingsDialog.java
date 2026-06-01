@@ -15,7 +15,7 @@ import java.awt.*;
  */
 public class UserSettingsDialog extends JDialog {
 
-    public UserSettingsDialog(Window owner) {
+    public UserSettingsDialog(Window owner, Runnable onProfileChanged) {
         super(owner, "Cài đặt người dùng", ModalityType.APPLICATION_MODAL);
         setSize(600, 500);
         setLocationRelativeTo(owner);
@@ -29,7 +29,7 @@ public class UserSettingsDialog extends JDialog {
         tabs.setBackground(AppColors.BG_SECONDARY);
         tabs.setForeground(AppColors.TEXT_NORMAL);
 
-        tabs.addTab("Hồ sơ", new ProfileEditPanel(username, profileApi));
+        tabs.addTab("Hồ sơ", new ProfileEditPanel(username, profileApi, onProfileChanged));
         tabs.addTab("Bảo mật", new AccountSecurityPanel());
         tabs.addTab("Trạng thái", new StatusPanel(profileApi));
 

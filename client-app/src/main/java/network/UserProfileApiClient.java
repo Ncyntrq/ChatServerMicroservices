@@ -20,10 +20,15 @@ public class UserProfileApiClient {
 
     // UP1 — Xem hồ sơ user
     public Map<String, Object> getProfile(String username) {
+        Map<String, Object> cached = network.UserProfileCache.get(username);
+        if (cached != null) return cached;
+
         String url = ApiConfig.GATEWAY_HTTP + "/api/users/" + username + "/profile";
         HttpResponse<String> resp = sendGet(url);
         try {
-            return json.readValue(resp.body(), new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> profile = json.readValue(resp.body(), new TypeReference<Map<String, Object>>() {});
+            network.UserProfileCache.put(username, profile);
+            return profile;
         } catch (Exception e) {
             throw new ApiException("Lỗi parse profile: " + e.getMessage(), e);
         }
@@ -34,13 +39,17 @@ public class UserProfileApiClient {
         Map<String, String> body = new java.util.HashMap<>();
         if (displayName != null) body.put("displayName", displayName);
         if (bio != null) body.put("bio", bio);
-        return putJson("/api/users/profile", body);
+        Map<String, Object> resp = putJson("/api/users/profile", body);
+        network.UserProfileCache.clear(SessionManager.get().getUsername());
+        return resp;
     }
 
     // UP4 — Đặt trạng thái tùy chỉnh
     public Map<String, Object> updateStatus(String status) {
         Map<String, String> body = Map.of("status", status);
-        return putJson("/api/users/status", body);
+        Map<String, Object> resp = putJson("/api/users/status", body);
+        network.UserProfileCache.clear(SessionManager.get().getUsername());
+        return resp;
     }
 
     // UP3 — Upload avatar sử dụng file-service và update avatarUrl
@@ -53,7 +62,9 @@ public class UserProfileApiClient {
             // 2. Cập nhật URL vào User Profile
             Map<String, String> body = new java.util.HashMap<>();
             body.put("avatarUrl", uploadedUrl);
-            return putJson("/api/users/profile", body);
+            Map<String, Object> resp = putJson("/api/users/profile", body);
+            network.UserProfileCache.clear(SessionManager.get().getUsername());
+            return resp;
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

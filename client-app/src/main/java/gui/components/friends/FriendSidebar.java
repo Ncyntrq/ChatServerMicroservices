@@ -20,14 +20,19 @@ public class FriendSidebar extends JPanel {
     private final String sessionUsername;
 
     private Consumer<String> onFriendSelected;
-    private Consumer<String> onFriendAction;
+    private java.util.function.Consumer<String> onFriendAction;
+    private Runnable onUserChanged;
 
-    public void setOnFriendSelected(Consumer<String> onFriendSelected) {
+    public void setOnFriendSelected(java.util.function.Consumer<String> onFriendSelected) {
         this.onFriendSelected = onFriendSelected;
     }
     
     public void setOnFriendAction(Consumer<String> onFriendAction) {
         this.onFriendAction = onFriendAction;
+    }
+
+    public void setOnUserChanged(Runnable onUserChanged) {
+        this.onUserChanged = onUserChanged;
     }
 
     public FriendSidebar(String sessionUsername) {
@@ -69,11 +74,21 @@ public class FriendSidebar extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         // --- FOOTER ---
-        UserFooterPanel accountFooter = new UserFooterPanel(sessionUsername);
+        accountFooter = new UserFooterPanel(sessionUsername, () -> {
+            if (onUserChanged != null) onUserChanged.run();
+        });
 
         add(headerPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(accountFooter, BorderLayout.SOUTH);
+    }
+
+    private UserFooterPanel accountFooter;
+
+    public void refreshUserFooter() {
+        if (accountFooter != null) {
+            accountFooter.refreshAvatar();
+        }
     }
 
     public void loadFriendsAndRequests(List<String> onlineUsers) {

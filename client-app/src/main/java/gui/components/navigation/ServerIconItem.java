@@ -85,6 +85,14 @@ public class ServerIconItem extends JPanel {
     private Image serverImage;
 
     public void loadServerIconFromUrl(String urlString) {
+        Image cachedImage = gui.utils.ImageCache.get(urlString);
+        if (cachedImage != null) {
+            this.serverImage = cachedImage;
+            this.iconLabel.setVisible(false);
+            repaint();
+            return;
+        }
+
         new SwingWorker<Image, Void>() {
             @Override protected Image doInBackground() {
                 try {
@@ -105,6 +113,7 @@ public class ServerIconItem extends JPanel {
                 try {
                     Image img = get();
                     if(img != null) {
+                        gui.utils.ImageCache.put(urlString, img);
                         serverImage = img;
                         iconLabel.setVisible(false);
                         repaint();
@@ -120,7 +129,8 @@ public class ServerIconItem extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
         // --- 1. DETERMINE DYNAMIC LOOKS ---
         Color backgroundColor;
