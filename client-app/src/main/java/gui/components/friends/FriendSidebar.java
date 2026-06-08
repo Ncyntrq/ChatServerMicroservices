@@ -235,12 +235,12 @@ public class FriendSidebar extends JPanel {
     }
 
     private void showAddFriendDialog() {
-        String username = JOptionPane.showInputDialog(this, "Nhập username kết bạn:", "Thêm bạn", JOptionPane.PLAIN_MESSAGE);
-        if (username != null && !username.trim().isEmpty()) {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        AddFriendDialog dialog = new AddFriendDialog(owner, username -> {
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() throws Exception {
-                    friendApi.sendRequest(username.trim());
+                    friendApi.sendRequest(username);
                     return null;
                 }
                 @Override
@@ -248,12 +248,13 @@ public class FriendSidebar extends JPanel {
                     try {
                         get();
                         JOptionPane.showMessageDialog(FriendSidebar.this, "Đã gửi lời mời đến " + username);
-                        if (onFriendAction != null) onFriendAction.accept(username.trim());
+                        if (onFriendAction != null) onFriendAction.accept(username);
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(FriendSidebar.this, "Lỗi: " + ex.getMessage());
                     }
                 }
             }.execute();
-        }
+        });
+        dialog.setVisible(true);
     }
 }
