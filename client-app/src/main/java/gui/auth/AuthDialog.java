@@ -1,14 +1,9 @@
 package gui.auth;
 
 import gui.theme.AppColors;
+
 import javax.swing.*;
-import java.awt.CardLayout;
-import java.awt.Window;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
 public class AuthDialog extends JDialog {
@@ -25,12 +20,12 @@ public class AuthDialog extends JDialog {
         setUndecorated(true);
         setTitle("Authentication");
         setModal(true);
-        setSize(480, 580);
+        setSize(900, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 20, 20));
 
-        // Header containing close button
+        // Header containing close button (for the Right Panel)
         JPanel header = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         header.setBackground(AppColors.BG_PRIMARY);
         
@@ -59,10 +54,16 @@ public class AuthDialog extends JDialog {
         cards.add(new LoginPanel(this), "Login");
         cards.add(new RegisterPanel(this), "Register");
 
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(AppColors.BG_PRIMARY);
-        root.add(header, BorderLayout.NORTH);
-        root.add(cards, BorderLayout.CENTER);
+        // The Right Panel (Forms)
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(AppColors.BG_PRIMARY);
+        rightPanel.add(header, BorderLayout.NORTH);
+        rightPanel.add(cards, BorderLayout.CENTER);
+
+        // The Root Panel (Split Screen)
+        JPanel root = new JPanel(new GridLayout(1, 2));
+        root.add(new AuthGraphicPanel());
+        root.add(rightPanel);
 
         setContentPane(root);
     }
