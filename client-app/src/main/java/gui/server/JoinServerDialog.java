@@ -87,6 +87,7 @@ public class JoinServerDialog extends JDialog {
         root.add(Box.createVerticalStrut(10));
         root.add(statusLabel);
 
+        gui.utils.UiKeys.onEnter(this, joinBtn::doClick); // Enter để Tham gia Server
         setContentPane(root);
     }
 }

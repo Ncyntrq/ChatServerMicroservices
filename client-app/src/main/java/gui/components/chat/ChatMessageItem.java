@@ -343,21 +343,37 @@ public class ChatMessageItem extends JPanel {
         };
         toolbar.setOpaque(false);
 
+        boolean canManage = network.PermissionCache.get().can(network.PermissionCache.MANAGE_MESSAGES);
+
         // Sửa — chỉ cho tin text của chính mình (không áp dụng cho file đính kèm)
         if (isOwn && !isAttachment) {
-            toolbar.add(new IconButton("✏", e -> startEditing()));
+            IconButton editBtn = new IconButton("✏", e -> startEditing());
+            editBtn.setToolTipText("Sửa");
+            toolbar.add(editBtn);
         }
-        // Ghim — mọi tin (panel pin được làm ở feature #8)
-        toolbar.add(new IconButton("📌", e -> {
-            if (actions != null) actions.onPin(message);
-        }));
-        // Xóa — backend tự kiểm tra quyền (chủ tin hoặc admin)
-        toolbar.add(new IconButton("🗑", e -> confirmDelete()));
+        // Ghim — chỉ người có quyền quản lý tin nhắn
+        if (canManage) {
+            IconButton pinBtn = new IconButton("📌", e -> {
+                if (actions != null) actions.onPin(message);
+            });
+            pinBtn.setToolTipText("Ghim");
+            toolbar.add(pinBtn);
+        }
+        // Xóa — chủ tin hoặc người có quyền quản lý tin nhắn (backend vẫn kiểm tra lại)
+        if (isOwn || canManage) {
+            IconButton delBtn = new IconButton("🗑", e -> confirmDelete());
+            delBtn.setToolTipText("Xóa");
+            toolbar.add(delBtn);
+        }
 
         JPanel wrap = new JPanel(new BorderLayout());
         wrap.setOpaque(false);
         wrap.add(toolbar, BorderLayout.NORTH);
         toolbar.setVisible(false);
+        // Đặt sẵn chiều rộng bằng toolbar → bật/tắt khi hover không làm xô (reflow) nội dung tin.
+        if (toolbar.getComponentCount() > 0) {
+            wrap.setPreferredSize(new Dimension(toolbar.getPreferredSize().width, 0));
+        }
         add(wrap, BorderLayout.EAST);
     }
 
@@ -504,10 +520,10 @@ public class ChatMessageItem extends JPanel {
 
         if (isHighlighted) {
             g2.setColor(AppColors.MSG_HIGHLIGHT_BG);
-            g2.fillRect(0, 0, getWidth(), getHeight());
+            g2.fillRoundRect(6, 1, getWidth() - 12, getHeight() - 2, 12, 12);
         } else if ((isHovered || isEditing) && !isSystemMsg) {
             g2.setColor(AppColors.BG_MESSAGE_HOVER);
-            g2.fillRect(0, 0, getWidth(), getHeight());
+            g2.fillRoundRect(6, 1, getWidth() - 12, getHeight() - 2, 12, 12);
         }
 
         g2.dispose();

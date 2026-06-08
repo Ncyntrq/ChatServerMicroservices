@@ -95,6 +95,7 @@ public class CreateChannelDialog extends JDialog {
         root.add(Box.createVerticalStrut(10));
         root.add(statusLabel);
 
+        gui.utils.UiKeys.onEnter(this, createBtn::doClick); // Enter để Tạo Channel
         setContentPane(root);
     }
 }

@@ -133,6 +133,7 @@ public class CreateServerDialog extends JDialog {
         root.add(Box.createVerticalStrut(10));
         root.add(statusLabel);
 
+        gui.utils.UiKeys.onEnter(this, createBtn::doClick); // Enter để Tạo Server
         setContentPane(root);
     }
 }

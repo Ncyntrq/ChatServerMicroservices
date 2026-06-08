@@ -1,5 +1,6 @@
 package gui.auth;
 
+import gui.theme.AppColors;
 import javax.swing.*;
 import java.awt.CardLayout;
 import java.awt.Window;
@@ -31,11 +32,11 @@ public class AuthDialog extends JDialog {
 
         // Header containing close button
         JPanel header = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
-        header.setBackground(Color.decode("#313338"));
+        header.setBackground(AppColors.BG_PRIMARY);
         
         JButton closeBtn = new JButton("✕");
         closeBtn.setFont(new Font("SansSerif", Font.BOLD, 18));
-        closeBtn.setForeground(Color.decode("#80848E"));
+        closeBtn.setForeground(AppColors.TEXT_MUTED);
         closeBtn.setFocusPainted(false);
         closeBtn.setContentAreaFilled(false);
         closeBtn.setBorderPainted(false);
@@ -47,7 +48,7 @@ public class AuthDialog extends JDialog {
                 closeBtn.setForeground(Color.WHITE);
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(Color.decode("#80848E"));
+                closeBtn.setForeground(AppColors.TEXT_MUTED);
             }
         });
         
@@ -59,7 +60,7 @@ public class AuthDialog extends JDialog {
         cards.add(new RegisterPanel(this), "Register");
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(Color.decode("#313338"));
+        root.setBackground(AppColors.BG_PRIMARY);
         root.add(header, BorderLayout.NORTH);
         root.add(cards, BorderLayout.CENTER);
 

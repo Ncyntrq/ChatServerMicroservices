@@ -24,6 +24,8 @@ public class ServerSidebar extends JPanel {
     private final JPanel listPanel;
     private final ServerApiClient serverApi = new ServerApiClient();
     private final Map<Long, ServerIconItem> serverItems = new java.util.HashMap<>();
+    // Cache unread cuối cùng — re-apply sau rebuild để badge không mất khi điều hướng
+    private final Map<Long, Integer> lastUnread = new java.util.HashMap<>();
 
     private BiConsumer<Long, String> onServerSelected;
     private java.util.function.Consumer<Long> onServerChanged;
@@ -134,9 +136,10 @@ public class ServerSidebar extends JPanel {
         listPanel.add(addBtn);
 
         listPanel.add(Box.createVerticalGlue());
+        applyUnread(); // re-apply badge unread đã cache lên item vừa rebuild
         listPanel.revalidate();
         listPanel.repaint();
-        
+
         // Notify ChatClientGUI of the latest name if a server is currently active
         if (activeServerId != -1 && onServerSelected != null) {
             for (Map<String, Object> server : servers) {
@@ -150,11 +153,18 @@ public class ServerSidebar extends JPanel {
 
     public void updateUnreadCounts(Map<Long, Integer> unreadCounts) {
         SwingUtilities.invokeLater(() -> {
-            for (Map.Entry<Long, ServerIconItem> entry : serverItems.entrySet()) {
-                Integer count = unreadCounts.get(entry.getKey());
-                entry.getValue().setUnreadCount(count != null ? count : 0);
-            }
+            lastUnread.clear();
+            lastUnread.putAll(unreadCounts);
+            applyUnread();
         });
+    }
+
+    /** Áp dụng unread đã cache lên các icon server hiện có. */
+    private void applyUnread() {
+        for (Map.Entry<Long, ServerIconItem> entry : serverItems.entrySet()) {
+            Integer count = lastUnread.get(entry.getKey());
+            entry.getValue().setUnreadCount(count != null ? count : 0);
+        }
     }
 
     private void refreshActiveStates() {

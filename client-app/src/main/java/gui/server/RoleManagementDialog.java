@@ -133,11 +133,17 @@ public class RoleManagementDialog extends JDialog {
         footer.add(closeBtn);
         root.add(footer, BorderLayout.SOUTH);
 
+        gui.utils.UiKeys.onEnter(nameField, this::saveRole); // Enter trong ô tên → Lưu/Thêm role
         setContentPane(root);
         loadRoles();
     }
 
     private void loadRoles() {
+        loadRoles(null);
+    }
+
+    /** Tải lại danh sách role; nếu selectRoleId != null thì chọn + cuộn tới role đó sau khi nạp. */
+    private void loadRoles(String selectRoleId) {
         tableModel.setRowCount(0);
         new SwingWorker<List<Map<String, Object>>, Void>() {
             @Override
@@ -148,16 +154,32 @@ public class RoleManagementDialog extends JDialog {
             protected void done() {
                 try {
                     currentRoles = get();
-                    for (Map<String, Object> r : currentRoles) {
+                    int selectIdx = -1;
+                    for (int i = 0; i < currentRoles.size(); i++) {
+                        Map<String, Object> r = currentRoles.get(i);
                         String name = String.valueOf(r.get("roleName")); // API uses roleName
                         if (name.equals("null")) name = String.valueOf(r.get("name")); // Fallback just in case
-                        
+
                         String color = String.valueOf(r.get("color"));
                         if (color == null || color.equals("null")) color = "#FFFFFF";
                         tableModel.addRow(new Object[]{name, color});
+
+                        if (selectRoleId != null && selectRoleId.equals(String.valueOf(r.get("id")))) {
+                            selectIdx = i;
+                        }
                     }
-                    // Do not hide right panel here anymore, keep it disabled
-                    resetForm();
+                    tableModel.fireTableDataChanged();
+
+                    if (selectIdx >= 0) {
+                        // Hiện rõ role vừa tạo: chọn + cuộn tới
+                        roleTable.setRowSelectionInterval(selectIdx, selectIdx);
+                        roleTable.scrollRectToVisible(roleTable.getCellRect(selectIdx, 0, true));
+                    } else {
+                        // Mặc định: sẵn sàng tạo role mới
+                        resetForm();
+                    }
+                    roleTable.revalidate();
+                    roleTable.repaint();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(RoleManagementDialog.this, "Lỗi tải Role: " + ex.getMessage());
                 }
@@ -221,20 +243,23 @@ public class RoleManagementDialog extends JDialog {
         String hexColor = String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
         
         saveBtn.setEnabled(false);
-        new SwingWorker<Void, Void>() {
-            @Override protected Void doInBackground() {
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() {
+                Map<String, Object> result;
                 if (isCreatingNew) {
-                    roleApi.createRole(serverId, name, hexColor, "SEND_MESSAGE,READ_MESSAGE");
+                    result = roleApi.createRole(serverId, name, hexColor, "SEND_MESSAGE,READ_MESSAGE");
                 } else if (selectedRoleId != null) {
-                    roleApi.updateRole(selectedRoleId, name, hexColor, "SEND_MESSAGE,READ_MESSAGE");
+                    result = roleApi.updateRole(selectedRoleId, name, hexColor, "SEND_MESSAGE,READ_MESSAGE");
+                } else {
+                    return null;
                 }
-                return null;
+                return result != null ? String.valueOf(result.get("id")) : null;
             }
             @Override protected void done() {
                 saveBtn.setEnabled(true);
                 try {
-                    get();
-                    loadRoles();
+                    String savedId = get();
+                    loadRoles(savedId); // reload + chọn role vừa lưu để hiển thị rõ
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(RoleManagementDialog.this, "Lỗi lưu Role: " + ex.getMessage());
                 }

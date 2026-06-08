@@ -3,44 +3,44 @@ package gui.theme;
 import java.awt.Color;
 
 public class AppColors {
-    // Backgrounds — refined dark palette
-    public static final Color BG_PRIMARY = Color.decode("#313338");   // Main Chat Area
-    public static final Color BG_SECONDARY = Color.decode("#2B2D31"); // Channel sidebar
-    public static final Color BG_TERTIARY = Color.decode("#1E1F22");  // Server sidebar / Input boxes
-    public static final Color BG_HOVER = Color.decode("#393C41");     // Sidebar hover
-    public static final Color BG_ACTIVE = Color.decode("#43444B");    // Active/selected item
-    public static final Color BG_FLOATING = Color.decode("#232428");  // Floating cards / tooltips
-    public static final Color BG_MESSAGE_HOVER = new Color(0x04, 0x04, 0x04, 0x0C); // Subtle message row hover
+    // Backgrounds — navy/charcoal palette (theo mockup CRM, tông xanh-đen)
+    public static final Color BG_PRIMARY = Color.decode("#1A1E27");   // Main Chat Area
+    public static final Color BG_SECONDARY = Color.decode("#151921"); // Channel/Friend sidebar + panel phải
+    public static final Color BG_TERTIARY = Color.decode("#0E1116");  // Server rail / Input boxes (sâu nhất)
+    public static final Color BG_HOVER = Color.decode("#232A38");     // Sidebar hover
+    public static final Color BG_ACTIVE = Color.decode("#2B3344");    // Active/selected item
+    public static final Color BG_FLOATING = Color.decode("#1D222D");  // Floating cards / tooltips / toast
+    public static final Color BG_MESSAGE_HOVER = new Color(0xFF, 0xFF, 0xFF, 0x0D); // Hover sáng nhẹ trên nền tối
 
     // Separator
-    public static final Color SEPARATOR = Color.decode("#3F4147");
+    public static final Color SEPARATOR = Color.decode("#272E3B");
 
     // Text Colors
-    public static final Color TEXT_NORMAL = Color.decode("#DBDEE1");
-    public static final Color TEXT_MUTED = Color.decode("#949BA4");
+    public static final Color TEXT_NORMAL = Color.decode("#D7DBE2");
+    public static final Color TEXT_MUTED = Color.decode("#8B92A0");
     public static final Color TEXT_WHITE = Color.WHITE;
-    public static final Color TEXT_LINK = Color.decode("#00A8FC");
-    public static final Color TEXT_HEADER = Color.decode("#F2F3F5");
+    public static final Color TEXT_LINK = Color.decode("#4DA6FF");
+    public static final Color TEXT_HEADER = Color.decode("#F1F3F7");
 
-    // Brand Colors
-    public static final Color BRAND_PRIMARY = Color.decode("#5865F2"); // Blurple
-    public static final Color BRAND_HOVER = Color.decode("#4752C4");   // Blurple hover
-    public static final Color BRAND_LINK = Color.decode("#00A8FC");
+    // Brand Colors — accent xanh-tím
+    public static final Color BRAND_PRIMARY = Color.decode("#5B6CFF");
+    public static final Color BRAND_HOVER = Color.decode("#4856E6");
+    public static final Color BRAND_LINK = Color.decode("#4DA6FF");
 
     // Semantic
-    public static final Color SUCCESS = Color.decode("#23A559");
-    public static final Color DANGER = Color.decode("#F23F42");
-    public static final Color WARNING = Color.decode("#F0B232");
+    public static final Color SUCCESS = Color.decode("#2FB36B");
+    public static final Color DANGER = Color.decode("#F0484F");
+    public static final Color WARNING = Color.decode("#F0B233");
 
-    // Message Highlight
-    public static final Color MSG_HIGHLIGHT_BG = new Color(0xF9, 0xA8, 0x26, 0x14); // Translucent amber
-    public static final Color MSG_HIGHLIGHT_BORDER = Color.decode("#F0B232");
+    // Message Highlight — translucent brand (xanh-tím)
+    public static final Color MSG_HIGHLIGHT_BG = new Color(0x5B, 0x6C, 0xFF, 0x1F);
+    public static final Color MSG_HIGHLIGHT_BORDER = Color.decode("#5B6CFF");
 
     // Status Dots
-    public static final Color STATUS_ONLINE = Color.decode("#23A559");
-    public static final Color STATUS_IDLE = Color.decode("#F0B232");
-    public static final Color STATUS_OFFLINE = Color.decode("#80848E");
-    public static final Color STATUS_DND = Color.decode("#F23F42");
+    public static final Color STATUS_ONLINE = Color.decode("#2FB36B");
+    public static final Color STATUS_IDLE = Color.decode("#F0B233");
+    public static final Color STATUS_OFFLINE = Color.decode("#6B7280");
+    public static final Color STATUS_DND = Color.decode("#F0484F");
 
     // Avatar Gradient Palette — unique colors per initial letter
     private static final Color[] AVATAR_COLORS = {

@@ -3,6 +3,7 @@ package gui.auth;
 import gui.components.AuthHeader;
 import gui.components.FormField;
 import gui.components.PrimaryButton;
+import gui.theme.AppColors;
 import gui.ChatClientGUI;
 import network.ApiException;
 import network.AuthApiClient;
@@ -17,25 +18,25 @@ public class LoginPanel extends JPanel {
     public LoginPanel(AuthDialog parent) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
-        setBackground(Color.decode("#313338"));
+        setBackground(AppColors.BG_PRIMARY);
 
         AuthHeader header = new AuthHeader("Welcome back!", "We're excited to see you again");
         FormField usernameField = new FormField("Username", "Enter your username or email", false);
         FormField passwordField = new FormField("Password", "Enter your password", true);
 
         JLabel forgotPass = new JLabel("Forgot your password?");
-        forgotPass.setForeground(Color.decode("#00A8FC"));
+        forgotPass.setForeground(AppColors.TEXT_LINK);
         forgotPass.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         forgotPass.setAlignmentX(Component.LEFT_ALIGNMENT);
         JPanel linkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        linkPanel.setBackground(Color.decode("#313338"));
+        linkPanel.setBackground(AppColors.BG_PRIMARY);
         linkPanel.add(forgotPass);
 
         JLabel statusLabel = new JLabel(" ");
-        statusLabel.setForeground(Color.decode("#F23F42"));
+        statusLabel.setForeground(AppColors.DANGER);
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        statusPanel.setBackground(Color.decode("#313338"));
+        statusPanel.setBackground(AppColors.BG_PRIMARY);
         statusPanel.add(statusLabel);
 
         AuthApiClient authClient = new AuthApiClient();
@@ -47,7 +48,7 @@ public class LoginPanel extends JPanel {
                 return;
             }
             statusLabel.setText("Đang đăng nhập...");
-            statusLabel.setForeground(Color.decode("#B5BAC1"));
+            statusLabel.setForeground(AppColors.TEXT_MUTED);
 
             // Gọi BE trong background thread để không khoá EDT
             SwingWorker<String, Void> worker = new SwingWorker<>() {
@@ -73,7 +74,7 @@ public class LoginPanel extends JPanel {
                         String msg = cause instanceof ApiException
                                 ? cause.getMessage()
                                 : "Đăng nhập thất bại: " + cause.getMessage();
-                        statusLabel.setForeground(Color.decode("#F23F42"));
+                        statusLabel.setForeground(AppColors.DANGER);
                         statusLabel.setText(msg);
                     }
                 }
@@ -81,10 +82,16 @@ public class LoginPanel extends JPanel {
             worker.execute();
         });
 
-        JLabel registerLink = new JLabel("<html><font color='#B5BAC1'>Need an account?</font> <font color='#00A8FC'>Register</font></html>");
+        // Tiện lợi: nhấn Enter ở username/password → đăng nhập
+        usernameField.onEnter(loginButton::doClick);
+        passwordField.onEnter(loginButton::doClick);
+        // Autofocus vào username khi mở
+        SwingUtilities.invokeLater(() -> usernameField.getField().requestFocusInWindow());
+
+        JLabel registerLink = new JLabel("<html><font color='#8B92A0'>Need an account?</font> <font color='#4DA6FF'>Register</font></html>");
         registerLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        footerPanel.setBackground(Color.decode("#313338"));
+        footerPanel.setBackground(AppColors.BG_PRIMARY);
         footerPanel.add(registerLink);
 
         add(header);

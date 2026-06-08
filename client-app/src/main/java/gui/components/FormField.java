@@ -58,4 +58,14 @@ public class FormField extends JPanel {
     public void setText(String text) {
         textField.setText(text);
     }
+
+    /** Truy cập field để gắn sự kiện (vd Enter để submit) hoặc focus. */
+    public JTextField getField() {
+        return textField;
+    }
+
+    /** Gắn hành động khi nhấn Enter trong field này. */
+    public void onEnter(Runnable action) {
+        textField.addActionListener(e -> action.run());
+    }
 }

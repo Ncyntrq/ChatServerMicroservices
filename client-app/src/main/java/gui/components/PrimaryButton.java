@@ -74,6 +74,11 @@ public class PrimaryButton extends JPanel {
         repaint();
     }
 
+    /** Kích hoạt click theo chương trình (vd khi nhấn Enter ở form). */
+    public void doClick() {
+        button.doClick();
+    }
+
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);

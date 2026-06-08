@@ -112,6 +112,7 @@ public class StatusPanel extends JPanel {
             }.execute();
         });
         updateBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        gui.utils.UiKeys.onEnter(customField, updateBtn::doClick); // Enter ở ô tùy chỉnh → Cập nhật
         add(updateBtn);
         add(Box.createVerticalStrut(10));
         add(statusLabel);

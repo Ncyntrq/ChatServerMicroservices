@@ -3,6 +3,7 @@ package gui.auth;
 import gui.components.AuthHeader;
 import gui.components.FormField;
 import gui.components.PrimaryButton;
+import gui.theme.AppColors;
 import network.ApiException;
 import network.AuthApiClient;
 
@@ -16,17 +17,17 @@ public class RegisterPanel extends JPanel {
     public RegisterPanel(AuthDialog parent) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
-        setBackground(Color.decode("#313338"));
+        setBackground(AppColors.BG_PRIMARY);
 
         AuthHeader header = new AuthHeader("Create an account", "A solid platform for real-time messaging");
         FormField usernameField = new FormField("USERNAME", "Enter your new username", false);
         FormField passwordField = new FormField("PASSWORD", "Enter your new password", true);
 
         JLabel statusLabel = new JLabel(" ");
-        statusLabel.setForeground(Color.decode("#F23F42"));
+        statusLabel.setForeground(AppColors.DANGER);
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        statusPanel.setBackground(Color.decode("#313338"));
+        statusPanel.setBackground(AppColors.BG_PRIMARY);
         statusPanel.add(statusLabel);
 
         AuthApiClient authClient = new AuthApiClient();
@@ -34,11 +35,11 @@ public class RegisterPanel extends JPanel {
             String user = usernameField.getText().trim();
             String pass = passwordField.getText();
             if (user.isEmpty() || pass.isEmpty()) {
-                statusLabel.setForeground(Color.decode("#F23F42"));
+                statusLabel.setForeground(AppColors.DANGER);
                 statusLabel.setText("Vui lòng nhập username và password");
                 return;
             }
-            statusLabel.setForeground(Color.decode("#B5BAC1"));
+            statusLabel.setForeground(AppColors.TEXT_MUTED);
             statusLabel.setText("Đang đăng ký...");
 
             SwingWorker<String, Void> worker = new SwingWorker<>() {
@@ -51,7 +52,7 @@ public class RegisterPanel extends JPanel {
                 protected void done() {
                     try {
                         String msg = get();
-                        statusLabel.setForeground(Color.decode("#23A55A"));
+                        statusLabel.setForeground(AppColors.SUCCESS);
                         statusLabel.setText("Đăng ký thành công! " + (msg == null ? "" : msg));
                         // Auto chuyển về tab Login sau 1s
                         Timer t = new Timer(800, ev -> {
@@ -64,7 +65,7 @@ public class RegisterPanel extends JPanel {
                         String err = cause instanceof ApiException
                                 ? cause.getMessage()
                                 : "Đăng ký thất bại: " + cause.getMessage();
-                        statusLabel.setForeground(Color.decode("#F23F42"));
+                        statusLabel.setForeground(AppColors.DANGER);
                         statusLabel.setText(err);
                     }
                 }
@@ -72,17 +73,21 @@ public class RegisterPanel extends JPanel {
             worker.execute();
         });
 
-        JLabel loginLink = new JLabel("<html><font color='#00A8FC'>Already have an account?</font></html>");
+        // Tiện lợi: nhấn Enter ở username/password → đăng ký
+        usernameField.onEnter(registerButton::doClick);
+        passwordField.onEnter(registerButton::doClick);
+
+        JLabel loginLink = new JLabel("<html><font color='#4DA6FF'>Already have an account?</font></html>");
         loginLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         JPanel linkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        linkPanel.setBackground(Color.decode("#313338"));
+        linkPanel.setBackground(AppColors.BG_PRIMARY);
         linkPanel.add(loginLink);
 
         JLabel termsText = new JLabel("By registering, you agree to our Terms of Service and Privacy Policy.");
-        termsText.setForeground(Color.decode("#80848E"));
+        termsText.setForeground(AppColors.TEXT_MUTED);
         termsText.setFont(new Font("SansSerif", Font.PLAIN, 10));
         JPanel termsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        termsPanel.setBackground(Color.decode("#313338"));
+        termsPanel.setBackground(AppColors.BG_PRIMARY);
         termsPanel.add(termsText);
 
         add(header);

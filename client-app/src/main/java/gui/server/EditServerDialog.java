@@ -144,6 +144,7 @@ public class EditServerDialog extends JDialog {
         root.add(Box.createVerticalStrut(10));
         root.add(statusLabel);
 
+        gui.utils.UiKeys.onEnter(this, saveBtn::doClick); // Enter để Lưu
         setContentPane(root);
     }
 }

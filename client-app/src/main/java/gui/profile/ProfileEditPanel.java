@@ -104,6 +104,9 @@ public class ProfileEditPanel extends JPanel {
         // --- Status Label ---
         add(statusLabel);
 
+        // Enter ở ô tên hiển thị → Lưu (bio là JTextArea nên Enter giữ chức năng xuống dòng)
+        displayNameField.onEnter(saveBtn::doClick);
+
         // --- Load current profile ---
         loadProfile(username, profileApi);
     }

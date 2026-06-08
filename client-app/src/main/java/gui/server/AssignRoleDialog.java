@@ -55,6 +55,7 @@ public class AssignRoleDialog extends JDialog {
         footer.add(cancelBtn);
         root.add(footer, BorderLayout.SOUTH);
 
+        gui.utils.UiKeys.onEnter(this, saveBtn::doClick); // Enter để Lưu
         setContentPane(root);
         loadRoles();
     }

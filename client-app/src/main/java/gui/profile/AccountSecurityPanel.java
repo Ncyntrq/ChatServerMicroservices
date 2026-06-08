@@ -104,5 +104,10 @@ public class AccountSecurityPanel extends JPanel {
         add(changeBtn);
         add(Box.createVerticalStrut(10));
         add(statusLabel);
+
+        // Enter ở các ô mật khẩu → Đổi mật khẩu
+        oldPassField.onEnter(changeBtn::doClick);
+        newPassField.onEnter(changeBtn::doClick);
+        confirmField.onEnter(changeBtn::doClick);
     }
 }

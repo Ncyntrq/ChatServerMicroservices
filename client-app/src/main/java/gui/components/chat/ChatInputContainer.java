@@ -12,6 +12,7 @@ import java.util.Map;
 public class ChatInputContainer extends JPanel {
     private final JTextField inputField;
     private final JButton sendButton;
+    private final JProgressBar uploadBar;
     private Runnable onAttach = () -> {};
 
     /** Gắn handler khi bấm nút đính kèm (+). */
@@ -29,6 +30,7 @@ public class ChatInputContainer extends JPanel {
 
         // --- 1. Left icon (Plus/Attach) ---
         IconButton plusButton = new IconButton("+", e -> onAttach.run());
+        plusButton.setToolTipText("Đính kèm tệp");
         JPanel leftWrap = new JPanel(new GridBagLayout());
         leftWrap.setOpaque(false);
         leftWrap.add(plusButton);
@@ -111,6 +113,7 @@ public class ChatInputContainer extends JPanel {
         sendButton.setFont(AppFonts.CAPTION_BOLD);
         sendButton.setPreferredSize(new Dimension(56, 32));
         sendButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        sendButton.setToolTipText("Gửi (Enter)");
 
         sendButton.addMouseListener(new MouseAdapter() {
             @Override
@@ -130,10 +133,27 @@ public class ChatInputContainer extends JPanel {
         rightWrap.setOpaque(false);
         rightWrap.add(rightPanel);
 
+        // --- Thanh tiến trình upload (ẩn mặc định) ---
+        uploadBar = new JProgressBar();
+        uploadBar.setIndeterminate(true);
+        uploadBar.setVisible(false);
+        uploadBar.setBorderPainted(false);
+        uploadBar.setForeground(AppColors.BRAND_PRIMARY);
+        uploadBar.setBackground(AppColors.BG_TERTIARY);
+        uploadBar.setPreferredSize(new Dimension(0, 3));
+
         // --- Assemble ---
+        add(uploadBar, BorderLayout.NORTH);
         add(leftWrap, BorderLayout.WEST);
         add(inputField, BorderLayout.CENTER);
         add(rightWrap, BorderLayout.EAST);
+    }
+
+    /** Hiện/ẩn thanh tiến trình khi đang tải tệp lên. */
+    public void setUploading(boolean active) {
+        uploadBar.setVisible(active);
+        revalidate();
+        repaint();
     }
 
     @Override

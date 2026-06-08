@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class UserListItem extends JPanel {
+    private static final int AVATAR_SIZE = 36;
     private final Color statusColor;
     private final AvatarBadge avatar;
     private boolean isHovered = false;
@@ -44,7 +45,7 @@ public class UserListItem extends JPanel {
 
         setLayout(new BorderLayout(10, 0));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 10));
+        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 10));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Hover & Right-click
@@ -69,7 +70,7 @@ public class UserListItem extends JPanel {
 
         // Avatar
         String initial = username.substring(0, 1).toUpperCase();
-        avatar = new AvatarBadge(initial, 32);
+        avatar = new AvatarBadge(initial, AVATAR_SIZE);
         
         // Mute offline avatars
         if (!isOnline) {
@@ -86,21 +87,20 @@ public class UserListItem extends JPanel {
         textPanel.setOpaque(false);
 
         nameLabel = new JLabel(username);
-        nameLabel.setForeground(isOnline ? AppColors.TEXT_NORMAL : AppColors.TEXT_MUTED);
-        nameLabel.setFont(AppFonts.BODY_SM);
+        nameLabel.setForeground(isOnline ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
+        nameLabel.setFont(AppFonts.BODY_BOLD);
         textPanel.add(nameLabel);
 
         if (customStatus != null && !customStatus.isEmpty()) {
             JLabel statusLabel = new JLabel(customStatus);
             statusLabel.setForeground(AppColors.TEXT_MUTED);
-            statusLabel.setFont(AppFonts.TINY);
+            statusLabel.setFont(AppFonts.CAPTION);
             textPanel.add(statusLabel);
         } else {
-            // Add an empty placeholder for dynamic status
-            JLabel statusLabel = new JLabel(" ");
+            // Dòng phụ mặc định theo trạng thái online; customStatus (nếu có) sẽ ghi đè
+            JLabel statusLabel = new JLabel(isOnline ? "Đang hoạt động" : "Ngoại tuyến");
             statusLabel.setForeground(AppColors.TEXT_MUTED);
-            statusLabel.setFont(AppFonts.TINY);
-            statusLabel.setVisible(false);
+            statusLabel.setFont(AppFonts.CAPTION);
             textPanel.add(statusLabel);
 
             // Fetch profile async to get displayName, avatar and customStatus
@@ -153,7 +153,7 @@ public class UserListItem extends JPanel {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(AppColors.BG_HOVER);
-            g2.fillRoundRect(4, 0, getWidth() - 8, getHeight(), 6, 6);
+            g2.fillRoundRect(4, 0, getWidth() - 8, getHeight(), 10, 10);
             g2.dispose();
         }
         super.paintComponent(g);
@@ -168,8 +168,9 @@ public class UserListItem extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         Point p = SwingUtilities.convertPoint(avatar.getParent(), avatar.getLocation(), this);
-        int x = p.x + 22;
-        int y = p.y + 22;
+        int off = AVATAR_SIZE - 12;
+        int x = p.x + off;
+        int y = p.y + off;
 
         // Cutout circle
         g2.setColor(isHovered ? AppColors.BG_HOVER : AppColors.BG_SECONDARY);

@@ -21,6 +21,8 @@ public class ChannelSidebar extends JPanel {
     private final JPanel listPanel;
     private final java.util.Map<Long, String> channelNames = new java.util.HashMap<>();
     private final Map<Long, ChannelListItem> channelItems = new java.util.HashMap<>();
+    // Cache unread cuối cùng — re-apply sau mỗi lần rebuild để badge không mất khi điều hướng
+    private final Map<Long, Integer> lastUnread = new java.util.HashMap<>();
     private UserFooterPanel accountFooter;
 
     private long activeServerId = -1;
@@ -170,17 +172,25 @@ public class ChannelSidebar extends JPanel {
             listPanel.add(empty);
         }
 
+        applyUnread(); // re-apply badge unread đã cache lên item vừa rebuild
         listPanel.revalidate();
         listPanel.repaint();
     }
 
     public void updateUnreadCounts(Map<Long, Integer> unreadCounts) {
         SwingUtilities.invokeLater(() -> {
-            for (Map.Entry<Long, ChannelListItem> entry : channelItems.entrySet()) {
-                Integer count = unreadCounts.get(entry.getKey());
-                entry.getValue().setUnreadCount(count != null ? count : 0);
-            }
+            lastUnread.clear();
+            lastUnread.putAll(unreadCounts);
+            applyUnread();
         });
+    }
+
+    /** Áp dụng unread đã cache lên các item hiện có (giữ badge qua các lần rebuild). */
+    private void applyUnread() {
+        for (Map.Entry<Long, ChannelListItem> entry : channelItems.entrySet()) {
+            Integer count = lastUnread.get(entry.getKey());
+            entry.getValue().setUnreadCount(count != null ? count : 0);
+        }
     }
 
     private ChannelListItem buildItem(Map<String, Object> ch, boolean isVoice) {

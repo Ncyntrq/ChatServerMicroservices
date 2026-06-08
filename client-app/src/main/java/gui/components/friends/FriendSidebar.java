@@ -72,6 +72,7 @@ public class FriendSidebar extends JPanel {
         JScrollPane scrollPane = new JScrollPane(scrollContentWrapper);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        gui.theme.ThinScrollBarUI.apply(scrollPane);
 
         // --- FOOTER ---
         accountFooter = new UserFooterPanel(sessionUsername, () -> {
@@ -120,14 +121,23 @@ public class FriendSidebar extends JPanel {
     }
 
     private final java.util.Map<String, UserListItem> friendItems = new java.util.HashMap<>();
+    // Cache unread cuối cùng — re-apply sau rebuild để badge không mất khi điều hướng
+    private final java.util.Map<String, Integer> lastUnread = new java.util.HashMap<>();
 
     public void updateUnreadCounts(java.util.Map<String, Integer> unreadCounts) {
         SwingUtilities.invokeLater(() -> {
-            for (java.util.Map.Entry<String, UserListItem> entry : friendItems.entrySet()) {
-                Integer count = unreadCounts.get(entry.getKey());
-                entry.getValue().setUnreadCount(count != null ? count : 0);
-            }
+            lastUnread.clear();
+            lastUnread.putAll(unreadCounts);
+            applyUnread();
         });
+    }
+
+    /** Áp dụng unread đã cache lên các item bạn bè hiện có. */
+    private void applyUnread() {
+        for (java.util.Map.Entry<String, UserListItem> entry : friendItems.entrySet()) {
+            Integer count = lastUnread.get(entry.getKey());
+            entry.getValue().setUnreadCount(count != null ? count : 0);
+        }
     }
 
     private void renderLists(List<String> friends, List<String> pending, List<String> onlineUsers) {
@@ -147,16 +157,14 @@ public class FriendSidebar extends JPanel {
                 JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
                 btnPanel.setOpaque(false);
                 
-                JButton acceptBtn = new JButton("✓");
-                acceptBtn.setMargin(new Insets(2, 4, 2, 4));
+                JButton acceptBtn = styledActionButton("✓", AppColors.SUCCESS, "Chấp nhận");
                 acceptBtn.addActionListener(e -> {
                     friendApi.acceptRequest(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
                     loadFriendsAndRequests(onlineUsers);
                 });
-                
-                JButton rejectBtn = new JButton("✗");
-                rejectBtn.setMargin(new Insets(2, 4, 2, 4));
+
+                JButton rejectBtn = styledActionButton("✗", AppColors.DANGER, "Từ chối");
                 rejectBtn.addActionListener(e -> {
                     friendApi.rejectOrRemoveFriend(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
@@ -206,8 +214,24 @@ public class FriendSidebar extends JPanel {
             listPanel.add(Box.createVerticalStrut(4));
         }
 
+        applyUnread(); // re-apply badge unread đã cache lên item vừa rebuild
         listPanel.revalidate();
         listPanel.repaint();
+    }
+
+    /** Nút hành động nhỏ, màu phẳng (xanh chấp nhận / đỏ từ chối) cho lời mời kết bạn. */
+    private JButton styledActionButton(String text, Color bg, String tooltip) {
+        JButton b = new JButton(text);
+        b.setForeground(Color.WHITE);
+        b.setBackground(bg);
+        b.setOpaque(true);
+        b.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+        b.setBorderPainted(false);
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setFont(gui.theme.AppFonts.CAPTION_BOLD);
+        b.setToolTipText(tooltip);
+        return b;
     }
 
     private void showAddFriendDialog() {
