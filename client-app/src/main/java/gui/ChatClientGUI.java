@@ -122,7 +122,6 @@ public class ChatClientGUI extends JFrame {
         add(westPanel, BorderLayout.WEST);
         add(buildCenterPanel(), BorderLayout.CENTER);
         add(eastContainer, BorderLayout.EAST);
-        add(buildBottomPanel(), BorderLayout.SOUTH);
 
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) { wsClient.close(); }
@@ -158,30 +157,6 @@ public class ChatClientGUI extends JFrame {
 
         IconButton pinBtn = new IconButton("📌", e -> pinController.openDialog());
         pinBtn.setToolTipText("Tin nhắn đã ghim");
-        JPanel pinWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
-        pinWrap.setOpaque(false);
-        pinWrap.add(pinBtn);
-
-        channelHeaderPanel = new JPanel(new BorderLayout());
-        channelHeaderPanel.setBackground(AppColors.BG_PRIMARY);
-        channelHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_TERTIARY),
-                BorderFactory.createEmptyBorder(12, 20, 12, 16)));
-        channelHeaderPanel.add(channelTitleLabel, BorderLayout.WEST);
-        channelHeaderPanel.add(pinWrap, BorderLayout.EAST);
-        channelHeaderPanel.setVisible(false);
-
-        JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.setBackground(AppColors.BG_PRIMARY);
-        centerPanel.add(channelHeaderPanel, BorderLayout.NORTH);
-        centerPanel.add(chatHistoryView, BorderLayout.CENTER);
-        return centerPanel;
-    }
-
-    private JPanel buildBottomPanel() {
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBackground(AppColors.BG_PRIMARY);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
 
         IconButton toggleMiniBtn = new IconButton("👥", e -> {
             boolean show = !miniSidebar.isVisible();
@@ -191,10 +166,33 @@ public class ChatClientGUI extends JFrame {
             eastContainer.repaint();
         });
         toggleMiniBtn.setToolTipText("Bạn bè & Server đã tham gia");
-        JPanel toolbar = new JPanel(new GridBagLayout());
-        toolbar.setOpaque(false);
-        toolbar.add(toggleMiniBtn);
-        bottomPanel.add(toolbar, BorderLayout.WEST);
+
+        JPanel headerRightWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        headerRightWrap.setOpaque(false);
+        headerRightWrap.add(pinBtn);
+        headerRightWrap.add(toggleMiniBtn);
+
+        channelHeaderPanel = new JPanel(new BorderLayout());
+        channelHeaderPanel.setBackground(AppColors.BG_PRIMARY);
+        channelHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_TERTIARY),
+                BorderFactory.createEmptyBorder(12, 20, 12, 16)));
+        channelHeaderPanel.add(channelTitleLabel, BorderLayout.WEST);
+        channelHeaderPanel.add(headerRightWrap, BorderLayout.EAST);
+        channelHeaderPanel.setVisible(false);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBackground(AppColors.BG_PRIMARY);
+        centerPanel.add(channelHeaderPanel, BorderLayout.NORTH);
+        centerPanel.add(chatHistoryView, BorderLayout.CENTER);
+        centerPanel.add(buildBottomPanel(), BorderLayout.SOUTH);
+        return centerPanel;
+    }
+
+    private JPanel buildBottomPanel() {
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBackground(AppColors.BG_PRIMARY);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
 
         chatInput.setVisible(false); // Ẩn ban đầu
         chatInput.getSendButton().addActionListener(e -> sendChatFromInput());
