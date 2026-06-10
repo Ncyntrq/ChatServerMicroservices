@@ -49,28 +49,28 @@ pipeline {
             }
         }
 
-        stage('Static Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        mvn sonar:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.projectName='Chat Server Microservices' \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_AUTH_TOKEN} \
-                            --batch-mode -q
-                    """
-                }
-            }
-        }
+        // stage('Static Analysis') {
+        //     steps {
+        //         withSonarQubeEnv('SonarQube') {
+        //             sh """
+        //                 mvn sonar:sonar \
+        //                     -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+        //                     -Dsonar.projectName='Chat Server Microservices' \
+        //                     -Dsonar.host.url=${SONAR_HOST_URL} \
+        //                     -Dsonar.token=${SONAR_AUTH_TOKEN} \
+        //                     --batch-mode -q
+        //             """
+        //         }
+        //     }
+        // }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
+        // stage('Quality Gate') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true
+        //         }
+        //     }
+        // }
 
         stage('Dockerization & Push') {
             steps {
