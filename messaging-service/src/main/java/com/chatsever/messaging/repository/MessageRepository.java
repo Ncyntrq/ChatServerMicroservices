@@ -17,4 +17,10 @@ public interface MessageRepository extends JpaRepository<ChatMessage, Long> {
     
     @Query("SELECT m FROM ChatMessage m WHERE ((m.sender = :u1 AND m.receiver = :u2) OR (m.sender = :u2 AND m.receiver = :u1)) AND m.id < :beforeId ORDER BY m.id DESC")
     List<ChatMessage> findPrivateMessagesBefore(@Param("u1") String u1, @Param("u2") String u2, @Param("beforeId") Long beforeId, Pageable pageable);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.channelId = :channelId AND LOWER(m.content) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.id DESC")
+    List<ChatMessage> searchByChannel(@Param("channelId") Long channelId, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.serverId = :serverId AND LOWER(m.content) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.id DESC")
+    List<ChatMessage> searchByServer(@Param("serverId") Long serverId, @Param("keyword") String keyword, Pageable pageable);
 }

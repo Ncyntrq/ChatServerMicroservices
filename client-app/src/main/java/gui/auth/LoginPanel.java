@@ -44,10 +44,10 @@ public class LoginPanel extends JPanel {
             String user = usernameField.getText().trim();
             String pass = passwordField.getText();
             if (user.isEmpty() || pass.isEmpty()) {
-                statusLabel.setText("Vui lòng nhập username và password");
+                statusLabel.setText("Please enter username and password");
                 return;
             }
-            statusLabel.setText("Đang đăng nhập...");
+            statusLabel.setText("Logging in...");
             statusLabel.setForeground(AppColors.TEXT_MUTED);
 
             // Gọi BE trong background thread để không khoá EDT
@@ -73,7 +73,7 @@ public class LoginPanel extends JPanel {
                         Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
                         String msg = cause instanceof ApiException
                                 ? cause.getMessage()
-                                : "Đăng nhập thất bại: " + cause.getMessage();
+                                : "Login failed: " + cause.getMessage();
                         statusLabel.setForeground(AppColors.DANGER);
                         statusLabel.setText(msg);
                     }

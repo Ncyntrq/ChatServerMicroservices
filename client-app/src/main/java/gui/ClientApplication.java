@@ -1,6 +1,7 @@
 package gui;
 
 import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.fonts.roboto.FlatRobotoFont;
 import gui.landing.LandingFrame;
 import network.SessionManager;
 
@@ -8,6 +9,8 @@ import javax.swing.*;
 
 public class ClientApplication {
     public static void main(String[] args) {
+        FlatRobotoFont.install();
+        UIManager.put("defaultFont", new java.awt.Font(FlatRobotoFont.FAMILY, java.awt.Font.PLAIN, 14));
         try {
             UIManager.setLookAndFeel(new FlatDarkLaf());
         } catch (Exception e) {

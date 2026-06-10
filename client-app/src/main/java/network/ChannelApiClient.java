@@ -204,4 +204,68 @@ public class ChannelApiClient {
         } catch (Exception ignore) {}
         return body;
     }
+
+    // ---------------------------------------------------------------
+    // Pinned Messages
+    // ---------------------------------------------------------------
+
+    /** Ghim tin nhắn vào channel. */
+    public void pinMessage(long channelId, long messageId) {
+        postJson("/api/channels/" + channelId + "/pins/" + messageId, Map.of());
+    }
+
+    /** Bỏ ghim tin nhắn. */
+    public void unpinMessage(long channelId, long messageId) {
+        sendDelete(ApiConfig.GATEWAY_HTTP + "/api/channels/" + channelId + "/pins/" + messageId);
+    }
+
+    /** Lấy danh sách tin nhắn đã ghim (chỉ chứa messageId). */
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> getPinnedMessages(long channelId) {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/channels/" + channelId + "/pins";
+        HttpResponse<String> resp = sendGet(url);
+        try {
+            return json.readValue(resp.body(), new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            throw new ApiException("Lỗi parse danh sách pin: " + e.getMessage(), e);
+        }
+    }
+
+    /** Lấy nội dung tin nhắn theo danh sách IDs (dùng cho ghim). */
+    public List<MessageDTO> getMessagesByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return Collections.emptyList();
+        String idParams = ids.stream().map(String::valueOf).reduce((a, b) -> a + "," + b).orElse("");
+        String url = ApiConfig.GATEWAY_HTTP + "/api/channels/bulk?ids=" + idParams;
+        HttpResponse<String> resp = sendGet(url);
+        try {
+            List<RawChatMessage> raw = json.readValue(resp.body(), new TypeReference<List<RawChatMessage>>() {});
+            return raw.stream().map(RawChatMessage::toDto).toList();
+        } catch (Exception e) {
+            throw new ApiException("Lỗi parse danh sách messages: " + e.getMessage(), e);
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // Tìm kiếm tin nhắn
+    // ---------------------------------------------------------------
+
+    /** Tìm kiếm tin nhắn theo từ khóa trong channel hoặc server. */
+    public List<MessageDTO> searchMessages(Long channelId, Long serverId, String keyword, int limit) {
+        StringBuilder url = new StringBuilder(ApiConfig.GATEWAY_HTTP + "/api/channels/search?keyword=");
+        try {
+            url.append(java.net.URLEncoder.encode(keyword, "UTF-8"));
+        } catch (Exception e) {
+            url.append(keyword);
+        }
+        url.append("&limit=").append(limit);
+        if (channelId != null) url.append("&channelId=").append(channelId);
+        if (serverId != null) url.append("&serverId=").append(serverId);
+        HttpResponse<String> resp = sendGet(url.toString());
+        try {
+            List<RawChatMessage> raw = json.readValue(resp.body(), new TypeReference<List<RawChatMessage>>() {});
+            return raw.stream().map(RawChatMessage::toDto).toList();
+        } catch (Exception e) {
+            throw new ApiException("Lỗi parse kết quả tìm kiếm: " + e.getMessage(), e);
+        }
+    }
 }

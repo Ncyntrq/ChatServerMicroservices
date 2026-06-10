@@ -68,8 +68,13 @@ public class MessageService {
         return false;
     }
 
-    // Gửi tin nhắn Broadcast theo Channel hoặc Global nếu serverId null
-    public void broadcastToChannel(MessageDTO msg, Map<String, WebSocketSession> sessions) throws Exception {
+    // Bắn tin nhắn vào RabbitMQ Fanout để phân phối cho tất cả các node WebSocket
+    public void broadcastToChannel(MessageDTO msg) {
+        rabbitTemplate.convertAndSend("chat.fanout", "", msg);
+    }
+
+    // Node cục bộ nhận từ RabbitMQ và đẩy xuống các WebSocket sessions nó đang quản lý
+    public void sendToLocalSessions(MessageDTO msg, Map<String, WebSocketSession> sessions) throws Exception {
         Set<String> serverMembers = null;
         if (msg.getServerId() != null) {
             serverMembers = getServerMembers(msg.getServerId());
@@ -170,8 +175,14 @@ public class MessageService {
         return null;
     }
 
-    public void deleteMessage(Long messageId) {
-        messageRepository.deleteById(messageId);
+    public ChatMessage deleteMessage(Long messageId) {
+        ChatMessage entity = messageRepository.findById(messageId).orElse(null);
+        if (entity != null) {
+            entity.setContent("Tin nhắn bị gỡ");
+            entity.setIsEdited(true);
+            return messageRepository.save(entity);
+        }
+        return null;
     }
 
     // M6: Kiểm tra quyền sở hữu tin nhắn

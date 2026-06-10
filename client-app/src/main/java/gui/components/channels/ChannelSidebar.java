@@ -58,11 +58,32 @@ public class ChannelSidebar extends JPanel {
         headerPanel.setPreferredSize(new Dimension(240, 48));
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_PRIMARY));
 
-        titleLabel = new JLabel("Chọn một server");
+        titleLabel = new JLabel("Select a server ⏷");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
         titleLabel.setForeground(AppColors.TEXT_WHITE);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
+        
+        // Make header clickable for dropdown
+        headerPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        headerPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (activeServerId > 0) {
+                    showServerDropdown(headerPanel);
+                }
+            }
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                headerPanel.setBackground(AppColors.BG_TERTIARY);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                headerPanel.setBackground(AppColors.BG_SECONDARY);
+            }
+        });
         headerPanel.add(titleLabel, BorderLayout.CENTER);
+
+
 
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
@@ -76,6 +97,7 @@ public class ChannelSidebar extends JPanel {
         JScrollPane scrollPane = new JScrollPane(scrollContentWrapper);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         accountFooter = new UserFooterPanel(sessionUsername, () -> {
             if (onUserChanged != null) onUserChanged.run();
@@ -94,7 +116,7 @@ public class ChannelSidebar extends JPanel {
 
     public void loadChannels(long serverId, String serverName) {
         this.activeServerId = serverId;
-        if (serverName != null) titleLabel.setText(serverName);
+        if (serverName != null) titleLabel.setText(serverName + " ⏷");
 
         new SwingWorker<List<Map<String, Object>>, Void>() {
             @Override
@@ -108,7 +130,7 @@ public class ChannelSidebar extends JPanel {
                     renderChannels(get());
                 } catch (Exception ex) {
                     listPanel.removeAll();
-                    JLabel err = new JLabel("Không tải được channels");
+                    JLabel err = new JLabel("Failed to load channels");
                     err.setForeground(AppColors.TEXT_MUTED);
                     listPanel.add(err);
                     listPanel.revalidate();
@@ -128,7 +150,7 @@ public class ChannelSidebar extends JPanel {
         for (Map<String, Object> ch : channels) {
             if (!"VOICE".equalsIgnoreCase(str(ch.get("type")))) {
                 if (!addedTextHeader) {
-                    listPanel.add(new SidebarCategoryHeader("KÊNH CHAT", () -> {
+                    listPanel.add(new SidebarCategoryHeader("TEXT CHANNELS", () -> {
                         Window owner = SwingUtilities.getWindowAncestor(this);
                         new CreateChannelDialog(owner, activeServerId,
                                 () -> {
@@ -148,7 +170,7 @@ public class ChannelSidebar extends JPanel {
             if ("VOICE".equalsIgnoreCase(str(ch.get("type")))) {
                 if (!addedVoiceHeader) {
                     listPanel.add(Box.createVerticalStrut(12));
-                    listPanel.add(new SidebarCategoryHeader("KÊNH THOẠI"));
+                    listPanel.add(new SidebarCategoryHeader("VOICE CHANNELS"));
                     listPanel.add(Box.createVerticalStrut(4));
                     addedVoiceHeader = true;
                 }
@@ -158,7 +180,7 @@ public class ChannelSidebar extends JPanel {
         }
 
         if (!addedTextHeader && !addedVoiceHeader) {
-            listPanel.add(new SidebarCategoryHeader("KÊNH CHAT", () -> {
+            listPanel.add(new SidebarCategoryHeader("TEXT CHANNELS", () -> {
                 Window owner = SwingUtilities.getWindowAncestor(this);
                 new CreateChannelDialog(owner, activeServerId,
                         () -> {
@@ -167,7 +189,7 @@ public class ChannelSidebar extends JPanel {
                         }).setVisible(true);
             }));
             listPanel.add(Box.createVerticalStrut(4));
-            JLabel empty = new JLabel("Chưa có channel");
+            JLabel empty = new JLabel("No channels yet");
             empty.setForeground(AppColors.TEXT_MUTED);
             listPanel.add(empty);
         }
@@ -208,10 +230,70 @@ public class ChannelSidebar extends JPanel {
         return item;
     }
 
+    private void showServerDropdown(Component anchor) {
+        gui.components.dropdown.AppDropdown menu = new gui.components.dropdown.AppDropdown();
+        
+        menu.add(new gui.components.dropdown.AppDropdownItem("Server Settings", e -> {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            new gui.server.UnifiedServerSettingsDialog(owner, activeServerId, () -> {
+                if (onChannelChanged != null) onChannelChanged.run();
+            }).setVisible(true);
+        }));
+        
+        menu.add(new gui.components.dropdown.AppDropdownItem("Create Channel", e -> {
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            new CreateChannelDialog(owner, activeServerId, () -> {
+                loadChannels(activeServerId, titleLabel.getText().replace(" ⏷", ""));
+                if (onChannelChanged != null) onChannelChanged.run();
+            }).setVisible(true);
+        }));
+
+        menu.add(new gui.components.dropdown.AppDropdownItem("Invite People", e -> {
+            new SwingWorker<String, Void>() {
+                @Override protected String doInBackground() {
+                    return new network.ServerApiClient().createInviteCode(activeServerId);
+                }
+                @Override protected void done() {
+                    try {
+                        String code = get();
+                        Window owner = SwingUtilities.getWindowAncestor(ChannelSidebar.this);
+                        new gui.server.InviteCodeDialog(owner, code).setVisible(true);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(ChannelSidebar.this, "Error generating invite: " + ex.getMessage());
+                    }
+                }
+            }.execute();
+        }));
+
+        menu.addSeparator();
+
+        menu.add(new gui.components.dropdown.AppDropdownItem("Leave Server", AppColors.DANGER, AppColors.DANGER, e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to leave this server?", "Confirm", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() {
+                    new network.ServerApiClient().leaveServer(activeServerId);
+                    return null;
+                }
+                @Override protected void done() {
+                    try {
+                        get();
+                        if (onChannelChanged != null) onChannelChanged.run();
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(ChannelSidebar.this, "Error leaving server: " + ex.getMessage());
+                    }
+                }
+            }.execute();
+        }));
+        
+        menu.show(anchor, 0, anchor.getHeight());
+    }
+
     private void showChannelMenu(Component anchor, long channelId, String name, String topic) {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem editItem = new JMenuItem("Sửa");
-        JMenuItem deleteItem = new JMenuItem("Xóa");
+        JMenuItem editItem = new JMenuItem("Edit Channel");
+        JMenuItem deleteItem = new JMenuItem("Delete Channel");
         Window owner = SwingUtilities.getWindowAncestor(this);
 
         editItem.addActionListener(e ->
@@ -223,7 +305,7 @@ public class ChannelSidebar extends JPanel {
 
         deleteItem.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "Xóa channel \"" + name + "\"?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+                    "Delete channel \"" + name + "\"?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (confirm != JOptionPane.YES_OPTION) return;
             new SwingWorker<Void, Void>() {
                 @Override
@@ -240,7 +322,7 @@ public class ChannelSidebar extends JPanel {
                         if (onChannelChanged != null) onChannelChanged.run();
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(ChannelSidebar.this,
-                                "Lỗi xóa channel: " + ex.getMessage());
+                                "Error deleting channel: " + ex.getMessage());
                     }
                 }
             }.execute();

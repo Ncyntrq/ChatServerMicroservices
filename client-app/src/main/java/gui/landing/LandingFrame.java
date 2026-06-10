@@ -14,7 +14,7 @@ import java.awt.*;
 public class LandingFrame extends JFrame {
 
     public LandingFrame() {
-        setTitle("ChatSever");
+        setTitle("ChatServer");
         setSize(720, 520);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -25,7 +25,7 @@ public class LandingFrame extends JFrame {
         root.setBorder(BorderFactory.createEmptyBorder(80, 60, 60, 60));
 
         // --- Logo / tên app ---
-        JLabel logo = new JLabel("💬  ChatSever");
+        JLabel logo = new JLabel("💬  ChatServer");
         logo.setFont(new Font("SansSerif", Font.BOLD, 40));
         logo.setForeground(AppColors.TEXT_WHITE);
         logo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -33,7 +33,7 @@ public class LandingFrame extends JFrame {
         root.add(Box.createVerticalStrut(16));
 
         // --- Mô tả ngắn ---
-        JLabel desc = new JLabel("Nền tảng chat real-time theo phong cách Discord");
+        JLabel desc = new JLabel("A real-time communication platform built for communities");
         desc.setFont(new Font("SansSerif", Font.PLAIN, 16));
         desc.setForeground(AppColors.TEXT_MUTED);
         desc.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -41,13 +41,13 @@ public class LandingFrame extends JFrame {
         root.add(Box.createVerticalStrut(48));
 
         // --- CTA buttons ---
-        PrimaryButton loginBtn = new PrimaryButton("Đăng nhập", e -> openAuth(true));
+        PrimaryButton loginBtn = new PrimaryButton("Log In", e -> openAuth(true));
         loginBtn.setMaximumSize(new Dimension(280, 48));
         loginBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         root.add(loginBtn);
         root.add(Box.createVerticalStrut(14));
 
-        PrimaryButton registerBtn = new PrimaryButton("Đăng ký", e -> openAuth(false));
+        PrimaryButton registerBtn = new PrimaryButton("Register", e -> openAuth(false));
         registerBtn.setMaximumSize(new Dimension(280, 48));
         registerBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         root.add(registerBtn);

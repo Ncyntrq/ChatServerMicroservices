@@ -1,41 +1,44 @@
-package gui.profile;
+package gui.server;
 
+import gui.server.settings.ServerOverviewPanel;
+import gui.server.settings.ServerRolesPanel;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
-import network.SessionManager;
-import network.UserProfileApiClient;
+import network.ServerApiClient;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
-public class UserSettingsDialog extends JDialog {
+public class UnifiedServerSettingsDialog extends JDialog {
+
+    private final ServerApiClient serverApi = new ServerApiClient();
+    private final long serverId;
+    private final Runnable onChange;
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cards = new JPanel(cardLayout);
+    
+    private final ServerRolesPanel rolesPanel;
 
-    public UserSettingsDialog(Window owner, Runnable onProfileChanged) {
+    public UnifiedServerSettingsDialog(Window owner, long serverId, Runnable onChange) {
         super(owner, ModalityType.APPLICATION_MODAL);
+        this.serverId = serverId;
+        this.onChange = onChange;
         setUndecorated(true);
         setBackground(AppColors.BG_PRIMARY);
-        
-        // Track owner bounds to simulate a full-screen overlay
+
         if (owner != null) {
             setBounds(owner.getBounds());
             owner.addComponentListener(new ComponentAdapter() {
-                @Override
-                public void componentResized(ComponentEvent e) { setBounds(owner.getBounds()); }
-                @Override
-                public void componentMoved(ComponentEvent e) { setBounds(owner.getBounds()); }
+                @Override public void componentResized(ComponentEvent e) { setBounds(owner.getBounds()); }
+                @Override public void componentMoved(ComponentEvent e) { setBounds(owner.getBounds()); }
             });
         } else {
             setSize(1024, 768);
             setLocationRelativeTo(null);
         }
-
-        String username = SessionManager.get().getUsername();
-        UserProfileApiClient profileApi = new UserProfileApiClient();
 
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(AppColors.BG_PRIMARY);
@@ -44,25 +47,27 @@ public class UserSettingsDialog extends JDialog {
         JPanel sidebarWrapper = new JPanel(new BorderLayout());
         sidebarWrapper.setBackground(AppColors.BG_SECONDARY);
         sidebarWrapper.setPreferredSize(new Dimension(240, 0));
-        
+
         JPanel sidebarList = new JPanel();
         sidebarList.setLayout(new BoxLayout(sidebarList, BoxLayout.Y_AXIS));
         sidebarList.setOpaque(false);
         sidebarList.setBorder(BorderFactory.createEmptyBorder(60, 20, 20, 20));
 
-        JLabel headerUser = new JLabel("USER SETTINGS");
-        headerUser.setFont(AppFonts.CAPTION_BOLD);
-        headerUser.setForeground(AppColors.TEXT_MUTED);
-        headerUser.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sidebarList.add(headerUser);
+        JLabel headerServer = new JLabel("SERVER SETTINGS");
+        headerServer.setFont(AppFonts.CAPTION_BOLD);
+        headerServer.setForeground(AppColors.TEXT_MUTED);
+        headerServer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sidebarList.add(headerServer);
         sidebarList.add(Box.createVerticalStrut(8));
 
-        sidebarList.add(createSidebarBtn("My Account", "Profile"));
+        sidebarList.add(createSidebarBtn("Overview", "Overview"));
         sidebarList.add(Box.createVerticalStrut(4));
-        sidebarList.add(createSidebarBtn("Privacy & Safety", "Security"));
+        sidebarList.add(createSidebarBtn("Roles", "Roles"));
         sidebarList.add(Box.createVerticalStrut(4));
-        sidebarList.add(createSidebarBtn("Status", "Status"));
         
+        JButton inviteBtn = createSidebarBtn("Generate Invite", "Invite");
+        sidebarList.add(inviteBtn);
+
         sidebarList.add(Box.createVerticalStrut(20));
         JSeparator sep = new JSeparator();
         sep.setForeground(AppColors.SEPARATOR);
@@ -71,21 +76,20 @@ public class UserSettingsDialog extends JDialog {
         sidebarList.add(sep);
         sidebarList.add(Box.createVerticalStrut(20));
 
-        JButton logoutBtn = createSidebarBtn("Log Out", "Logout");
-        logoutBtn.setForeground(AppColors.DANGER);
-        sidebarList.add(logoutBtn);
+        JButton deleteBtn = createSidebarBtn("Delete Server", "Delete");
+        deleteBtn.setForeground(AppColors.DANGER);
+        sidebarList.add(deleteBtn);
 
         sidebarWrapper.add(sidebarList, BorderLayout.WEST);
 
         // --- Right Content Area ---
         cards.setBackground(AppColors.BG_PRIMARY);
         cards.setBorder(BorderFactory.createEmptyBorder(60, 40, 60, 40));
+
+        cards.add(new ServerOverviewPanel(serverId, onChange), "Overview");
         
-        ProfileEditPanel pep = new ProfileEditPanel(username, profileApi, onProfileChanged);
-        
-        cards.add(pep, "Profile");
-        cards.add(new AccountSecurityPanel(), "Security");
-        cards.add(new StatusPanel(profileApi), "Status");
+        rolesPanel = new ServerRolesPanel(serverId);
+        cards.add(rolesPanel, "Roles");
 
         // --- ESC Close Button ---
         JPanel escWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 40, 60));
@@ -117,10 +121,7 @@ public class UserSettingsDialog extends JDialog {
         // Key bindings for ESC
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "closeSettings");
         root.getActionMap().put("closeSettings", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                dispose();
-            }
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { dispose(); }
         });
 
         setContentPane(root);
@@ -148,7 +149,7 @@ public class UserSettingsDialog extends JDialog {
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 btn.setContentAreaFilled(false);
-                if (!"Log Out".equals(text)) {
+                if (!"Delete Server".equals(text)) {
                     btn.setForeground(AppColors.TEXT_NORMAL);
                 } else {
                     btn.setForeground(AppColors.DANGER);
@@ -157,22 +158,56 @@ public class UserSettingsDialog extends JDialog {
         });
 
         btn.addActionListener(e -> {
-            if ("Logout".equals(cardName)) {
-                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?", "Logout", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    SessionManager.get().clear();
-                    Window owner = SwingUtilities.getWindowAncestor(UserSettingsDialog.this);
-                    if (owner != null) {
-                        owner.dispose();
-                    }
-                    new gui.landing.LandingFrame().setVisible(true);
-                    dispose();
-                }
+            if ("Delete".equals(cardName)) {
+                deleteServer();
+            } else if ("Invite".equals(cardName)) {
+                generateInvite();
             } else {
                 cardLayout.show(cards, cardName);
+                if ("Roles".equals(cardName)) rolesPanel.reloadRoles();
             }
         });
 
         return btn;
+    }
+
+    private void generateInvite() {
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() {
+                return serverApi.createInviteCode(serverId);
+            }
+            @Override protected void done() {
+                try {
+                    String code = get();
+                    new InviteCodeDialog(UnifiedServerSettingsDialog.this, code).setVisible(true);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(UnifiedServerSettingsDialog.this, "Error generating invite: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void deleteServer() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Delete this server permanently? This action cannot be undone.",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        
+        if (onChange != null) onChange.run(); // Broadcast before deleting
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() {
+                serverApi.deleteServer(serverId);
+                return null;
+            }
+            @Override protected void done() {
+                try {
+                    get();
+                    if (onChange != null) onChange.run();
+                    dispose();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(UnifiedServerSettingsDialog.this, "Error deleting server", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 }
