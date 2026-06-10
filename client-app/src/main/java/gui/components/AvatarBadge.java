@@ -65,8 +65,9 @@ public class AvatarBadge extends JPanel {
                 if (resp.statusCode() == 200) {
                     Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
                     if (downloadedImage != null) {
-                        gui.utils.ImageCache.put(urlString, downloadedImage);
-                        SwingUtilities.invokeLater(() -> setAvatarImage(downloadedImage));
+                        Image scaledImg = downloadedImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+                        gui.utils.ImageCache.put(urlString, scaledImg);
+                        SwingUtilities.invokeLater(() -> setAvatarImage(scaledImg));
                     }
                 }
             } catch (Exception e) {
@@ -84,7 +85,8 @@ public class AvatarBadge extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+        // Thay đổi TEXT_ANTIALIASING để tránh viền rỗ/gai (fringing) khi vẽ trên nền trong suốt (Opaque=false)
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         int w = getWidth();
         int h = getHeight();

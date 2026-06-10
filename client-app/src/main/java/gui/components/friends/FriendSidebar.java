@@ -47,7 +47,7 @@ public class FriendSidebar extends JPanel {
         headerPanel.setPreferredSize(new Dimension(240, 48));
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppColors.BG_PRIMARY));
 
-        titleLabel = new JLabel("Bạn bè");
+        titleLabel = new JLabel("Friends");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
         titleLabel.setForeground(AppColors.TEXT_WHITE);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
@@ -72,6 +72,7 @@ public class FriendSidebar extends JPanel {
         JScrollPane scrollPane = new JScrollPane(scrollContentWrapper);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         gui.theme.ThinScrollBarUI.apply(scrollPane);
 
         // --- FOOTER ---
@@ -110,7 +111,7 @@ public class FriendSidebar extends JPanel {
                     renderLists(friends, pending, onlineUsers);
                 } catch (Exception ex) {
                     listPanel.removeAll();
-                    JLabel err = new JLabel("Không tải được dữ liệu bạn bè");
+                    JLabel err = new JLabel("Failed to load friends");
                     err.setForeground(AppColors.TEXT_MUTED);
                     listPanel.add(err);
                     listPanel.revalidate();
@@ -144,27 +145,67 @@ public class FriendSidebar extends JPanel {
         listPanel.removeAll();
         friendItems.clear();
 
-        // 1. Lời mời kết bạn
+        if ((pending == null || pending.isEmpty()) && (friends == null || friends.isEmpty())) {
+            JPanel emptyPanel = new JPanel();
+            emptyPanel.setLayout(new BoxLayout(emptyPanel, BoxLayout.Y_AXIS));
+            emptyPanel.setOpaque(false);
+            
+            JLabel iconLabel = new JLabel("📭");
+            iconLabel.setFont(gui.theme.AppFonts.EMOJI.deriveFont(28f));
+            iconLabel.setForeground(AppColors.TEXT_MUTED);
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            JLabel textLabel = new JLabel("No friends yet");
+            textLabel.setFont(gui.theme.AppFonts.BODY_SM);
+            textLabel.setForeground(AppColors.TEXT_MUTED);
+            textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            emptyPanel.add(iconLabel);
+            emptyPanel.add(Box.createVerticalStrut(8));
+            emptyPanel.add(textLabel);
+            
+            listPanel.add(Box.createVerticalGlue());
+            listPanel.add(emptyPanel);
+            listPanel.add(Box.createVerticalGlue());
+            listPanel.revalidate();
+            listPanel.repaint();
+            return;
+        }
+
+        // 1. Pending Requests
         if (pending != null && !pending.isEmpty()) {
-            listPanel.add(new SidebarCategoryHeader("ĐANG CHỜ XÁC NHẬN — " + pending.size()));
+            listPanel.add(new SidebarCategoryHeader("PENDING — " + pending.size()));
             listPanel.add(Box.createVerticalStrut(4));
             for (String req : pending) {
-                JPanel row = new JPanel(new BorderLayout());
-                row.setOpaque(false);
-                UserListItem item = new UserListItem(req, "Chờ xác nhận", AppColors.STATUS_OFFLINE, true);
-                row.add(item, BorderLayout.CENTER);
-
-                JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
-                btnPanel.setOpaque(false);
+                JPanel itemPanel = new JPanel();
+                itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
+                itemPanel.setOpaque(false);
                 
-                JButton acceptBtn = styledActionButton("✓", AppColors.SUCCESS, "Chấp nhận");
+                // Make it look like a card
+                JPanel card = new JPanel(new BorderLayout());
+                card.setBackground(AppColors.BG_FLOATING);
+                card.setBorder(BorderFactory.createCompoundBorder(
+                        gui.theme.AppBorders.rounded(AppColors.SEPARATOR, 12, 1, 1),
+                        BorderFactory.createEmptyBorder(8, 8, 8, 8)
+                ));
+
+                UserListItem item = new UserListItem(req, "Incoming Request", AppColors.STATUS_OFFLINE, true);
+                item.setOpaque(false); // Let card background show
+                
+                card.add(item, BorderLayout.CENTER);
+                
+                JPanel btnPanel = new JPanel(new GridLayout(1, 2, 8, 0));
+                btnPanel.setOpaque(false);
+                btnPanel.setBorder(BorderFactory.createEmptyBorder(4, 44, 0, 0)); // align under username
+                
+                JButton acceptBtn = ghostActionButton("Accept", AppColors.SUCCESS, "Accept Friend Request");
                 acceptBtn.addActionListener(e -> {
                     friendApi.acceptRequest(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
                     loadFriendsAndRequests(onlineUsers);
                 });
 
-                JButton rejectBtn = styledActionButton("✗", AppColors.DANGER, "Từ chối");
+                JButton rejectBtn = ghostActionButton("Ignore", AppColors.DANGER, "Ignore Request");
                 rejectBtn.addActionListener(e -> {
                     friendApi.rejectOrRemoveFriend(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
@@ -173,17 +214,18 @@ public class FriendSidebar extends JPanel {
 
                 btnPanel.add(acceptBtn);
                 btnPanel.add(rejectBtn);
-                row.add(btnPanel, BorderLayout.EAST);
                 
-                listPanel.add(row);
-                listPanel.add(Box.createVerticalStrut(4));
+                card.add(btnPanel, BorderLayout.SOUTH);
+                itemPanel.add(card);
+                listPanel.add(itemPanel);
+                listPanel.add(Box.createVerticalStrut(8));
             }
             listPanel.add(Box.createVerticalStrut(10));
         }
 
-        // 2. Trực tuyến
+        // 2. Online
         List<String> onlineFriends = friends.stream().filter(onlineUsers::contains).toList();
-        listPanel.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + onlineFriends.size()));
+        listPanel.add(new SidebarCategoryHeader("ONLINE — " + onlineFriends.size()));
         listPanel.add(Box.createVerticalStrut(4));
         for (String f : onlineFriends) {
             UserListItem item = new UserListItem(f, null, AppColors.STATUS_ONLINE, true);
@@ -198,9 +240,9 @@ public class FriendSidebar extends JPanel {
         }
         listPanel.add(Box.createVerticalStrut(10));
 
-        // 3. Ngoại tuyến
+        // 3. Offline
         List<String> offlineFriends = friends.stream().filter(f -> !onlineUsers.contains(f)).toList();
-        listPanel.add(new SidebarCategoryHeader("NGOẠI TUYẾN — " + offlineFriends.size()));
+        listPanel.add(new SidebarCategoryHeader("OFFLINE — " + offlineFriends.size()));
         listPanel.add(Box.createVerticalStrut(4));
         for (String f : offlineFriends) {
             UserListItem item = new UserListItem(f, null, AppColors.STATUS_OFFLINE, false);
@@ -219,18 +261,40 @@ public class FriendSidebar extends JPanel {
         listPanel.repaint();
     }
 
-    /** Nút hành động nhỏ, màu phẳng (xanh chấp nhận / đỏ từ chối) cho lời mời kết bạn. */
-    private JButton styledActionButton(String text, Color bg, String tooltip) {
-        JButton b = new JButton(text);
-        b.setForeground(Color.WHITE);
-        b.setBackground(bg);
-        b.setOpaque(true);
-        b.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
-        b.setBorderPainted(false);
+    /** Nút hành động nhỏ dạng ghost cho lời mời kết bạn. */
+    private JButton ghostActionButton(String text, Color highlight, String tooltip) {
+        JButton b = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (getModel().isRollover() || getModel().isPressed()) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(highlight);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
+        b.setForeground(highlight);
+        b.setOpaque(false);
+        b.setBorderPainted(true);
         b.setFocusPainted(false);
+        b.setContentAreaFilled(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        b.setFont(gui.theme.AppFonts.CAPTION_BOLD);
+        b.setFont(gui.theme.AppFonts.BODY_SM);
+        b.setBorder(gui.theme.AppBorders.rounded(highlight, 12, 6, 12));
         b.setToolTipText(tooltip);
+        
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                b.setForeground(Color.WHITE);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                b.setForeground(highlight);
+            }
+        });
+        
         return b;
     }
 

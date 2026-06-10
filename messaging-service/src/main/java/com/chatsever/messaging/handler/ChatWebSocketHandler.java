@@ -1,5 +1,6 @@
 package com.chatsever.messaging.handler;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import com.chatsever.common.dto.MessageDTO;
 
 import com.chatsever.common.enums.MessageType;
@@ -50,11 +51,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                sessions.put(username, session);
                session.getAttributes().put("username", username);
                messageService.notifyPresence(username, "connect");
-               messageService.broadcastToChannel(new MessageDTO(MessageType.JOIN, "SERVER", null, username + " đã vào!", LocalDateTime.now()), sessions);
+               messageService.broadcastToChannel(new MessageDTO(MessageType.JOIN, "SERVER", null, username + " đã vào!", LocalDateTime.now()));
            }
        } catch (Exception e) {
            session.close(new CloseStatus(4001, "Xác thực thất bại: " + e.getMessage()));
        }
+    }
+
+    @RabbitListener(queues = "#{broadcastQueue.name}")
+    public void handleBroadcastMessage(MessageDTO msg) {
+        try {
+            messageService.sendToLocalSessions(msg, sessions);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     @Override
@@ -76,7 +86,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             case CHAT -> {
                 ChatMessage saved = messageService.saveMessage(msg);
                 msg.setMessageId(saved.getId());
-                messageService.broadcastToChannel(msg, sessions);
+                messageService.broadcastToChannel(msg);
                 // Publish notification event cho notification-service (N1, N2, N5)
                 messageService.publishNotificationEvent(msg);
             }
@@ -89,7 +99,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     }
                     messageService.updateMessage(msg.getMessageId(), msg.getContent());
                     msg.setIsEdited(true);
-                    messageService.broadcastToChannel(msg, sessions);
+                    messageService.broadcastToChannel(msg);
                 }
             }
             case DELETE -> {
@@ -100,10 +110,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                         return;
                     }
                     messageService.deleteMessage(msg.getMessageId());
-                    messageService.broadcastToChannel(msg, sessions);
+                    // Soft Delete: broadcast như EDIT để mọi client cập nhật UI thành "Tin nhắn bị gỡ"
+                    msg.setType(MessageType.EDIT);
+                    msg.setContent("Tin nhắn bị gỡ");
+                    msg.setIsEdited(true);
+                    messageService.broadcastToChannel(msg);
                 }
             }
-            case TYPING -> messageService.broadcastToChannel(msg, sessions);
+            case TYPING -> messageService.broadcastToChannel(msg);
             case PRIVATE -> {
                 ChatMessage saved = messageService.saveMessage(msg);
                 msg.setMessageId(saved.getId());
@@ -127,7 +141,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (username != null) {
             sessions.remove(username);
             messageService.notifyPresence(username, "disconnect");
-            messageService.broadcastToChannel(new MessageDTO(MessageType.LEAVE, "SERVER", null, username + " rời đi!", LocalDateTime.now()), sessions);
+            messageService.broadcastToChannel(new MessageDTO(MessageType.LEAVE, "SERVER", null, username + " rời đi!", LocalDateTime.now()));
         }
     }
 

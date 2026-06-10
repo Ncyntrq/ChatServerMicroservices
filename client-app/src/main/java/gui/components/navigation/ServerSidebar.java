@@ -119,13 +119,6 @@ public class ServerSidebar extends JPanel {
                 if (onServerSelected != null) onServerSelected.accept(id, name);
                 refreshActiveStates();
             });
-            item.setOnContextMenu(() -> {
-                Window owner = SwingUtilities.getWindowAncestor(this);
-                new ServerSettingsDialog(owner, id, () -> {
-                    loadServers();
-                    if (onServerChanged != null) onServerChanged.accept(id);
-                }).setVisible(true);
-            });
             listPanel.add(item);
         }
 
@@ -173,8 +166,8 @@ public class ServerSidebar extends JPanel {
 
     private void showAddServerMenu(Component anchor) {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem createItem = new JMenuItem("Tạo Server Mới");
-        JMenuItem joinItem = new JMenuItem("Tham Gia Server");
+        JMenuItem createItem = new JMenuItem("Create Server");
+        JMenuItem joinItem = new JMenuItem("Join Server");
         Window owner = SwingUtilities.getWindowAncestor(this);
         createItem.addActionListener(e ->
                 new CreateServerDialog(owner, () -> {

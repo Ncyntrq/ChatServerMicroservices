@@ -41,11 +41,20 @@ public class FormField extends JPanel {
         textField.setForeground(AppColors.TEXT_NORMAL);
         textField.setCaretColor(AppColors.TEXT_WHITE);
         textField.setFont(AppFonts.BODY);
-        textField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppColors.SEPARATOR, 1),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)
-        ));
+        textField.setBorder(gui.theme.AppBorders.rounded(AppColors.SEPARATOR, 8, 10, 12));
         textField.setSelectionColor(AppColors.BRAND_PRIMARY);
+
+        // Add focus glow effect
+        textField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                textField.setBorder(gui.theme.AppBorders.rounded(AppColors.BRAND_PRIMARY, 8, 10, 12));
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                textField.setBorder(gui.theme.AppBorders.rounded(AppColors.SEPARATOR, 8, 10, 12));
+            }
+        });
 
         add(labelRow, BorderLayout.NORTH);
         add(textField, BorderLayout.CENTER);

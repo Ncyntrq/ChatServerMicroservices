@@ -39,4 +39,11 @@ public interface MessageRepository extends JpaRepository<ChatMessage, Long> {
     // serverId của 1 channel (suy ra từ chính tin nhắn của channel) — dùng để kiểm tra membership
     @Query("SELECT m.serverId FROM ChatMessage m WHERE m.channelId = :channelId AND m.serverId IS NOT NULL ORDER BY m.id DESC")
     List<Long> findServerIdsByChannel(@Param("channelId") Long channelId, Pageable pageable);
+
+    // --- API search dùng bởi MessageController (/search) ---
+    @Query("SELECT m FROM ChatMessage m WHERE m.channelId = :channelId AND LOWER(m.content) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.id DESC")
+    List<ChatMessage> searchByChannel(@Param("channelId") Long channelId, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.serverId = :serverId AND LOWER(m.content) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.id DESC")
+    List<ChatMessage> searchByServer(@Param("serverId") Long serverId, @Param("keyword") String keyword, Pageable pageable);
 }

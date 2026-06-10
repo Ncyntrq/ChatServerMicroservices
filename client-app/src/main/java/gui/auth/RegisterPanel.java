@@ -36,11 +36,11 @@ public class RegisterPanel extends JPanel {
             String pass = passwordField.getText();
             if (user.isEmpty() || pass.isEmpty()) {
                 statusLabel.setForeground(AppColors.DANGER);
-                statusLabel.setText("Vui lòng nhập username và password");
+                statusLabel.setText("Please enter username and password");
                 return;
             }
             statusLabel.setForeground(AppColors.TEXT_MUTED);
-            statusLabel.setText("Đang đăng ký...");
+            statusLabel.setText("Registering...");
 
             SwingWorker<String, Void> worker = new SwingWorker<>() {
                 @Override
@@ -53,7 +53,7 @@ public class RegisterPanel extends JPanel {
                     try {
                         String msg = get();
                         statusLabel.setForeground(AppColors.SUCCESS);
-                        statusLabel.setText("Đăng ký thành công! " + (msg == null ? "" : msg));
+                        statusLabel.setText("Registration successful! " + (msg == null ? "" : msg));
                         // Auto chuyển về tab Login sau 1s
                         Timer t = new Timer(800, ev -> {
                             if (parent != null) parent.showLoginTab();
@@ -64,7 +64,7 @@ public class RegisterPanel extends JPanel {
                         Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
                         String err = cause instanceof ApiException
                                 ? cause.getMessage()
-                                : "Đăng ký thất bại: " + cause.getMessage();
+                                : "Registration failed: " + cause.getMessage();
                         statusLabel.setForeground(AppColors.DANGER);
                         statusLabel.setText(err);
                     }

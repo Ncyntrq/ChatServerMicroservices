@@ -3,6 +3,7 @@ package gui;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.fonts.roboto.FlatRobotoFont;
 import gui.landing.LandingFrame;
 import gui.theme.AppColors;
 import gui.theme.Theme;
@@ -18,6 +19,8 @@ import java.util.Map;
 
 public class ClientApplication {
     public static void main(String[] args) {
+        FlatRobotoFont.install();
+        UIManager.put("defaultFont", new java.awt.Font(FlatRobotoFont.FAMILY, java.awt.Font.PLAIN, 14));
         applyLookAndFeel();
 
         SwingUtilities.invokeLater(() -> {

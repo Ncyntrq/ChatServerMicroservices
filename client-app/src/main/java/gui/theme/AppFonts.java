@@ -17,7 +17,7 @@ public final class AppFonts {
 
     // Preferred font families (in order of preference)
     private static final String PRIMARY_FAMILY = findAvailableFont(
-            "Segoe UI", "Noto Sans", ".SF NS", "Helvetica Neue", "SansSerif"
+            "Roboto", "Segoe UI", "Noto Sans", ".SF NS", "Helvetica Neue", "SansSerif"
     );
     private static final String EMOJI_FAMILY = findAvailableFont(
             "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", "SansSerif"
@@ -33,7 +33,7 @@ public final class AppFonts {
     // Heading fonts
     public static Font HEADING_LG, HEADING_MD, HEADING_SM;
     // Body fonts
-    public static Font BODY, BODY_BOLD, BODY_SM;
+    public static Font BODY, BODY_BOLD, BODY_ITALIC, BODY_SM;
     // Caption / Meta
     public static Font CAPTION, CAPTION_BOLD, TINY;
     // Emoji
@@ -55,6 +55,7 @@ public final class AppFonts {
 
         BODY = primary(Font.PLAIN, SZ_BODY);
         BODY_BOLD = primary(Font.BOLD, SZ_BODY_BOLD);
+        BODY_ITALIC = primary(Font.ITALIC, SZ_BODY);
         BODY_SM = primary(Font.PLAIN, SZ_BODY_SM);
 
         CAPTION = primary(Font.PLAIN, SZ_CAPTION);

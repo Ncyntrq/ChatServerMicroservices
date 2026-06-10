@@ -34,6 +34,9 @@ class NotificationServiceTest {
     @Mock
     private ReadStatusRepository readStatusRepository;
 
+    @Mock
+    private com.chatsever.notification.repository.UnreadCounterRepository unreadCounterRepository;
+
     @InjectMocks
     private NotificationService notificationService;
 
@@ -114,12 +117,13 @@ class NotificationServiceTest {
 
     @Test
     void getUnreadCounts_shouldReturnMapOfCounts() {
-        Notification n1 = new Notification("user1", 1L, null, "s1", NotificationType.MESSAGE, "msg1");
-        Notification n2 = new Notification("user1", 1L, null, "s2", NotificationType.MESSAGE, "msg2");
-        Notification n3 = new Notification("user1", 2L, null, "s3", NotificationType.MENTION, "msg3");
+        // getUnreadCounts đọc từ UnreadCounter (counter tổng hợp), không phải từng Notification.
+        com.chatsever.notification.model.UnreadCounter c1 =
+                new com.chatsever.notification.model.UnreadCounter("user1", 1L, null, null, 2);
+        com.chatsever.notification.model.UnreadCounter c2 =
+                new com.chatsever.notification.model.UnreadCounter("user1", 2L, null, null, 1);
 
-        when(notificationRepository.findByUserIdAndIsReadFalse("user1"))
-                .thenReturn(List.of(n1, n2, n3));
+        when(unreadCounterRepository.findByUserId("user1")).thenReturn(List.of(c1, c2));
 
         UnreadCountResponse response = notificationService.getUnreadCounts("user1");
 
