@@ -23,6 +23,13 @@ public class ChatInputContainer extends JPanel {
     private final JProgressBar uploadBar;
     private Runnable onAttach = () -> {};
     private Runnable onSend = () -> {};
+    private final JPopupMenu mentionPopup = new JPopupMenu();
+    private java.util.List<String> availableMentions = new java.util.ArrayList<>();
+
+    // Hàm để ChatClientGUI truyền dữ liệu thật vào
+    public void setAvailableMentions(java.util.List<String> mentions) {
+        this.availableMentions = mentions != null ? mentions : new java.util.ArrayList<>();
+    }
 
     /** Gắn handler khi bấm nút đính kèm (+). */
     public void setOnAttach(Runnable r) {
@@ -76,6 +83,13 @@ public class ChatInputContainer extends JPanel {
             @Override public void changedUpdate(DocumentEvent e) { adjustInputHeight(); }
         });
 
+        // --- Xử lý Tag (@) Mention ---
+        inputArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { checkMention(); }
+            @Override public void removeUpdate(DocumentEvent e) { checkMention(); }
+            @Override public void changedUpdate(DocumentEvent e) { checkMention(); }
+        });
+
         inputScroll = new JScrollPane(inputArea,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         inputScroll.setBorder(BorderFactory.createEmptyBorder());
@@ -91,18 +105,18 @@ public class ChatInputContainer extends JPanel {
             JPopupMenu emojiMenu = new JPopupMenu();
             emojiMenu.setLayout(new GridLayout(3, 5, 4, 4));
             emojiMenu.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-            
+
             for (Map.Entry<String, String> entry : EmojiHelper.EMOJIS.entrySet()) {
                 String shortcode = entry.getKey();
                 String twemojiCode = entry.getValue();
-                
+
                 JButton btn = new JButton();
                 btn.setPreferredSize(new Dimension(36, 36));
                 btn.setFocusPainted(false);
                 btn.setContentAreaFilled(false);
                 btn.setBorderPainted(false);
                 btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                
+
                 // Get preloaded icon or load it
                 ImageIcon icon = EmojiHelper.getEmojiIcon(twemojiCode, 24);
                 if (icon != null) {
@@ -110,13 +124,13 @@ public class ChatInputContainer extends JPanel {
                 } else {
                     btn.setText(shortcode);
                 }
-                
+
                 btn.addActionListener(ev -> {
                     inputArea.replaceSelection(shortcode + " ");
                     emojiMenu.setVisible(false);
                     inputArea.requestFocusInWindow();
                 });
-                
+
                 emojiMenu.add(btn);
             }
             Component source = (Component) e.getSource();
@@ -239,5 +253,72 @@ public class ChatInputContainer extends JPanel {
 
     public JTextArea getInputArea() {
         return inputArea;
+    }
+
+    private void checkMention() {
+        // Dùng invokeLater để đợi Document cập nhật xong text
+        SwingUtilities.invokeLater(() -> {
+            try {
+                int caret = inputArea.getCaretPosition();
+                String text = inputArea.getText();
+                if (caret == 0) { mentionPopup.setVisible(false); return; }
+
+                // Tìm vị trí bắt đầu của từ đang gõ (dấu cách hoặc xuống dòng gần nhất)
+                int startSpace = text.lastIndexOf(" ", caret - 1);
+                int startNewline = text.lastIndexOf("\n", caret - 1);
+                int start = Math.max(startSpace, startNewline);
+                start = (start == -1) ? 0 : start + 1;
+
+                String currentWord = text.substring(start, caret);
+
+                // Nếu từ đang gõ bắt đầu bằng '@'
+                if (currentWord.startsWith("@")) {
+                    String query = currentWord.substring(1); // Lấy phần chữ sau '@'
+                    showMentionPopup(query, start, caret);
+                } else {
+                    mentionPopup.setVisible(false);
+                }
+            } catch (Exception ex) {
+                mentionPopup.setVisible(false);
+            }
+        });
+    }
+
+    private void showMentionPopup(String query, int wordStart, int caret) {
+        mentionPopup.removeAll();
+
+        boolean hasItem = false;
+        // Quét trên danh sách thực tế đã được truyền từ Server vào
+        for (String member : availableMentions) {
+            // Lọc danh sách theo từ khoá đang gõ
+            if (member.toLowerCase().startsWith(query.toLowerCase())) {
+                JMenuItem item = new JMenuItem(member);
+                item.setFont(AppFonts.BODY);
+                item.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                item.addActionListener(e -> {
+                    try {
+                        // Khi click, thay thế chuỗi @... đang gõ bằng @username hoàn chỉnh
+                        inputArea.getDocument().remove(wordStart, inputArea.getCaretPosition() - wordStart);
+                        inputArea.getDocument().insertString(wordStart, "@" + member + " ", null);
+                        mentionPopup.setVisible(false);
+                        inputArea.requestFocusInWindow(); // Trả lại focus cho ô nhập
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                });
+                mentionPopup.add(item);
+                hasItem = true;
+            }
+        }
+
+        if (hasItem) {
+            try {
+                // Tính toán toạ độ để hiển thị Popup ngay trên chữ @
+                Rectangle rect = inputArea.modelToView2D(wordStart).getBounds();
+                mentionPopup.show(inputArea, (int) rect.getX(), (int) rect.getY() - mentionPopup.getPreferredSize().height);
+            } catch (Exception ex) {}
+        } else {
+            mentionPopup.setVisible(false);
+        }
     }
 }

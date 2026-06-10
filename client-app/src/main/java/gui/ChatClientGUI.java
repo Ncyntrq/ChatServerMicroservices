@@ -71,7 +71,7 @@ public class ChatClientGUI extends JFrame {
     // Header vùng chat (tiêu đề kênh + icon ghim 📌)
     private JLabel channelTitleLabel;
     private JPanel channelHeaderPanel;
-    
+
     private gui.components.chat.TypingIndicatorPanel typingIndicatorPanel;
 
     private long activeServerId = -1;
@@ -308,9 +308,14 @@ public class ChatClientGUI extends JFrame {
             westPanel.add(friendSidebar, BorderLayout.CENTER);
             eastContainer.setVisible(false); // Ẩn thanh thành viên
             chatInput.setVisible(false);      // Ẩn thanh nhập khi ở Home
+
+            // ---> NOTE 1: Xóa danh sách Tag @ khi về trang chủ
+            chatInput.setAvailableMentions(List.of());
+
             if (chatHistoryView != null) {
-            chatHistoryView.setPlaceholderText("Welcome to ChatServer! Select a server, channel, or friend to start chatting.");
-        }    clearChat();
+                chatHistoryView.setPlaceholderText("Welcome to ChatServer! Select a server, channel, or friend to start chatting.");
+            }
+            clearChat();
             memberListView.renderOnline(List.of());
             loadPresence();
         } else {
@@ -365,6 +370,9 @@ public class ChatClientGUI extends JFrame {
         setChannelHeader("@ " + username);
         chatHistoryView.setPlaceholderText("Send your first message to " + username);
         clearChat();
+
+        // ---> NOTE 2: Nạp tên bạn bè vào danh sách Tag @ (chỉ tag được người đang chat cùng)
+        chatInput.setAvailableMentions(List.of(username));
 
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() { notificationApi.ackDm(username, sessionUsername); return null; }
@@ -446,6 +454,10 @@ public class ChatClientGUI extends JFrame {
                     String ownerId = String.valueOf(serverData.get("ownerId"));
 
                     memberListView.renderServerMembers(allUsers, online, ownerId);
+
+                    // ---> NOTE 3: Nạp toàn bộ thành viên của Server vào danh sách Tag @
+                    chatInput.setAvailableMentions(allUsers);
+
                 } catch (Exception ex) {
                     // giữ nguyên hiển thị cũ nếu lỗi
                 }

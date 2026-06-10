@@ -167,12 +167,11 @@ public class ChatMessageItem extends JPanel {
         add(row, BorderLayout.CENTER);
     }
 
-    /** Thân tin dạng text: JTextPane render emoji + wrap (bẻ được cả từ dài) + giới hạn bề rộng. */
+    /** Thân tin dạng text: Xử lý hiển thị Tag @ (Màu xanh) và bẻ wrap từ dài */
     private JTextPane createTextBody(String content, int topPadding) {
         final String raw = content == null ? "" : content;
         JTextPane pane = new JTextPane() {
             @Override public Dimension getPreferredSize() {
-                // Bề rộng ÔM SÁT nội dung: = dòng dài nhất (cap ở maxBubble) ⇒ box & toolbar bám sát tin.
                 int cap = maxBubbleWidth();
                 FontMetrics fm = getFontMetrics(getFont());
                 int longest = 0;
@@ -181,18 +180,32 @@ public class ChatMessageItem extends JPanel {
                 setSize(w, Short.MAX_VALUE);
                 return new Dimension(w, super.getPreferredSize().height);
             }
-            @Override public Dimension getMaximumSize() {
-                return getPreferredSize();
-            }
+            @Override public Dimension getMaximumSize() { return getPreferredSize(); }
         };
-        pane.setEditorKit(new WrapEditorKit()); // bẻ giữa từ dài (URL/chuỗi liền)
+        pane.setEditorKit(new WrapEditorKit());
         pane.setEditable(false);
         pane.setOpaque(false);
-        pane.setForeground(AppColors.TEXT_NORMAL);
-        pane.setFont(AppFonts.BODY);
         pane.setAlignmentX(Component.LEFT_ALIGNMENT);
         pane.setBorder(BorderFactory.createEmptyBorder(topPadding, 0, 0, 0));
-        EmojiHelper.renderTextWithEmojis(pane, content);
+        EmojiHelper.renderTextWithEmojis(pane, raw);
+
+        try {
+            javax.swing.text.StyledDocument doc = pane.getStyledDocument();
+            String docText = doc.getText(0, doc.getLength());
+
+            javax.swing.text.SimpleAttributeSet mentionStyle = new javax.swing.text.SimpleAttributeSet();
+            javax.swing.text.StyleConstants.setForeground(mentionStyle, new Color(88, 101, 242));
+            javax.swing.text.StyleConstants.setBold(mentionStyle, true);
+
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@[\\p{L}\\p{N}_]+");
+            java.util.regex.Matcher matcher = pattern.matcher(docText);
+
+            while (matcher.find()) {
+                doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), mentionStyle, false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return pane;
     }
 
@@ -313,6 +326,8 @@ public class ChatMessageItem extends JPanel {
 
         add(west, BorderLayout.WEST);
         add(centerWrap, BorderLayout.CENTER);
+
+
     }
 
     private void addEditedBadge() {
@@ -496,7 +511,28 @@ public class ChatMessageItem extends JPanel {
     /** Cập nhật nội dung khi nhận broadcast EDIT từ server. */
     public void updateContent(String newContent, boolean edited) {
         if (messageBody != null) {
-            EmojiHelper.renderTextWithEmojis(messageBody, newContent); // giữ render emoji
+            messageBody.setText(newContent);
+            try {
+                javax.swing.text.SimpleAttributeSet normalStyle = new javax.swing.text.SimpleAttributeSet();
+                javax.swing.text.StyleConstants.setForeground(normalStyle, AppColors.TEXT_NORMAL);
+
+                javax.swing.text.SimpleAttributeSet mentionStyle = new javax.swing.text.SimpleAttributeSet();
+                javax.swing.text.StyleConstants.setForeground(mentionStyle, new Color(88, 101, 242));
+                javax.swing.text.StyleConstants.setBold(mentionStyle, true);
+
+                javax.swing.text.StyledDocument doc = messageBody.getStyledDocument();
+                doc.setCharacterAttributes(0, doc.getLength(), normalStyle, true);
+
+                // FIX LỖI OFFSET TƯƠNG TỰ BÊN TRÊN
+                String docText = doc.getText(0, doc.getLength());
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@[\\p{L}\\p{N}_.]+");
+                java.util.regex.Matcher matcher = pattern.matcher(docText);
+
+                while (matcher.find()) {
+                    doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), mentionStyle, false);
+                }
+            } catch (Exception e) {}
+
             messageBody.revalidate();
         }
         message.setContent(newContent);

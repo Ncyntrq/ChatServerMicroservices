@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class EmojiHelper {
     private static final String BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/";
-    
+
     public static final Map<String, String> EMOJIS = new LinkedHashMap<>();
     private static final Map<String, ImageIcon> CACHE = new ConcurrentHashMap<>();
 
@@ -31,7 +31,7 @@ public class EmojiHelper {
         EMOJIS.put(":fire:", "1f525");
         EMOJIS.put(":sparkles:", "2728");
         EMOJIS.put(":tada:", "1f389");
-        
+
         // Preload emojis in background thread
         new Thread(() -> {
             for (Map.Entry<String, String> entry : EMOJIS.entrySet()) {
@@ -64,13 +64,13 @@ public class EmojiHelper {
     public static void renderTextWithEmojis(JTextPane textPane, String text) {
         textPane.setText("");
         if (text == null || text.isEmpty()) return;
-        
+
         String remaining = text;
         while (!remaining.isEmpty()) {
             int firstMatchIdx = -1;
             String foundShortcode = null;
             String foundTwemoji = null;
-            
+
             for (Map.Entry<String, String> entry : EMOJIS.entrySet()) {
                 int idx = remaining.indexOf(entry.getKey());
                 if (idx != -1) {
@@ -81,7 +81,7 @@ public class EmojiHelper {
                     }
                 }
             }
-            
+
             try {
                 if (firstMatchIdx != -1 && foundShortcode != null && foundTwemoji != null) {
                     // Append text before the shortcode
