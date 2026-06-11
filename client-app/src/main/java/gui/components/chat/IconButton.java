@@ -47,6 +47,19 @@ public class IconButton extends JButton {
         this(iconText, null);
     }
 
+    /** Constructor nhận Icon vẽ tay — không phụ thuộc font/emoji. */
+    public IconButton(Icon icon, ActionListener onClick) {
+        this("", onClick);
+        setIcon(icon);
+        setFont(AppFonts.BODY);       // không cần EMOJI font nữa
+        setHorizontalAlignment(CENTER);
+        setVerticalAlignment(CENTER);
+    }
+
+    public IconButton(Icon icon) {
+        this(icon, null);
+    }
+
     /** Biến thể nhỏ gọn (vd toolbar tin nhắn): font emoji nhỏ + kích thước tùy chỉnh. */
     public IconButton(String iconText, ActionListener onClick, int size) {
         this(iconText, onClick);

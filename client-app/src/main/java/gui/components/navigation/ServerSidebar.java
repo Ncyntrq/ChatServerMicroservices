@@ -24,6 +24,8 @@ public class ServerSidebar extends JPanel {
     private final JPanel listPanel;
     private final ServerApiClient serverApi = new ServerApiClient();
     private final Map<Long, ServerIconItem> serverItems = new java.util.HashMap<>();
+    private final Map<Long, String> serverNames = new java.util.HashMap<>();
+    private final Map<Long, String> serverIconUrls = new java.util.HashMap<>();
     // Cache unread cuối cùng — re-apply sau rebuild để badge không mất khi điều hướng
     private final Map<Long, Integer> lastUnread = new java.util.HashMap<>();
 
@@ -75,6 +77,8 @@ public class ServerSidebar extends JPanel {
     private void renderServers(List<Map<String, Object>> servers) {
         listPanel.removeAll();
         serverItems.clear();
+        serverNames.clear();
+        serverIconUrls.clear();
 
         listPanel.add(Box.createVerticalStrut(10));
         ServerIconItem homeBtn = new ServerIconItem("💬");
@@ -101,6 +105,9 @@ public class ServerSidebar extends JPanel {
         for (Map<String, Object> server : servers) {
             long id = asLong(server.get("id"));
             String name = str(server.get("name"));
+            String iconUrl = str(server.get("icon"));
+            serverNames.put(id, name);
+            serverIconUrls.put(id, iconUrl);
             String symbol = (name == null || name.isBlank()) ? "?" : name.substring(0, 1).toUpperCase();
 
             ServerIconItem item = new ServerIconItem(symbol);
@@ -108,7 +115,6 @@ public class ServerSidebar extends JPanel {
             item.setAlignmentX(Component.CENTER_ALIGNMENT);
             item.setActive(id == activeServerId);
             
-            String iconUrl = str(server.get("icon"));
             if (iconUrl != null && !iconUrl.isBlank()) {
                 if (!iconUrl.startsWith("http")) iconUrl = network.ApiConfig.GATEWAY_HTTP + iconUrl;
                 item.loadServerIconFromUrl(iconUrl);
@@ -150,6 +156,14 @@ public class ServerSidebar extends JPanel {
             lastUnread.putAll(unreadCounts);
             applyUnread();
         });
+    }
+
+    public String getServerName(long id) {
+        return serverNames.get(id);
+    }
+
+    public String getServerIconUrl(long id) {
+        return serverIconUrls.get(id);
     }
 
     /** Áp dụng unread đã cache lên các icon server hiện có. */

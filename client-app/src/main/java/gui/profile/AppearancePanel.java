@@ -2,6 +2,7 @@ package gui.profile;
 
 import gui.ChatClientGUI;
 import gui.ClientApplication;
+import gui.components.AppIcons;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 import gui.theme.Theme;
@@ -33,8 +34,10 @@ public class AppearancePanel extends JPanel {
         add(title, gc);
 
         ButtonGroup group = new ButtonGroup();
-        JRadioButton darkBtn = themeRadio("🌙  Tối", Theme.DARK, group, dialog);
-        JRadioButton lightBtn = themeRadio("☀  Sáng", Theme.LIGHT, group, dialog);
+
+        // Dùng AppIcons thay emoji — tương thích mọi OS
+        JRadioButton darkBtn  = themeRadio("  Tối",   AppIcons.moon(16), Theme.DARK,  group, dialog);
+        JRadioButton lightBtn = themeRadio("  Sáng",  AppIcons.sun(16),  Theme.LIGHT, group, dialog);
 
         Theme current = ThemeManager.get().current();
         darkBtn.setSelected(current == Theme.DARK);
@@ -58,19 +61,19 @@ public class AppearancePanel extends JPanel {
 
     /** Combo chọn hoạ tiết nền: Ngẫu nhiên / Không nền / từng pattern. */
     private JComboBox<String> buildWallpaperSelector(JDialog dialog) {
-        Map<String, String> options = new LinkedHashMap<>(); // label -> value
+        Map<String, String> options = new LinkedHashMap<>(); // label → value
         options.put("Ngẫu nhiên", WallpaperManager.RANDOM);
-        options.put("Không nền", WallpaperManager.NONE);
-        options.put("Mèo", "cats");
-        options.put("Star Wars", "starwars");
-        options.put("Kẹo ngọt", "sweets");
+        options.put("Không nền",  WallpaperManager.NONE);
+        options.put("Mèo",        "cats");
+        options.put("Star Wars",  "starwars");
+        options.put("Kẹo ngọt",   "sweets");
 
         JComboBox<String> combo = new JComboBox<>(options.keySet().toArray(new String[0]));
         combo.setFont(AppFonts.BODY);
         // Chọn sẵn theo cấu hình hiện tại
-        String current = WallpaperManager.get().selection();
+        String cur = WallpaperManager.get().selection();
         options.entrySet().stream()
-                .filter(e -> e.getValue().equals(current))
+                .filter(e -> e.getValue().equals(cur))
                 .findFirst()
                 .ifPresent(e -> combo.setSelectedItem(e.getKey()));
 
@@ -85,12 +88,22 @@ public class AppearancePanel extends JPanel {
         return combo;
     }
 
-    private JRadioButton themeRadio(String text, Theme theme, ButtonGroup group, JDialog dialog) {
-        JRadioButton btn = new JRadioButton(text);
+    /**
+     * JRadioButton với icon Java2D ở trái, text ở phải.
+     * Icon tự đổi màu theo foreground của button (khi disabled / hover).
+     */
+    private JRadioButton themeRadio(String text, Icon icon, Theme theme, ButtonGroup group, JDialog dialog) {
+        JRadioButton btn = new JRadioButton(text, icon) {
+            // Đảm bảo icon luôn được sơn với màu foreground hiện tại
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+            }
+        };
         btn.setFont(AppFonts.BODY);
         btn.setForeground(AppColors.TEXT_NORMAL);
         btn.setOpaque(false);
         btn.setFocusPainted(false);
+        btn.setIconTextGap(6);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         group.add(btn);
         btn.addActionListener(e -> applyTheme(theme, dialog));
@@ -100,6 +113,6 @@ public class AppearancePanel extends JPanel {
     private void applyTheme(Theme theme, JDialog dialog) {
         if (theme == ThemeManager.get().current()) return;
         ThemeManager.get().set(theme);
-        ClientApplication.applyThemeLive(theme); // đổi tại chỗ, dialog tự được re-theme
+        ClientApplication.applyThemeLive(theme);
     }
 }

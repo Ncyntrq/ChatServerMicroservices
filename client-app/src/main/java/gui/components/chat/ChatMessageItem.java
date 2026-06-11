@@ -3,6 +3,7 @@ package gui.components.chat;
 import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import gui.components.AvatarBadge;
+import gui.components.AppIcons;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 import network.FileApiClient;
@@ -385,7 +386,7 @@ public class ChatMessageItem extends JPanel {
         }
 
         if (hasActions) {
-            IconButton moreBtn = new IconButton("⋯", null);
+            IconButton moreBtn = new IconButton(AppIcons.ellipsis(14), null);
             moreBtn.setToolTipText("Tùy chọn");
             moreBtn.addActionListener(e -> showActionMenu(moreBtn, canEdit, canPin, canDelete));
             toolbar.add(moreBtn);
@@ -405,9 +406,9 @@ public class ChatMessageItem extends JPanel {
     /** Mở menu hành động (Sửa/Ghim/Xóa) ngay dưới nút "⋯". */
     private void showActionMenu(JComponent anchor, boolean canEdit, boolean canPin, boolean canDelete) {
         JPopupMenu menu = new JPopupMenu();
-        if (canEdit) menu.add(actionItem("✏  Sửa", this::startEditing));
-        if (canPin) menu.add(actionItem("📌  Ghim", () -> { if (actions != null) actions.onPin(message); }));
-        if (canDelete) menu.add(actionItem("🗑  Xóa", this::confirmDelete));
+        if (canEdit) menu.add(actionItem("  Sửa tin nhắn", this::startEditing));
+        if (canPin) menu.add(actionItem("  Ghim tin nhắn", () -> { if (actions != null) actions.onPin(message); }));
+        if (canDelete) menu.add(actionItem("  Xóa tin nhắn", this::confirmDelete));
 
         menuOpen = true; // giữ toolbar hiện trong lúc menu mở (chuột rời item không ẩn nút)
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
@@ -767,8 +768,8 @@ public class ChatMessageItem extends JPanel {
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.setMaximumSize(new Dimension(340, 68));
 
-        JLabel icon = new JLabel(fileEmoji(att.name));
-        icon.setFont(AppFonts.EMOJI);
+        // Icon file: thay emoji (dễ bị ô vuông) bằng badge màu + text viết tắt
+        JLabel icon = buildFileIconLabel(att.name);
         card.add(icon, BorderLayout.WEST);
 
         JPanel center = new JPanel();
@@ -786,7 +787,7 @@ public class ChatMessageItem extends JPanel {
         center.add(size);
         card.add(center, BorderLayout.CENTER);
 
-        IconButton download = new IconButton("⬇", e -> downloadFile(att));
+        IconButton download = new IconButton(AppIcons.download(16), e -> downloadFile(att));
         download.setToolTipText("Tải xuống");
         JPanel dlWrap = new JPanel(new BorderLayout());
         dlWrap.setOpaque(false);
@@ -872,12 +873,44 @@ public class ChatMessageItem extends JPanel {
         return String.format("%.1f MB", b / (1024.0 * 1024));
     }
 
+    /** Badge icon cho loại tệp — không dùng emoji (tránh ô vuông). */
+    private JLabel buildFileIconLabel(String name) {
+        String n = name == null ? "" : name.toLowerCase();
+        record FileType(String abbr, Color color) {}
+        FileType ft;
+        if      (n.endsWith(".pdf"))                                     ft = new FileType("PDF", new Color(0xE74C3C));
+        else if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z")) ft = new FileType("ZIP", new Color(0xF39C12));
+        else if (n.endsWith(".doc") || n.endsWith(".docx"))              ft = new FileType("DOC", new Color(0x2980B9));
+        else if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv")) ft = new FileType("XLS", new Color(0x27AE60));
+        else if (n.endsWith(".mp3") || n.endsWith(".wav") || n.endsWith(".ogg")) ft = new FileType("AUD", new Color(0x9B59B6));
+        else if (n.endsWith(".mp4") || n.endsWith(".mkv") || n.endsWith(".avi")) ft = new FileType("VID", new Color(0xE67E22));
+        else                                                             ft = new FileType("FILE", new Color(0x7F8C8D));
+
+        JLabel label = new JLabel(ft.abbr(), SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(ft.color());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("SansSerif", Font.BOLD, 10));
+        label.setPreferredSize(new Dimension(38, 38));
+        label.setOpaque(false);
+        return label;
+    }
+
+    /** @deprecated Thay bằng buildFileIconLabel() */
+    @SuppressWarnings("unused")
     private String fileEmoji(String name) {
         String n = name == null ? "" : name.toLowerCase();
-        if (n.endsWith(".pdf")) return "📕";
-        if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z")) return "📦";
-        if (n.endsWith(".doc") || n.endsWith(".docx")) return "📝";
-        if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv")) return "📊";
-        return "📄";
+        if (n.endsWith(".pdf")) return "PDF";
+        if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z")) return "ZIP";
+        if (n.endsWith(".doc") || n.endsWith(".docx")) return "DOC";
+        if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv")) return "XLS";
+        return "FILE";
     }
 }

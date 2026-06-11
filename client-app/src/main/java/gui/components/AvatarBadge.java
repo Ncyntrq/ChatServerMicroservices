@@ -14,6 +14,12 @@ public class AvatarBadge extends JPanel {
     private final Color bgColor;
     private Image avatarImage;
     private final int size;
+    private boolean isLoading = false;
+
+    public void setLoading(boolean loading) {
+        this.isLoading = loading;
+        repaint();
+    }
 
     public AvatarBadge(String initial) {
         this(initial, 40);
@@ -53,28 +59,17 @@ public class AvatarBadge extends JPanel {
             return;
         }
 
-        new Thread(() -> {
-            try {
-                String token = network.SessionManager.get().getAccessToken();
-                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
-                        .uri(java.net.URI.create(urlString))
-                        .header("Authorization", "Bearer " + token)
-                        .GET()
-                        .build();
-                java.net.http.HttpResponse<byte[]> resp = network.HttpClientHolder.get().send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
-                if (resp.statusCode() == 200) {
-                    Image downloadedImage = ImageIO.read(new java.io.ByteArrayInputStream(resp.body()));
-                    if (downloadedImage != null) {
-                        Image scaledImg = downloadedImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
-                        gui.utils.ImageCache.put(urlString, scaledImg);
-                        SwingUtilities.invokeLater(() -> setAvatarImage(scaledImg));
-                    }
-                }
-            } catch (Exception e) {
-                if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                System.err.println("Failed to load avatar from URL: " + urlString + " (" + e.getMessage() + ")");
+        this.isLoading = true;
+        repaint();
+
+        gui.utils.ImageCache.loadAsync(urlString, size, img -> {
+            this.isLoading = false;
+            if (img != null) {
+                setAvatarImage(img);
+            } else {
+                repaint();
             }
-        }).start();
+        });
     }
 
     @Override
@@ -95,6 +90,10 @@ public class AvatarBadge extends JPanel {
             Shape circle = new Ellipse2D.Double(0, 0, w, h);
             g2.setClip(circle);
             g2.drawImage(avatarImage, 0, 0, w, h, this);
+        } else if (isLoading) {
+            // Hiệu ứng skeleton mờ nhẹ để không hiển thị chữ
+            g2.setColor(AppColors.BG_TERTIARY != null ? AppColors.BG_TERTIARY : new Color(30, 31, 34));
+            g2.fillOval(0, 0, w, h);
         } else {
             // Gradient fill for richer visual
             g2.setColor(bgColor);

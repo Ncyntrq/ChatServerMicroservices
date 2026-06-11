@@ -9,6 +9,7 @@ import gui.chat.UnreadCountSync;
 import gui.components.channels.ChannelSidebar;
 import gui.components.chat.ChatMessageItem;
 import gui.components.chat.ChatInputContainer;
+import gui.components.AppIcons;
 import gui.components.chat.IconButton;
 import gui.components.feedback.Toast;
 import gui.components.friends.FriendSidebar;
@@ -107,6 +108,9 @@ public class ChatClientGUI extends JFrame {
         this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId);
         this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast);
 
+        // Khởi tạo SystemTray (icon notification khi app minimize)
+        gui.notification.SystemTrayManager.get().init(this);
+
         wireSidebarCallbacks();
 
         westPanel = new JPanel(new BorderLayout());
@@ -198,10 +202,10 @@ public class ChatClientGUI extends JFrame {
         channelTitleLabel.setFont(AppFonts.BODY_BOLD);
         channelTitleLabel.setForeground(AppColors.TEXT_HEADER);
 
-        IconButton pinBtn = new IconButton("📌", e -> pinController.openDialog());
+        IconButton pinBtn = new IconButton(AppIcons.pin(16), e -> pinController.openDialog());
         pinBtn.setToolTipText("Pinned messages");
 
-        IconButton toggleMiniBtn = new IconButton("👥", e -> {
+        IconButton toggleMiniBtn = new IconButton(AppIcons.users(18), e -> {
             boolean show = !miniSidebar.isVisible();
             miniSidebar.setVisible(show);
             if (show) miniSidebar.refresh();
@@ -210,7 +214,7 @@ public class ChatClientGUI extends JFrame {
         });
         toggleMiniBtn.setToolTipText("Friends & Servers");
 
-        IconButton searchBtn = new IconButton("🔍", e -> openSearchDialog());
+        IconButton searchBtn = new IconButton(AppIcons.search(16), e -> openSearchDialog());
         searchBtn.setToolTipText("Search messages");
 
         JPanel headerRightWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -570,8 +574,17 @@ public class ChatClientGUI extends JFrame {
             case SYSTEM -> appendSystem(msg.getContent());
             case ERROR -> Toast.error(this, msg.getContent());
             case TYPING -> {
-                if (belongsToActiveChannel(msg) && !sessionUsername.equals(msg.getSender())) {
+                if (belongsToActiveTyping(msg) && !sessionUsername.equals(msg.getSender())) {
                     typingIndicatorPanel.addTypingUser(msg.getSender());
+                }
+            }
+            case STATUS -> {
+                // Cập nhật trạng thái real-time: sender=username, content=statusName (vd "IDLE")
+                String who = msg.getSender();
+                String statusStr = msg.getContent();
+                if (who != null && statusStr != null && !sessionUsername.equals(who)) {
+                    memberListView.updateUserStatus(who, statusStr);
+                    friendSidebar.updateUserStatus(who, statusStr);
                 }
             }
             case PING, PONG -> { /* ignore */ }
@@ -592,6 +605,69 @@ public class ChatClientGUI extends JFrame {
         } else {
             unreadSync.refresh();
         }
+
+        // Notify OS
+        if (msg.getSender() != null && !msg.getSender().equals(sessionUsername)) {
+            new Thread(() -> {
+                String title, content, avatarText, avatarUrl;
+                Runnable onClick;
+
+                if (msg.getType() == MessageType.PRIVATE) {
+                    title = "Tin nhắn từ " + msg.getSender();
+                    content = msg.getContent();
+                    avatarText = msg.getSender();
+                    
+                    java.util.Map<String, Object> profile = network.UserProfileCache.get(msg.getSender());
+                    if (profile == null) {
+                        try {
+                            profile = new network.UserProfileApiClient().getProfile(msg.getSender());
+                        } catch (Exception ignored) {}
+                    }
+                    avatarUrl = (profile != null && profile.get("avatarUrl") != null) ? profile.get("avatarUrl").toString() : null;
+                    if (avatarUrl == null && profile != null && profile.get("avatar") != null) avatarUrl = profile.get("avatar").toString();
+
+                    onClick = () -> {
+                        gui.notification.SystemTrayManager.get().restoreApp();
+                        openDirectMessage(msg.getSender());
+                    };
+                } else {
+                    String serverName = serverSidebar.getServerName(msg.getServerId());
+                    if (serverName == null || serverName.isBlank()) serverName = "Server";
+                    
+                    String channelName = channelSidebar.getChannelName(msg.getChannelId());
+                    if (channelName == null || channelName.isBlank()) {
+                        try {
+                            java.util.List<java.util.Map<String, Object>> channels = new network.ChannelApiClient().getChannelsByServer(msg.getServerId());
+                            for (java.util.Map<String, Object> ch : channels) {
+                                if (String.valueOf(msg.getChannelId()).equals(String.valueOf(ch.get("id")))) {
+                                    channelName = ch.get("name") != null ? ch.get("name").toString() : null;
+                                    break;
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    if (channelName == null || channelName.isBlank()) channelName = "Kênh";
+                    
+                    title = serverName;
+                    avatarText = serverName;
+                    avatarUrl = serverSidebar.getServerIconUrl(msg.getServerId());
+                    content = "#" + channelName + " - " + msg.getSender() + ": " + msg.getContent();
+                    
+                    onClick = () -> {
+                        gui.notification.SystemTrayManager.get().restoreApp();
+                        onServerSelected(msg.getServerId(), serverSidebar.getServerName(msg.getServerId()));
+                        SwingUtilities.invokeLater(() -> onChannelSelected(msg.getChannelId()));
+                    };
+                }
+
+                if (content == null || content.isEmpty() || content.endsWith(": null")) {
+                    if (msg.getType() == MessageType.PRIVATE) content = "[Tệp đính kèm]";
+                    else content = "#" + channelSidebar.getChannelName(msg.getChannelId()) + " - " + msg.getSender() + " đã gửi 1 tệp đính kèm";
+                }
+
+                gui.notification.SystemTrayManager.get().notifyNewMessage(title, content, avatarText, avatarUrl, onClick);
+            }).start();
+        }
     }
 
     /** Chỉ hiển thị tin của channel đang mở, hoặc tin private. */
@@ -603,6 +679,28 @@ public class ChatClientGUI extends JFrame {
             return isFromFriend || isToFriend;
         }
         return msg.getChannelId() == null || msg.getChannelId() == activeChannelId;
+    }
+
+    /**
+     * Lọc sự kiện TYPING: chỉ hiển thị khi đang ở đúng channel/DM mà người gõ đang nhắn.
+     * - DM typing: receiver phải là mình VÀ sender phải là người đang chat cùng.
+     * - Channel typing: channelId phải khớp VÀ serverId phải khớp.
+     * Tách riêng khỏi belongsToActiveChannel vì TYPING có trường receiver (khác PRIVATE message).
+     */
+    private boolean belongsToActiveTyping(MessageDTO msg) {
+        boolean isDmTyping = msg.getReceiver() != null;
+        if (isDmTyping) {
+            // DM typing: chỉ hiển thị nếu đang mở DM với đúng người gửi
+            // và receiver của typing event là chính mình
+            return activePrivateUser != null
+                    && activePrivateUser.equals(msg.getSender())
+                    && sessionUsername.equals(msg.getReceiver());
+        }
+        // Channel typing: phải đang ở đúng channel VÀ đúng server
+        if (activeChannelId <= 0 || activePrivateUser != null) return false;
+        boolean channelMatch = msg.getChannelId() != null && msg.getChannelId() == activeChannelId;
+        boolean serverMatch = msg.getServerId() == null || msg.getServerId() == activeServerId;
+        return channelMatch && serverMatch;
     }
 
     /** Tin SYSTEM thật từ server → giữ trong luồng chat. */

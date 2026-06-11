@@ -67,6 +67,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Nhận sự kiện thay đổi trạng thái user từ presence-service (qua routing key "presence.status").
+     * Broadcast xuống TẤT CẢ WebSocket sessions — mọi client sẽ nhận và cập nhật UI.
+     */
+    @RabbitListener(queues = "#{presenceQueue.name}")
+    public void handlePresenceStatusEvent(MessageDTO msg) {
+        try {
+            messageService.broadcastToChannel(msg); // reuse fanout để gửi tới tất cả nodes
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         MessageDTO msg = objectMapper.readValue(message.getPayload(), MessageDTO.class);
@@ -118,6 +132,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 }
             }
             case TYPING -> messageService.broadcastToChannel(msg);
+            case STATUS -> {} // STATUS được publish từ presence-service qua RabbitMQ, không xử lý tại đây
             case PRIVATE -> {
                 ChatMessage saved = messageService.saveMessage(msg);
                 msg.setMessageId(saved.getId());
@@ -129,8 +144,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             default -> {}
         }
         
-        // Log event
-        if (msg.getType() != MessageType.TYPING && msg.getType() != MessageType.PING) {
+        // Log event (bỏ qua TYPING, PING, STATUS để không spam log)
+        if (msg.getType() != MessageType.TYPING
+                && msg.getType() != MessageType.PING
+                && msg.getType() != MessageType.STATUS) {
             messageService.publishLogEvent(msg);
         }
     }

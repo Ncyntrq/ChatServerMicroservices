@@ -40,6 +40,29 @@ public class PresenceApiClient {
         }
     }
 
+    // P5 — Cập nhật trạng thái hoạt động (ONLINE / IDLE / AWAY / DO_NOT_DISTURB / INVISIBLE)
+    public void updatePresenceStatus(String status) {
+        String token = SessionManager.get().getAccessToken();
+        if (token == null) throw new ApiException("Chưa đăng nhập — không có token");
+        String url = ApiConfig.GATEWAY_HTTP + "/api/presence/status?status=" + status;
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Authorization", "Bearer " + token)
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> resp = HttpClientHolder.get().send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("Không cập nhật được trạng thái: " + e.getMessage(), e);
+        }
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------

@@ -1,6 +1,7 @@
 package gui.components.friends;
 
 import gui.components.channels.UserFooterPanel;
+import gui.components.AppIcons;
 import gui.components.chat.IconButton;
 import gui.components.chat.SidebarCategoryHeader;
 import gui.components.chat.UserListItem;
@@ -53,7 +54,8 @@ public class FriendSidebar extends JPanel {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
 
-        IconButton addFriendBtn = new IconButton("➕", e -> showAddFriendDialog());
+        IconButton addFriendBtn = new IconButton(AppIcons.plus(14), e -> showAddFriendDialog());
+        addFriendBtn.setToolTipText("Thêm bạn bè");
         JPanel addWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
         addWrap.setOpaque(false);
         addWrap.add(addFriendBtn);
@@ -140,6 +142,20 @@ public class FriendSidebar extends JPanel {
             entry.getValue().setUnreadCount(count != null ? count : 0);
         }
     }
+
+    /**
+     * Cập nhật trạng thái real-time cho 1 người bạn khi nhận STATUS WebSocket event.
+     * Chỉ repaint item tìm được, không rebuild toàn danh sách.
+     */
+    public void updateUserStatus(String username, String statusStr) {
+        SwingUtilities.invokeLater(() -> {
+            UserListItem item = friendItems.get(username);
+            if (item != null) {
+                item.updatePresenceStatus(statusStr);
+            }
+        });
+    }
+
 
     private void renderLists(List<String> friends, List<String> pending, List<String> onlineUsers) {
         listPanel.removeAll();

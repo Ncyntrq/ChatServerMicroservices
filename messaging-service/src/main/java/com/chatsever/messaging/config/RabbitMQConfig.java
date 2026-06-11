@@ -32,8 +32,21 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(broadcastQueue).to(chatFanout);
     }
 
+    /** Queue riêng cho sự kiện thay đổi trạng thái user từ presence-service. */
+    @Bean
+    public Queue presenceQueue() {
+        return new AnonymousQueue();
+    }
+
+    /** Bind presenceQueue vào chat.exchange với routing key "presence.status". */
+    @Bean
+    public Binding presenceBinding(TopicExchange chatExchange, Queue presenceQueue) {
+        return BindingBuilder.bind(presenceQueue).to(chatExchange).with("presence.status");
+    }
+
     @Bean
     public Jackson2JsonMessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
-}
+}
+

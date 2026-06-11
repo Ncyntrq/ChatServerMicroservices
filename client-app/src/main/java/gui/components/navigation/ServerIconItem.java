@@ -81,6 +81,7 @@ public class ServerIconItem extends JPanel {
     }
 
     private Image serverImage;
+    private boolean isLoading = false;
 
     public void loadServerIconFromUrl(String urlString) {
         Image cachedImage = gui.utils.ImageCache.get(urlString);
@@ -91,28 +92,20 @@ public class ServerIconItem extends JPanel {
             return;
         }
 
-        new SwingWorker<Image, Void>() {
-            @Override protected Image doInBackground() {
-                try {
-                    // download() chỉ gửi JWT (header) khi URL trỏ về gateway tin cậy → chống lộ token tới host lạ
-                    byte[] bytes = new network.FileApiClient().download(urlString);
-                    return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                } catch(Exception e) {}
-                return null;
+        this.isLoading = true;
+        this.iconLabel.setVisible(false); // Ẩn chữ đi để vẽ skeleton
+        repaint();
+
+        gui.utils.ImageCache.loadAsync(urlString, 40, img -> {
+            this.isLoading = false;
+            if (img != null) {
+                this.serverImage = img;
+                this.iconLabel.setVisible(false);
+            } else {
+                this.iconLabel.setVisible(true); // Tải lỗi thì hiện lại chữ
             }
-            @Override protected void done() {
-                try {
-                    Image img = get();
-                    if(img != null) {
-                        Image scaledImg = img.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                        gui.utils.ImageCache.put(urlString, scaledImg);
-                        serverImage = scaledImg;
-                        iconLabel.setVisible(false);
-                        repaint();
-                    }
-                } catch(Exception ignore){}
-            }
-        }.execute();
+            repaint();
+        });
     }
 
     @Override
@@ -146,6 +139,10 @@ public class ServerIconItem extends JPanel {
             // Draw a subtle border so it blends well
             g2.setColor(new Color(255, 255, 255, 20));
             g2.drawRoundRect(x, y, size, size, cornerRadius, cornerRadius);
+        } else if (isLoading) {
+            // Skeleton mờ
+            g2.setColor(AppColors.BG_TERTIARY != null ? AppColors.BG_TERTIARY : new Color(30, 31, 34));
+            g2.fillRoundRect(x, y, size, size, cornerRadius, cornerRadius);
         } else {
             g2.setColor(backgroundColor);
             g2.fillRoundRect(x, y, size, size, cornerRadius, cornerRadius);

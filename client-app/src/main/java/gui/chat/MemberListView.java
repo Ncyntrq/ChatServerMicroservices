@@ -8,13 +8,14 @@ import network.PermissionCache;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
  * Thanh thành viên (EAST) hiển thị danh sách TRỰC TUYẾN / NGOẠI TUYẾN.
- * Context menu (Cấp Role / Kick) chỉ gắn cho chủ server, ủy quyền hành động
- * qua callback để frame xử lý dialog + API.
+ * Hỗ trợ cập nhật trạng thái real-time qua {@link #updateUserStatus(String, String)}.
  */
 public class MemberListView extends JScrollPane {
 
@@ -22,6 +23,9 @@ public class MemberListView extends JScrollPane {
     private final String sessionUsername;
     private final Consumer<String> onAssignRole;
     private final Consumer<String> onKick;
+
+    /** Map username → UserListItem để tra cứu nhanh khi có STATUS event. */
+    private final Map<String, UserListItem> memberItems = new HashMap<>();
 
     public MemberListView(String sessionUsername, Consumer<String> onAssignRole, Consumer<String> onKick) {
         this.sessionUsername = sessionUsername;
@@ -46,6 +50,7 @@ public class MemberListView extends JScrollPane {
     /** Render danh sách thành viên 1 server, tách online/offline; gắn context menu nếu là chủ server. */
     public void renderServerMembers(List<String> allUsers, List<String> onlineUsers, String ownerId) {
         listPanel.removeAll();
+        memberItems.clear();
         listPanel.add(Box.createVerticalStrut(15));
 
         List<String> onlineList = new java.util.ArrayList<>();
@@ -85,21 +90,39 @@ public class MemberListView extends JScrollPane {
         if (canModerate && !name.equals(sessionUsername)) {
             item.setOnContextMenu(() -> showContextMenu(item, name, isOwner));
         }
+        memberItems.put(name, item);
         listPanel.add(item);
     }
 
-    /** Render danh sách online đơn giản (màn hình Home, không thuộc server nào). */
+    /** Render danh sách online đơn giản (màn hình Home). */
     public void renderOnline(List<String> usernames) {
         listPanel.removeAll();
+        memberItems.clear();
         listPanel.add(Box.createVerticalStrut(15));
         listPanel.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + usernames.size()));
         listPanel.add(Box.createVerticalStrut(5));
         for (String username : usernames) {
             if (username == null || username.isBlank()) continue;
-            listPanel.add(new UserListItem(username.trim(), null, AppColors.STATUS_ONLINE, true));
+            String name = username.trim();
+            UserListItem item = new UserListItem(name, null, AppColors.STATUS_ONLINE, true);
+            memberItems.put(name, item);
+            listPanel.add(item);
         }
         listPanel.revalidate();
         listPanel.repaint();
+    }
+
+    /**
+     * Cập nhật trạng thái real-time cho 1 thành viên khi nhận STATUS WebSocket event.
+     * Chỉ cập nhật item đã render, không rebuild toàn bộ danh sách.
+     */
+    public void updateUserStatus(String username, String statusStr) {
+        SwingUtilities.invokeLater(() -> {
+            UserListItem item = memberItems.get(username);
+            if (item != null) {
+                item.updatePresenceStatus(statusStr);
+            }
+        });
     }
 
     private void showContextMenu(Component anchor, String username, boolean isOwner) {

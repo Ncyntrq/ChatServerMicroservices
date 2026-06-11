@@ -1,5 +1,6 @@
 package gui.components.chat;
 
+import gui.components.AppIcons;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 
@@ -100,8 +101,11 @@ public class ChatInputContainer extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         rightPanel.setOpaque(false);
 
-        rightPanel.add(new IconButton("🎁", e -> System.out.println("Gift menu...")));
-        IconButton emojiButton = new IconButton("😀", e -> {
+        // Nút quà/sticker — dùng AppIcons.plus thay emoji 🎁 (tránh ô vuông)
+        IconButton giftBtn = new IconButton(AppIcons.gift(16), e -> System.out.println("Gift menu..."));
+        giftBtn.setToolTipText("Sticker / Gift");
+        rightPanel.add(giftBtn);
+        IconButton emojiButton = new IconButton(AppIcons.smile(16), e -> {
             JPopupMenu emojiMenu = new JPopupMenu();
             emojiMenu.setLayout(new GridLayout(3, 5, 4, 4));
             emojiMenu.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));

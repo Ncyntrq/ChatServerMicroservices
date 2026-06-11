@@ -13,5 +13,6 @@ public enum MessageType {
     PONG,       // Server trả lời heartbeat
     EDIT,       // Sửa tin nhắn
     DELETE,     // Xóa tin nhắn
-    TYPING      // Đang gõ phím
+    TYPING,     // Đang gõ phím
+    STATUS      // Thay đổi trạng thái online (ONLINE/IDLE/DO_NOT_DISTURB/INVISIBLE)
 }
