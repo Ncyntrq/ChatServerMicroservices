@@ -28,8 +28,13 @@ public class ServerIconItem extends JPanel {
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setLayout(new BorderLayout());
 
-        iconLabel = new JLabel(iconSymbol);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        iconLabel = new JLabel(iconSymbol); // hiện text trước (chữ cái / emoji thô)
+        iconLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        // Nếu là emoji → thay bằng ảnh Twemoji (đồng nhất OS), nạp nền để không chặn EDT.
+        gui.components.chat.EmojiHelper.iconForCharAsync(iconSymbol, 22, ic -> {
+            iconLabel.setIcon(ic);
+            iconLabel.setText(null);
+        });
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel.setVerticalAlignment(SwingConstants.CENTER);
         iconLabel.setOpaque(false);

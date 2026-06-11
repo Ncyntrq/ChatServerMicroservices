@@ -29,14 +29,22 @@ public class AuthHeader extends JPanel {
                 g2.setPaint(gp);
                 g2.fillOval(x, y, size, size);
 
-                // Icon text
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
-                FontMetrics fm = g2.getFontMetrics();
-                String icon = "💬";
-                int tx = (getWidth() - fm.stringWidth(icon)) / 2;
-                int ty = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
-                g2.drawString(icon, tx, ty);
+                // Icon 💬 — vẽ ảnh Twemoji để đồng nhất mọi OS; fallback drawString nếu chưa nạp/offline.
+                // Chỉ ĐỌC cache ở đây (không fetch) để không chặn EDT — prefetch + repaint làm bên dưới.
+                java.awt.image.BufferedImage emoji =
+                        gui.components.chat.EmojiHelper.cachedImageForChar("💬", 30);
+                if (emoji != null) {
+                    g2.drawImage(emoji, (getWidth() - emoji.getWidth()) / 2,
+                            (getHeight() - emoji.getHeight()) / 2, null);
+                } else {
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(new Font("SansSerif", Font.PLAIN, 28));
+                    FontMetrics fm = g2.getFontMetrics();
+                    String icon = "💬";
+                    int tx = (getWidth() - fm.stringWidth(icon)) / 2;
+                    int ty = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
+                    g2.drawString(icon, tx, ty);
+                }
 
                 g2.dispose();
             }
@@ -45,6 +53,8 @@ public class AuthHeader extends JPanel {
         logoCircle.setMaximumSize(new Dimension(64, 64));
         logoCircle.setOpaque(false);
         logoCircle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Nạp nền ảnh emoji rồi vẽ lại (lần đầu chưa có cache sẽ fallback drawString)
+        gui.components.chat.EmojiHelper.prefetchChar("💬", 30, logoCircle::repaint);
 
         // Title
         JLabel title = new JLabel(titleText);

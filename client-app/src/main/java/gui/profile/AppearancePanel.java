@@ -59,7 +59,7 @@ public class AppearancePanel extends JPanel {
         add(buildWallpaperSelector(dialog), gc);
     }
 
-    /** Combo chọn hoạ tiết nền: Ngẫu nhiên / Không nền / từng pattern. */
+    /** Combo chọn nền chat: Ngẫu nhiên / Không nền / pattern / Ảnh tùy chỉnh / Màu nền. */
     private JComboBox<String> buildWallpaperSelector(JDialog dialog) {
         Map<String, String> options = new LinkedHashMap<>(); // label → value
         options.put("Ngẫu nhiên", WallpaperManager.RANDOM);
@@ -67,10 +67,12 @@ public class AppearancePanel extends JPanel {
         options.put("Mèo",        "cats");
         options.put("Star Wars",  "starwars");
         options.put("Kẹo ngọt",   "sweets");
+        options.put("Ảnh tùy chỉnh…", WallpaperManager.CUSTOM_IMAGE);
+        options.put("Màu nền…",       WallpaperManager.CUSTOM_COLOR);
 
         JComboBox<String> combo = new JComboBox<>(options.keySet().toArray(new String[0]));
         combo.setFont(AppFonts.BODY);
-        // Chọn sẵn theo cấu hình hiện tại
+        // Chọn sẵn theo cấu hình hiện tại (set TRƯỚC khi gắn listener ⇒ không bật picker khi mở dialog)
         String cur = WallpaperManager.get().selection();
         options.entrySet().stream()
                 .filter(e -> e.getValue().equals(cur))
@@ -78,14 +80,47 @@ public class AppearancePanel extends JPanel {
                 .ifPresent(e -> combo.setSelectedItem(e.getKey()));
 
         combo.addActionListener(e -> {
-            String label = (String) combo.getSelectedItem();
-            String value = options.get(label);
+            String value = options.get((String) combo.getSelectedItem());
             if (value == null) return;
-            WallpaperManager.get().set(value);
-            Window owner = dialog.getOwner();
-            if (owner instanceof ChatClientGUI chat) chat.refreshChatBackground();
+            WallpaperManager wm = WallpaperManager.get();
+            if (WallpaperManager.CUSTOM_IMAGE.equals(value)) {
+                pickImage(dialog, wm);
+            } else if (WallpaperManager.CUSTOM_COLOR.equals(value)) {
+                pickColor(dialog, wm);
+            } else {
+                wm.set(value);
+                refresh(dialog);
+            }
         });
         return combo;
+    }
+
+    /** Mở hộp chọn file ảnh; nếu chọn → lưu + áp nền ngay. */
+    private void pickImage(JDialog dialog, WallpaperManager wm) {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Chọn ảnh nền");
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Ảnh (png, jpg, jpeg, gif, bmp)", "png", "jpg", "jpeg", "gif", "bmp"));
+        if (fc.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
+            wm.setCustomImage(fc.getSelectedFile().getAbsolutePath());
+            refresh(dialog);
+        }
+    }
+
+    /** Mở bảng chọn màu; nếu chọn → lưu + áp nền ngay. */
+    private void pickColor(JDialog dialog, WallpaperManager wm) {
+        Color init = new Color(wm.customColor(), true);
+        Color picked = JColorChooser.showDialog(dialog, "Chọn màu nền", init);
+        if (picked != null) {
+            wm.setCustomColor(picked.getRGB());
+            refresh(dialog);
+        }
+    }
+
+    /** Vẽ lại nền chat của cửa sổ chính (nếu dialog mở từ ChatClientGUI). */
+    private void refresh(JDialog dialog) {
+        Window owner = dialog.getOwner();
+        if (owner instanceof ChatClientGUI chat) chat.refreshChatBackground();
     }
 
     /**

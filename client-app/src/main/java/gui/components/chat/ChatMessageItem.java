@@ -143,6 +143,7 @@ public class ChatMessageItem extends JPanel {
         };
         content.setEditorKit(new WrapEditorKit()); // bẻ được từ dài
         content.setEditable(false);
+        makeNonInteractive(content); // chặn focus/bôi đen/con trỏ soạn thảo
         content.setOpaque(false);
         content.setFont(AppFonts.BODY_SM);
         content.setForeground(AppColors.TEXT_MUTED);
@@ -185,6 +186,7 @@ public class ChatMessageItem extends JPanel {
         };
         pane.setEditorKit(new WrapEditorKit());
         pane.setEditable(false);
+        makeNonInteractive(pane); // chặn focus/bôi đen/con trỏ soạn thảo
         pane.setOpaque(false);
         pane.setAlignmentX(Component.LEFT_ALIGNMENT);
         pane.setBorder(BorderFactory.createEmptyBorder(topPadding, 0, 0, 0));
@@ -208,6 +210,17 @@ public class ChatMessageItem extends JPanel {
             e.printStackTrace();
         }
         return pane;
+    }
+
+    /**
+     * Biến JTextPane chỉ-đọc thành "không tương tác": không nhận focus, không bôi đen,
+     * không hiện con trỏ soạn thảo. Dùng cho thân tin nhắn (chỉ hiển thị + render emoji).
+     */
+    private static void makeNonInteractive(JTextPane pane) {
+        pane.setFocusable(false);
+        pane.setHighlighter(null);            // bỏ chọn/bôi đen text
+        pane.getCaret().setVisible(false);    // ẩn con trỏ nhấp nháy
+        pane.setCursor(Cursor.getDefaultCursor()); // không hiện con trỏ chữ "I"
     }
 
     /**
@@ -803,12 +816,8 @@ public class ChatMessageItem extends JPanel {
             byte[] bytes = new FileApiClient().download(fullUrl); // JWT qua header, chặn host lạ
             BufferedImage src = ImageIO.read(new ByteArrayInputStream(bytes));
             if (src == null) return null;
-            int w = src.getWidth(), h = src.getHeight();
-            double scale = Math.min(1.0, Math.min(maxW / (double) w, maxH / (double) h));
-            int nw = Math.max(1, (int) Math.round(w * scale));
-            int nh = Math.max(1, (int) Math.round(h * scale));
-            Image scaled = src.getScaledInstance(nw, nh, Image.SCALE_SMOOTH);
-            return new ImageIcon(scaled);
+            // Scale bicubic chất lượng cao (thay SCALE_SMOOTH/bilinear) ⇒ ảnh phóng to nét hơn.
+            return new ImageIcon(gui.utils.ImageUtils.highQualityScale(src, maxW, maxH));
         } catch (Exception e) {
             return null;
         }
@@ -820,11 +829,14 @@ public class ChatMessageItem extends JPanel {
         JLabel label = new JLabel("Đang tải…", SwingConstants.CENTER);
         label.setForeground(AppColors.TEXT_MUTED);
         dlg.setContentPane(new JScrollPane(label));
-        dlg.setSize(720, 580);
+        // Cửa sổ xem ảnh chiếm tối đa ~85% màn hình ⇒ ảnh hiển thị lớn & nét hơn.
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int maxW = (int) (screen.width * 0.85), maxH = (int) (screen.height * 0.85);
+        dlg.setSize(Math.min(900, maxW), Math.min(720, maxH));
         dlg.setLocationRelativeTo(owner);
 
         new SwingWorker<ImageIcon, Void>() {
-            @Override protected ImageIcon doInBackground() { return loadScaledIcon(att.url, 1200, 900); }
+            @Override protected ImageIcon doInBackground() { return loadScaledIcon(att.url, maxW, maxH); }
             @Override protected void done() {
                 try {
                     ImageIcon ic = get();

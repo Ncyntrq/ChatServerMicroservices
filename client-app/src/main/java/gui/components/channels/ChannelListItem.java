@@ -42,10 +42,16 @@ public class ChannelListItem extends JPanel {
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 
-        // Prefix Icon (# for text, 🔊 for voice)
-        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "#");
-        prefixLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
+        // Prefix Icon (# cho text; 🔊 cho voice — dùng ảnh Twemoji để đồng nhất mọi OS)
+        JLabel prefixLabel = new JLabel(isVoice ? "🔊" : "#"); // text trước, fallback khi offline
+        prefixLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
         prefixLabel.setForeground(AppColors.TEXT_MUTED);
+        if (isVoice) { // thay 🔊 thô bằng ảnh Twemoji, nạp nền để không chặn EDT
+            gui.components.chat.EmojiHelper.iconForCharAsync("🔊", 14, ic -> {
+                prefixLabel.setIcon(ic);
+                prefixLabel.setText(null);
+            });
+        }
 
         // Channel Name
         nameLabel = new JLabel(channelName);

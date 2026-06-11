@@ -52,6 +52,19 @@ public final class WallpaperRenderer {
         });
     }
 
+    /** Nạp ảnh nền tùy chỉnh từ file ngoài (cache theo đường dẫn). Null nếu rỗng/lỗi/đã xoá. */
+    private static BufferedImage loadFile(String path) {
+        if (path == null || path.isEmpty()) return null;
+        return CACHE.computeIfAbsent("file:" + path, p -> {
+            try {
+                java.io.File f = new java.io.File(path);
+                return f.isFile() ? ImageIO.read(f) : null;
+            } catch (Exception e) {
+                return null;
+            }
+        });
+    }
+
     /** Vẽ gradient (theo theme) + pattern (theo id + theme) phủ kín vùng w×h (dùng cache). */
     public static void paint(Graphics2D g, int w, int h, Theme theme, String patternId) {
         if (w <= 0 || h <= 0) return;
@@ -125,6 +138,27 @@ public final class WallpaperRenderer {
     private static BufferedImage compose(int w, int h, Theme theme, String patternId) {
         BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = out.createGraphics();
+
+        // Chế độ tùy chỉnh của user (ưu tiên hơn gradient/pattern dựng sẵn).
+        WallpaperManager wm = WallpaperManager.get();
+        if (WallpaperManager.CUSTOM_COLOR.equals(wm.selection())) {
+            g.setColor(new Color(wm.customColor(), true));
+            g.fillRect(0, 0, w, h);
+            g.dispose();
+            return out;
+        }
+        if (WallpaperManager.CUSTOM_IMAGE.equals(wm.selection())) {
+            BufferedImage custom = loadFile(wm.customImagePath());
+            if (custom != null) {
+                drawCover(g, custom, w, h, 1f); // phủ kín, giữ tỉ lệ
+            } else { // file lỗi/đã xoá → nền phẳng an toàn
+                g.setColor(AppColors.BG_PRIMARY);
+                g.fillRect(0, 0, w, h);
+            }
+            g.dispose();
+            return out;
+        }
+
         String suffix = theme == Theme.LIGHT ? "light" : "dark";
 
         BufferedImage gradient = load("/wallpapers/gradient-" + suffix + ".png");

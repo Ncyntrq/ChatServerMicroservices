@@ -4,6 +4,7 @@ import com.chatsever.common.dto.MessageDTO;
 import gui.components.AvatarBadge;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
+import gui.theme.ThinScrollBarUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -52,7 +53,11 @@ public class PinnedMessagesDialog extends JDialog {
 
         JScrollPane scroll = new JScrollPane(listPanel);
         scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(AppColors.BG_SECONDARY);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // bỏ thanh trượt ngang thừa
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
+        ThinScrollBarUI.apply(scroll); // style scrollbar mảnh, đồng bộ với chat
         root.add(scroll, BorderLayout.CENTER);
 
         setContentPane(root);
