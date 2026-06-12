@@ -183,6 +183,39 @@ public class FileApiClient {
         }
     }
 
+    /**
+     * Liệt kê file đã upload vào 1 channel (cho sidebar Ảnh/Video & File).
+     * @param type  "image" / "document" / null (tất cả)
+     * @param limit số lượng tối đa
+     * @return danh sách map metadata (id, originalName, contentType, fileSize, url, thumbnailUrl, createdAt).
+     *         url/thumbnailUrl là đường dẫn TƯƠNG ĐỐI từ server — caller tự ghép gateway nếu cần tải.
+     */
+    public List<Map<String, Object>> getFilesByChannel(long channelId, String type, int limit) {
+        try {
+            StringBuilder url = new StringBuilder(ApiConfig.GATEWAY_HTTP)
+                    .append("/api/files/channel/").append(channelId).append("?limit=").append(limit);
+            if (type != null && !type.isBlank()) url.append("&type=").append(type);
+
+            HttpRequest.Builder b = HttpRequest.newBuilder()
+                    .uri(URI.create(url.toString()))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET();
+            String token = SessionManager.get().getAccessToken();
+            if (token != null) b.header("Authorization", "Bearer " + token);
+
+            HttpResponse<String> resp = HttpClientHolder.get().send(b.build(), HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                throw new ApiException(resp.statusCode(), parseError(resp.body()));
+            }
+            return json.readValue(resp.body(), new TypeReference<List<Map<String, Object>>>() {});
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new ApiException("Lỗi tải danh sách file: " + e.getMessage(), e);
+        }
+    }
+
     private long asLong(Object o) {
         if (o instanceof Number) return ((Number) o).longValue();
         try { return o == null ? 0L : Long.parseLong(o.toString()); }

@@ -80,6 +80,18 @@ public class FileController {
     }
 
     /**
+     * 6. Liệt kê file theo channel (cho sidebar Ảnh/Video & File).
+     * GET /api/files/channel/{channelId}?type=image|document&limit=20
+     */
+    @GetMapping("/channel/{channelId}")
+    public ResponseEntity<java.util.List<FileMetadataDTO>> getFilesByChannel(
+            @PathVariable Long channelId,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "limit", defaultValue = "20") int limit) {
+        return ResponseEntity.ok(fileStorageService.getFilesByChannel(channelId, type, limit));
+    }
+
+    /**
      * 5. Xóa file (chỉ owner).
      * DELETE /api/files/{fileId}?userId=xxx
      */

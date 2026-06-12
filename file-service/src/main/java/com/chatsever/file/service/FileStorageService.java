@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -198,6 +199,28 @@ public class FileStorageService {
             log.error("Lỗi xóa file {}: {}", fileId, e.getMessage());
             throw new RuntimeException("Không thể xóa file: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Liệt kê file của 1 channel, mới nhất trước.
+     * @param type  "image" (chỉ ảnh) / "document" (loại trừ ảnh) / null (tất cả)
+     * @param limit số lượng tối đa trả về (>0)
+     */
+    public List<FileMetadataDTO> getFilesByChannel(Long channelId, String type, int limit) {
+        return repository.findByChannelIdOrderByCreatedAtDesc(channelId).stream()
+                .filter(m -> matchesType(m.getContentType(), type))
+                .limit(limit > 0 ? limit : 20)
+                .map(this::toDTO)
+                .toList();
+    }
+
+    /** Lọc theo nhóm loại: image = ảnh; document = không phải ảnh; null/khác = tất cả. */
+    private boolean matchesType(String contentType, String type) {
+        if (type == null || type.isBlank()) return true;
+        boolean img = isImage(contentType);
+        if ("image".equalsIgnoreCase(type)) return img;
+        if ("document".equalsIgnoreCase(type)) return !img;
+        return true;
     }
 
     // --- Private helpers ---

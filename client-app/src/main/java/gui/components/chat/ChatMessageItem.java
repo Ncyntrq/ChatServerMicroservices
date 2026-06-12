@@ -883,44 +883,22 @@ public class ChatMessageItem extends JPanel {
     }
 
     private ImageIcon loadScaledIcon(String fullUrl, int maxW, int maxH) {
-        if (fullUrl == null) return null;
-        try {
-            byte[] bytes = new FileApiClient().download(fullUrl); // JWT qua header, chặn host lạ
-            BufferedImage src = ImageIO.read(new ByteArrayInputStream(bytes));
-            if (src == null) return null;
-            // Scale bicubic chất lượng cao (thay SCALE_SMOOTH/bilinear) ⇒ ảnh phóng to nét hơn.
-            return new ImageIcon(gui.utils.ImageUtils.highQualityScale(src, maxW, maxH));
-        } catch (Exception e) {
-            return null;
-        }
+        return ImageViewer.loadScaled(fullUrl, maxW, maxH); // dùng chung loader (DRY)
     }
 
     private void openFullImage(Attachment att) {
-        Window owner = SwingUtilities.getWindowAncestor(this);
-        JDialog dlg = new JDialog(owner, att.name != null ? att.name : "Ảnh", Dialog.ModalityType.MODELESS);
-        JLabel label = new JLabel("Đang tải…", SwingConstants.CENTER);
-        label.setForeground(AppColors.TEXT_MUTED);
-        dlg.setContentPane(new JScrollPane(label));
-        // Cửa sổ xem ảnh chiếm tối đa ~85% màn hình ⇒ ảnh hiển thị lớn & nét hơn.
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        int maxW = (int) (screen.width * 0.85), maxH = (int) (screen.height * 0.85);
-        dlg.setSize(Math.min(900, maxW), Math.min(720, maxH));
-        dlg.setLocationRelativeTo(owner);
+        ImageViewer.open(this, att.url, att.name); // dialog xem ảnh dùng chung
+    }
 
-        new SwingWorker<ImageIcon, Void>() {
-            @Override protected ImageIcon doInBackground() { return loadScaledIcon(att.url, maxW, maxH); }
-            @Override protected void done() {
-                try {
-                    ImageIcon ic = get();
-                    if (ic != null) { label.setText(null); label.setIcon(ic); }
-                    else label.setText("[Không tải được ảnh]");
-                } catch (Exception e) {
-                    if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                    label.setText("[Lỗi tải ảnh]");
-                }
-            }
-        }.execute();
-        dlg.setVisible(true);
+    /**
+     * Trích {@link ChannelAttachment} từ 1 tin nhắn có đính kèm (cho sidebar DM, vốn không có channelId).
+     * URL trong content đã là URL đầy đủ qua gateway. Trả null nếu tin không phải attachment.
+     */
+    public static ChannelAttachment toChannelAttachment(MessageDTO m) {
+        if (m == null) return null;
+        Attachment a = parseAttachment(m.getContent());
+        if (a == null) return null;
+        return new ChannelAttachment(a.contentType, a.name, a.url, a.thumbnailUrl, a.size, m.getTimestamp());
     }
 
     private void downloadFile(Attachment att) {
@@ -951,40 +929,12 @@ public class ChatMessageItem extends JPanel {
     }
 
     private String humanSize(long b) {
-        if (b <= 0) return "";
-        if (b < 1024) return b + " B";
-        if (b < 1024 * 1024) return String.format("%.1f KB", b / 1024.0);
-        return String.format("%.1f MB", b / (1024.0 * 1024));
+        return FileBadge.humanSize(b); // dùng chung (DRY)
     }
 
     /** Badge icon cho loại tệp — không dùng emoji (tránh ô vuông). */
     private JLabel buildFileIconLabel(String name) {
-        String n = name == null ? "" : name.toLowerCase();
-        record FileType(String abbr, Color color) {}
-        FileType ft;
-        if      (n.endsWith(".pdf"))                                     ft = new FileType("PDF", new Color(0xE74C3C));
-        else if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z")) ft = new FileType("ZIP", new Color(0xF39C12));
-        else if (n.endsWith(".doc") || n.endsWith(".docx"))              ft = new FileType("DOC", new Color(0x2980B9));
-        else if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv")) ft = new FileType("XLS", new Color(0x27AE60));
-        else if (n.endsWith(".mp3") || n.endsWith(".wav") || n.endsWith(".ogg")) ft = new FileType("AUD", new Color(0x9B59B6));
-        else if (n.endsWith(".mp4") || n.endsWith(".mkv") || n.endsWith(".avi")) ft = new FileType("VID", new Color(0xE67E22));
-        else                                                             ft = new FileType("FILE", new Color(0x7F8C8D));
-
-        JLabel label = new JLabel(ft.abbr(), SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(ft.color());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        label.setForeground(Color.WHITE);
-        label.setFont(new Font("SansSerif", Font.BOLD, 10));
-        label.setPreferredSize(new Dimension(38, 38));
-        label.setOpaque(false);
-        return label;
+        return FileBadge.make(name, 38); // badge dùng chung (DRY)
     }
 
     /** @deprecated Thay bằng buildFileIconLabel() */

@@ -2,7 +2,7 @@ package gui;
 
 import gui.chat.ChatHistoryView;
 import gui.chat.FileUploadController;
-import gui.chat.MemberListView;
+import gui.chat.RightSidebarView;
 import gui.chat.OutboundMessageController;
 import gui.chat.PinController;
 import gui.chat.UnreadCountSync;
@@ -37,7 +37,7 @@ import java.util.ArrayList;
 /**
  * Cửa sổ chat chính. Đóng vai trò orchestrator: dựng layout, giữ trạng thái
  * điều hướng (server/channel/DM đang mở) và nối các thành phần con:
- * {@link ChatHistoryView}, {@link MemberListView}, {@link UnreadCountSync},
+ * {@link ChatHistoryView}, {@link RightSidebarView}, {@link UnreadCountSync},
  * {@link FileUploadController} + các sidebar.
  */
 public class ChatClientGUI extends JFrame {
@@ -63,7 +63,7 @@ public class ChatClientGUI extends JFrame {
 
     // Thành phần con tách ra (Phase 0 refactor)
     private final ChatHistoryView chatHistoryView;
-    private final MemberListView memberListView;
+    private final RightSidebarView rightSidebar;
     private final UnreadCountSync unreadSync;
     private final FileUploadController fileUpload;
     private final PinController pinController;
@@ -102,7 +102,7 @@ public class ChatClientGUI extends JFrame {
         this.channelSidebar = new ChannelSidebar(sessionUsername);
         this.friendSidebar = new FriendSidebar(sessionUsername);
         this.chatHistoryView = new ChatHistoryView(sessionUsername, messageActions);
-        this.memberListView = new MemberListView(sessionUsername, this::openAssignRoleDialog, this::confirmKick);
+        this.rightSidebar = new RightSidebarView(sessionUsername, this::openAssignRoleDialog, this::confirmKick);
         this.unreadSync = new UnreadCountSync(notificationApi, serverSidebar, channelSidebar, friendSidebar, sessionUsername);
         this.fileUpload = new FileUploadController(this, fileApi, wsClient, sessionUsername, this::toast, chatInput::setUploading);
         this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId);
@@ -127,7 +127,7 @@ public class ChatClientGUI extends JFrame {
 
         eastContainer = new JPanel(new BorderLayout());
         eastContainer.setBackground(AppColors.BG_SECONDARY);
-        eastContainer.add(memberListView, BorderLayout.CENTER);
+        eastContainer.add(rightSidebar, BorderLayout.CENTER);
         eastContainer.add(miniSidebar, BorderLayout.EAST);
 
         add(westPanel, BorderLayout.WEST);
@@ -320,7 +320,7 @@ public class ChatClientGUI extends JFrame {
                 chatHistoryView.setPlaceholderText("Welcome to ChatServer! Select a server, channel, or friend to start chatting.");
             }
             clearChat();
-            memberListView.renderOnline(List.of());
+            rightSidebar.renderOnline(List.of());
             loadPresence();
         } else {
             this.activePrivateUser = null;
@@ -331,6 +331,9 @@ public class ChatClientGUI extends JFrame {
             setChannelHeader(null);
             channelSidebar.loadChannels(serverId, serverName != null ? serverName : "Server #" + serverId);
             clearChat();
+            // Sidebar phải: hiện section Thành viên; Ảnh/Video & File chờ tới khi chọn channel
+            rightSidebar.setMembersVisible(true);
+            rightSidebar.setAttachments(List.of());
             loadPermissionsAndMembers(serverId);
         }
         unreadSync.refresh(); // làm tươi badge chưa đọc sau khi điều hướng
@@ -346,6 +349,10 @@ public class ChatClientGUI extends JFrame {
         chatHistoryView.setPlaceholderText("No messages yet — start the conversation 👋");
         clearChat();
 
+        // Sidebar phải: hiện đủ 3 section; Ảnh/Video & File trích từ lịch sử tin nhắn (đồng bộ với đoạn chat)
+        rightSidebar.setMembersVisible(true);
+        rightSidebar.setAttachments(List.of());
+
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() { notificationApi.ackChannel(channelId, sessionUsername); return null; }
             @Override protected void done() { unreadSync.refresh(); }
@@ -357,13 +364,26 @@ public class ChatClientGUI extends JFrame {
             }
             @Override protected void done() {
                 try {
-                    for (MessageDTO m : get()) chatHistoryView.appendMessage(m);
+                    List<MessageDTO> msgs = get();
+                    for (MessageDTO m : msgs) chatHistoryView.appendMessage(m);
+                    if (channelId == activeChannelId) rightSidebar.setAttachments(extractAttachments(msgs));
                 } catch (Exception ex) {
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
                     Toast.error(ChatClientGUI.this, "Failed to load history: " + cause.getMessage());
                 }
             }
         }.execute();
+    }
+
+    /** Trích Ảnh/Video & File từ danh sách tin nhắn đã tải (mới nhất trước) cho sidebar phải. */
+    private List<gui.components.chat.ChannelAttachment> extractAttachments(List<MessageDTO> msgs) {
+        List<gui.components.chat.ChannelAttachment> atts = new java.util.ArrayList<>();
+        for (MessageDTO m : msgs) {
+            gui.components.chat.ChannelAttachment a = gui.components.chat.ChatMessageItem.toChannelAttachment(m);
+            if (a != null) atts.add(a);
+        }
+        java.util.Collections.reverse(atts);
+        return atts;
     }
 
     /** Mở DM với 1 người bạn. */
@@ -405,6 +425,11 @@ public class ChatClientGUI extends JFrame {
         // Nạp tên bạn bè vào danh sách Tag @ (chỉ tag được người đang chat cùng)
         chatInput.setAvailableMentions(List.of(username));
 
+        // Sidebar phải: hiện Ảnh/Video & File, ẩn Thành viên (DM không có danh sách thành viên)
+        eastContainer.setVisible(true);
+        rightSidebar.setMembersVisible(false);
+        rightSidebar.setAttachments(List.of());
+
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() { notificationApi.ackDm(username, sessionUsername); return null; }
             @Override protected void done() { unreadSync.refresh(); }
@@ -416,9 +441,12 @@ public class ChatClientGUI extends JFrame {
             }
             @Override protected void done() {
                 try {
-                    for (MessageDTO m : get()) {
+                    List<MessageDTO> msgs = get();
+                    for (MessageDTO m : msgs) {
                         if (!"[SYSTEM_FRIEND_UPDATE]".equals(m.getContent())) chatHistoryView.appendMessage(m);
                     }
+                    // Trích Ảnh/Video & File từ tin nhắn DM đã tải (DM không có channelId để gọi API)
+                    if (username.equals(activePrivateUser)) rightSidebar.setAttachments(extractAttachments(msgs));
                 } catch (Exception ex) {
                     gui.components.feedback.Toast.error(ChatClientGUI.this, "Failed to load history: " + ex.getMessage());
                 }
@@ -484,7 +512,7 @@ public class ChatClientGUI extends JFrame {
                     if (serverData == null) serverData = details;
                     String ownerId = String.valueOf(serverData.get("ownerId"));
 
-                    memberListView.renderServerMembers(allUsers, online, ownerId);
+                    rightSidebar.renderServerMembers(allUsers, online, ownerId);
 
                     // ---> NOTE 3: Nạp toàn bộ thành viên của Server vào danh sách Tag @
                     chatInput.setAvailableMentions(allUsers);
@@ -499,15 +527,15 @@ public class ChatClientGUI extends JFrame {
     /** Cập nhật danh sách online (fallback hoặc trigger từ WS LIST). */
     private void setOnlineUsers(List<String> usernames) {
         if (activeServerId > 0) { loadServerMembersAndPresence(activeServerId); return; }
-        memberListView.renderOnline(usernames);
+        rightSidebar.renderOnline(usernames);
     }
 
-    /** Mở dialog cấp Role cho 1 thành viên (context menu MemberListView). */
+    /** Mở dialog cấp Role cho 1 thành viên (context menu RightSidebarView). */
     private void openAssignRoleDialog(String username) {
         new gui.server.AssignRoleDialog(this, activeServerId, username).setVisible(true);
     }
 
-    /** Xác nhận + thực thi Kick 1 thành viên (context menu MemberListView). */
+    /** Xác nhận + thực thi Kick 1 thành viên (context menu RightSidebarView). */
     private void confirmKick(String username) {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to kick " + username + "?",
@@ -610,7 +638,7 @@ public class ChatClientGUI extends JFrame {
                 String who = msg.getSender();
                 String statusStr = msg.getContent();
                 if (who != null && statusStr != null && !sessionUsername.equals(who)) {
-                    memberListView.updateUserStatus(who, statusStr);
+                    rightSidebar.updateUserStatus(who, statusStr);
                     friendSidebar.updateUserStatus(who, statusStr);
                 }
             }
