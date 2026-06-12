@@ -280,10 +280,9 @@ public class MessageService {
     public void addReaction(Long messageId, String userId, String emoji) {
         java.util.Optional<MessageReaction> opt = reactionRepository.findByMessageIdAndUserIdAndEmoji(messageId, userId, emoji);
         if (opt.isPresent()) {
-            MessageReaction r = opt.get();
-            r.setCount(r.getCount() + 1);
-            reactionRepository.save(r);
-            broadcastReactionEvent(messageId, emoji, "ADD", userId);
+            // Nếu đã thả rồi thì xóa (undo)
+            reactionRepository.delete(opt.get());
+            broadcastReactionEvent(messageId, emoji, "REMOVE", userId);
         } else {
             reactionRepository.save(new MessageReaction(messageId, userId, emoji));
             broadcastReactionEvent(messageId, emoji, "ADD", userId);

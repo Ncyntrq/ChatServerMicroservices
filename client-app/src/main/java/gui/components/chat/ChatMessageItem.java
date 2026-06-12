@@ -318,9 +318,12 @@ public class ChatMessageItem extends JPanel {
 
         if (!compact) {
             // Header row: username + badges + timestamp (chỉ ở tin đầu nhóm)
-            headerRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+            headerRow = new JPanel(new BorderLayout());
             headerRow.setOpaque(false);
             headerRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JPanel leftHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+            leftHeader.setOpaque(false);
 
             JLabel senderLabel = new JLabel(senderName);
             senderLabel.setFont(AppFonts.BODY_BOLD);
@@ -335,7 +338,7 @@ public class ChatMessageItem extends JPanel {
             senderLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             senderLabel.addMouseListener(openProfileAdapter);
 
-            headerRow.add(senderLabel);
+            leftHeader.add(senderLabel);
 
             // #1: ProfileLoader (cache + gộp request trùng) → tối đa 1 HTTP/user thay vì 1/tin nhắn
             final AvatarBadge avatarRef = avatar;
@@ -373,7 +376,7 @@ public class ChatMessageItem extends JPanel {
                 badge.setForeground(Color.WHITE);
                 badge.setFont(AppFonts.TINY);
                 badge.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
-                headerRow.add(badge);
+                leftHeader.add(badge);
             }
 
             // Timestamp
@@ -382,7 +385,9 @@ public class ChatMessageItem extends JPanel {
             JLabel timeLabel = new JLabel(timeStr);
             timeLabel.setFont(AppFonts.CAPTION);
             timeLabel.setForeground(new Color(0x80, 0x84, 0x8E, 0x99));
-            headerRow.add(timeLabel);
+            leftHeader.add(timeLabel);
+
+            headerRow.add(leftHeader, BorderLayout.WEST);
 
             boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
             if (Boolean.TRUE.equals(message.getIsEdited()) && !isDeleted) {
@@ -486,19 +491,25 @@ public class ChatMessageItem extends JPanel {
 
     private void addEditedBadge() {
         if (editedBadgeShown) return; 
-        JLabel editedBadge = new JLabel("(đã sửa)");
+        JLabel editedBadge = new JLabel("<html><i>(đã sửa)</i></html>");
         editedBadge.setFont(AppFonts.TINY);
         editedBadge.setForeground(AppColors.TEXT_MUTED);
+        // Thêm khoảng cách nhỏ ở trên và phải
+        editedBadge.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 4));
 
         if (headerRow != null) {
-            headerRow.add(editedBadge);
+            headerRow.add(editedBadge, BorderLayout.EAST);
             headerRow.revalidate();
             headerRow.repaint();
         } else {
             // Tin nhắn gộp nhóm (compact) không có headerRow
-            editedBadge.setAlignmentX(Component.LEFT_ALIGNMENT);
-            editedBadge.setBorder(BorderFactory.createEmptyBorder(0, 12, 2, 0)); // Thụt lề cho khớp
-            contentPanel.add(editedBadge); // Chèn vào dưới cùng của contentPanel
+            JPanel topWrap = new JPanel(new BorderLayout());
+            topWrap.setOpaque(false);
+            topWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+            topWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 20)); // Giữ chiều cao nhỏ nhất
+            topWrap.add(editedBadge, BorderLayout.EAST);
+            
+            contentPanel.add(topWrap, 0); // Chèn lên trên cùng của contentPanel
             contentPanel.revalidate();
             contentPanel.repaint();
         }
@@ -667,10 +678,12 @@ public class ChatMessageItem extends JPanel {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 4));
         panel.setOpaque(false);
         for (String em : emojis) {
-            JButton btn = new JButton(em);
-            btn.setFont(AppFonts.EMOJI);
-            btn.setMargin(new Insets(2, 6, 2, 6));
+            JButton btn = new JButton();
+            btn.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
             btn.setFocusPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            gui.components.chat.EmojiHelper.iconForCharAsync(em, 24, icon -> btn.setIcon(icon));
             btn.addActionListener(e -> {
                 menu.setVisible(false);
                 try {
@@ -709,38 +722,39 @@ public class ChatMessageItem extends JPanel {
         reactionBadgePanel.setVisible(true);
         if (reactionWrap != null) reactionWrap.setVisible(true);
 
-        java.util.Map<String, Integer> emojiCounts = new java.util.LinkedHashMap<>();
+        java.util.Set<String> uniqueEmojis = new java.util.LinkedHashSet<>();
         java.util.Map<String, Boolean> meReactedMap = new java.util.HashMap<>();
 
         for (MessageDTO.ReactionDTO r : reactions) {
-            emojiCounts.put(r.getEmoji(), emojiCounts.getOrDefault(r.getEmoji(), 0) + r.getCount());
+            uniqueEmojis.add(r.getEmoji());
             if (r.getUserId().equals(currentUser)) {
                 meReactedMap.put(r.getEmoji(), true);
             }
         }
 
-        for (java.util.Map.Entry<String, Integer> entry : emojiCounts.entrySet()) {
-            String emoji = entry.getKey();
-            int count = entry.getValue();
+        for (String emoji : uniqueEmojis) {
             boolean meReacted = meReactedMap.getOrDefault(emoji, false);
 
-            JButton badge = new JButton(emoji + " " + count);
-            badge.setFont(gui.theme.AppFonts.EMOJI_SM);
-            badge.setMargin(new Insets(1, 4, 1, 4));
+            JButton badge = new JButton(); // Không hiện text
+            badge.setMargin(new Insets(2, 4, 2, 4));
             badge.setFocusPainted(false);
-            badge.setBorderPainted(false);
-            badge.setContentAreaFilled(false);
             badge.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             if (meReacted) {
-                badge.setForeground(AppColors.BRAND_PRIMARY);
+                badge.setBackground(new Color(88, 101, 242, 30));
+                badge.setContentAreaFilled(true);
+                badge.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+                badge.setBorderPainted(false);
             } else {
-                badge.setForeground(AppColors.TEXT_MUTED);
+                badge.setContentAreaFilled(false);
+                badge.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+                badge.setBorderPainted(false);
             }
+
+            gui.components.chat.EmojiHelper.iconForCharAsync(emoji, 16, icon -> badge.setIcon(icon));
 
             badge.addActionListener(e -> {
                 try {
-                    // Luôn luôn cộng dồn khi bấm (tương tự Zalo) thay vì xóa
                     network.ReactionApiClient.addReaction(message.getMessageId(), emoji);
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -837,30 +851,66 @@ public class ChatMessageItem extends JPanel {
             messageBody.revalidate();
         }
 
-        // 2. Xóa reply quote khỏi contentPanel
+        // 2. Xóa reply quote và edited badge (của tin nhắn compact) khỏi contentPanel, đồng thời xóa attachment nếu có
+        java.util.List<Component> toRemove = new java.util.ArrayList<>();
         for (Component c : contentPanel.getComponents()) {
             if (c instanceof JLabel) {
-                JLabel lbl = (JLabel) c;
-                String txt = lbl.getText();
+                String txt = ((JLabel) c).getText();
                 if (txt != null && txt.contains("Trả lời")) {
-                    contentPanel.remove(c);
-                    break;
+                    toRemove.add(c);
+                }
+            } else if (c instanceof JPanel && c != headerRow) {
+                // Kiểm tra xem JPanel này có chứa chữ (đã sửa) không (đây là topWrap của tin nhắn compact)
+                boolean hasEditedBadge = false;
+                for (Component child : ((JPanel) c).getComponents()) {
+                    if (child instanceof JLabel) {
+                        String txt = ((JLabel) child).getText();
+                        if (txt != null && txt.contains("(đã sửa)")) {
+                            hasEditedBadge = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasEditedBadge) {
+                    toRemove.add(c);
+                } else if (isAttachment) {
+                    toRemove.add(c);
                 }
             }
+        }
+        for (Component c : toRemove) {
+            contentPanel.remove(c);
+        }
+        
+        // Nếu là tin nhắn đính kèm, messageBody có thể chưa được tạo, cần tạo mới để hiển thị chữ "Tin nhắn bị gỡ"
+        if (isAttachment && messageBody == null) {
+            messageBody = createTextBody("Tin nhắn bị gỡ", headerRow == null ? 0 : 3);
+            contentPanel.add(messageBody);
+            messageBody.setForeground(AppColors.TEXT_MUTED);
+            try {
+                javax.swing.text.SimpleAttributeSet style = new javax.swing.text.SimpleAttributeSet();
+                javax.swing.text.StyleConstants.setForeground(style, AppColors.TEXT_MUTED);
+                javax.swing.text.StyleConstants.setItalic(style, true);
+                javax.swing.text.StyledDocument doc = messageBody.getStyledDocument();
+                doc.setCharacterAttributes(0, doc.getLength(), style, true);
+            } catch (Exception ignored) {}
         }
 
         // 3. Xóa edited badge khỏi headerRow
         if (headerRow != null) {
             for (Component c : headerRow.getComponents()) {
-                if (c instanceof JLabel && "(đã sửa)".equals(((JLabel) c).getText())) {
-                    headerRow.remove(c);
-                    break;
+                if (c instanceof JLabel) {
+                    String txt = ((JLabel) c).getText();
+                    if (txt != null && txt.contains("(đã sửa)")) {
+                        headerRow.remove(c);
+                        break;
+                    }
                 }
             }
-            editedBadgeShown = false;
             headerRow.revalidate();
             headerRow.repaint();
         }
+        editedBadgeShown = false;
 
         // 4. Ẩn toolbar hover
         if (toolbar != null) {
