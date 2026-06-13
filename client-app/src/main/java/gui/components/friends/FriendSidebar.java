@@ -24,6 +24,9 @@ public class FriendSidebar extends JPanel {
     private java.util.function.Consumer<String> onFriendAction;
     private Runnable onUserChanged;
 
+    // Đảm bảo chỉ 1 dialog "Thêm bạn" mở tại 1 thời điểm.
+    private AddFriendDialog addFriendDialog;
+
     public void setOnFriendSelected(java.util.function.Consumer<String> onFriendSelected) {
         this.onFriendSelected = onFriendSelected;
     }
@@ -316,10 +319,17 @@ public class FriendSidebar extends JPanel {
 
     /** Mở dialog tìm kiếm + thêm bạn (tìm theo username/tên hiển thị, gửi/chấp nhận lời mời). */
     private void showAddFriendDialog() {
+        // Nếu dialog đang mở → đưa lên trước, không tạo cửa sổ mới.
+        if (addFriendDialog != null && addFriendDialog.isVisible()) {
+            addFriendDialog.toFront();
+            return;
+        }
         JFrame owner = (JFrame) SwingUtilities.getWindowAncestor(this);
         Consumer<String> onAction = targetUser -> {
             if (onFriendAction != null) onFriendAction.accept(targetUser);
         };
-        new AddFriendDialog(owner, sessionUsername, onAction).setVisible(true);
+        if (addFriendDialog != null) addFriendDialog.dispose(); // gỡ instance cũ đã ẩn
+        addFriendDialog = new AddFriendDialog(owner, sessionUsername, onAction);
+        addFriendDialog.setVisible(true);
     }
 }

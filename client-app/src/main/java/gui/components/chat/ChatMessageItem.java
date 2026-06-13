@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
 
-public class ChatMessageItem extends JPanel {
+public class  ChatMessageItem extends JPanel {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter FULL_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -49,7 +49,8 @@ public class ChatMessageItem extends JPanel {
 
     // Components dùng cho inline-edit & cập nhật động
     private JPanel contentPanel;
-    private JPanel centerWrap; // bọc content + toolbar (căn giữa dọc, toolbar nằm cạnh tin)
+    private JPanel centerWrap; // bọc content + reaction (GridBag)
+    private JPanel overlay;    // bọc centerWrap + toolbar nổi (định vị tuyệt đối theo bong bóng)
     private JPanel headerRow;
     private JTextPane messageBody;
     private JPanel toolbar;
@@ -483,10 +484,50 @@ public class ChatMessageItem extends JPanel {
         gl.gridx = 2; gl.gridy = 0; gl.gridheight = 2; gl.weightx = 1; gl.fill = GridBagConstraints.HORIZONTAL;
         centerWrap.add(Box.createHorizontalGlue(), gl);
 
+        // Overlay: centerWrap là lớp nền (lấp đầy), toolbar nổi lên trên định vị tuyệt đối.
+        // ⇒ toolbar không tranh chỗ ngang với nội dung nên tin dài vẫn hiện được toolbar.
+        overlay = new JPanel(null) {
+            @Override public Dimension getPreferredSize() { return centerWrap.getPreferredSize(); }
+            @Override public Dimension getMinimumSize() { return centerWrap.getMinimumSize(); }
+            @Override public Dimension getMaximumSize() {
+                return new Dimension(Integer.MAX_VALUE, centerWrap.getMaximumSize().height);
+            }
+            @Override public void doLayout() {
+                centerWrap.setBounds(0, 0, getWidth(), getHeight());
+                centerWrap.doLayout(); // lay out con ngay để đọc đúng kích thước bong bóng
+                layoutFloatingToolbar();
+            }
+        };
+        overlay.setOpaque(false);
+        overlay.add(centerWrap);
+
         add(west, BorderLayout.WEST);
-        add(centerWrap, BorderLayout.CENTER);
+        add(overlay, BorderLayout.CENTER);
+    }
 
+    /**
+     * Định vị toolbar nổi theo bong bóng nội dung:
+     * - Tin ngắn → đặt NGAY BÊN PHẢI bong bóng (không che chữ).
+     * - Tin dài (bong bóng rộng) → neo sát mép phải vùng hiển thị ⇒ luôn nhìn thấy, responsive.
+     */
+    private void layoutFloatingToolbar() {
+        if (toolbar == null || overlay == null || contentPanel == null) return;
+        Dimension ts = toolbar.getPreferredSize();
+        int overlayW = overlay.getWidth();
+        // contentPanel nằm trong centerWrap (đã lấp đầy overlay tại 0,0) ⇒ toạ độ trùng overlay.
+        int bubbleRight = centerWrap.getX() + contentPanel.getX() + contentPanel.getWidth();
+        int bubbleTop = centerWrap.getY() + contentPanel.getY();
 
+        int gap = 8;
+        int x = (bubbleRight + gap + ts.width <= overlayW)
+                ? bubbleRight + gap                       // bên phải bong bóng (tin ngắn)
+                : Math.max(0, overlayW - ts.width);       // neo mép phải (tin dài)
+
+        // Luôn căn giữa dọc toolbar theo bong bóng tin (mọi độ dài).
+        int contentH = contentPanel.getHeight();
+        int y = bubbleTop + (contentH - ts.height) / 2;
+        y = Math.max(0, Math.min(y, overlay.getHeight() - ts.height));
+        toolbar.setBounds(x, y, ts.width, ts.height);
     }
 
     private void addEditedBadge() {
@@ -534,7 +575,7 @@ public class ChatMessageItem extends JPanel {
         boolean showHoverTime = isConsecutive && message.getTimestamp() != null;
         if (!hasActions && !showHoverTime) return; // không có gì để hiện → bỏ qua
 
-        toolbar = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2)) {
+        toolbar = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 3)) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -563,32 +604,31 @@ public class ChatMessageItem extends JPanel {
             toolbar.add(timeLabel);
         }
 
+        int btnSize = 28; // nhỏ gọn hơn 34 ⇒ toolbar không lấp đầy hàng tin 1 dòng
         if (canReply) {
-            IconButton reactBtn = new IconButton("☺", null);
+            IconButton reactBtn = new IconButton("☺", null, btnSize);
             reactBtn.addActionListener(e -> showReactionMenu(reactBtn));
             reactBtn.setToolTipText("Thả cảm xúc");
             toolbar.add(reactBtn);
 
-            IconButton replyBtn = new IconButton("↩", e -> { if (actions != null) actions.onReply(message); });
+            IconButton replyBtn = new IconButton("↩", e -> { if (actions != null) actions.onReply(message); }, btnSize);
             replyBtn.setToolTipText("Trả lời");
             toolbar.add(replyBtn);
         }
 
         if (canEdit || canPin || canDelete) {
-            IconButton moreBtn = new IconButton(AppIcons.ellipsis(14), null);
+            IconButton moreBtn = new IconButton(AppIcons.ellipsis(14), null, btnSize);
             moreBtn.setToolTipText("Tùy chọn");
             moreBtn.addActionListener(e -> showActionMenu(moreBtn, canEdit, canPin, canDelete));
             toolbar.add(moreBtn);
         }
 
         toolbar.setVisible(false);
-        // Đặt toolbar NGAY CẠNH tin nhắn (gridx1). Khi ẩn, GridBag bỏ qua ⇒ không chiếm chỗ.
-        if (centerWrap != null) {
-            GridBagConstraints tc = new GridBagConstraints();
-            tc.gridx = 1; tc.weighty = 1; tc.fill = GridBagConstraints.NONE;
-            tc.anchor = GridBagConstraints.WEST;
-            tc.insets = new Insets(0, 8, 0, 0);
-            centerWrap.add(toolbar, tc);
+        // Toolbar nổi trên overlay (z-order 0 = vẽ trên cùng), định vị tuyệt đối theo bong bóng.
+        // ⇒ không chiếm chỗ layout, tin dài tới đâu toolbar vẫn hiển thị.
+        if (overlay != null) {
+            overlay.add(toolbar);
+            overlay.setComponentZOrder(toolbar, 0);
         }
     }
 
@@ -829,6 +869,20 @@ public class ChatMessageItem extends JPanel {
      * Soft-delete: thay nội dung thành "Tin nhắn bị gỡ", ẩn toolbar, reply quote,
      * edited badge, và reaction — giống Zalo/Messenger.
      */
+    /** Thân tin "Tin nhắn bị gỡ" dạng mờ-nghiêng, rộng vừa đủ chữ (createTextBody bắt độ rộng lúc tạo). */
+    private JTextPane buildDeletedBody() {
+        JTextPane body = createTextBody("Tin nhắn bị gỡ", headerRow == null ? 0 : 3);
+        body.setForeground(AppColors.TEXT_MUTED);
+        try {
+            javax.swing.text.SimpleAttributeSet style = new javax.swing.text.SimpleAttributeSet();
+            javax.swing.text.StyleConstants.setForeground(style, AppColors.TEXT_MUTED);
+            javax.swing.text.StyleConstants.setItalic(style, true);
+            javax.swing.text.StyledDocument doc = body.getStyledDocument();
+            doc.setCharacterAttributes(0, doc.getLength(), style, true);
+        } catch (Exception ignored) {}
+        return body;
+    }
+
     public void applySoftDelete() {
         // 1. Cập nhật nội dung
         message.setContent("Tin nhắn bị gỡ");
@@ -838,17 +892,13 @@ public class ChatMessageItem extends JPanel {
         message.setReplyToContent(null);
         message.setReactions(null);
 
+        // Tạo lại thân tin gọn theo "Tin nhắn bị gỡ". KHÔNG setText trên body cũ vì độ rộng
+        // bong bóng được createTextBody bắt theo nội dung LÚC TẠO ⇒ body cũ vẫn rộng theo tin gốc.
         if (messageBody != null) {
-            messageBody.setText("Tin nhắn bị gỡ");
-            messageBody.setForeground(AppColors.TEXT_MUTED);
-            try {
-                javax.swing.text.SimpleAttributeSet style = new javax.swing.text.SimpleAttributeSet();
-                javax.swing.text.StyleConstants.setForeground(style, AppColors.TEXT_MUTED);
-                javax.swing.text.StyleConstants.setItalic(style, true);
-                javax.swing.text.StyledDocument doc = messageBody.getStyledDocument();
-                doc.setCharacterAttributes(0, doc.getLength(), style, true);
-            } catch (Exception ignored) {}
-            messageBody.revalidate();
+            int idx = indexInContent(messageBody);
+            contentPanel.remove(messageBody);
+            messageBody = buildDeletedBody();
+            contentPanel.add(messageBody, Math.min(idx, contentPanel.getComponentCount()));
         }
 
         // 2. Xóa reply quote và edited badge (của tin nhắn compact) khỏi contentPanel, đồng thời xóa attachment nếu có
@@ -884,16 +934,8 @@ public class ChatMessageItem extends JPanel {
         
         // Nếu là tin nhắn đính kèm, messageBody có thể chưa được tạo, cần tạo mới để hiển thị chữ "Tin nhắn bị gỡ"
         if (isAttachment && messageBody == null) {
-            messageBody = createTextBody("Tin nhắn bị gỡ", headerRow == null ? 0 : 3);
+            messageBody = buildDeletedBody();
             contentPanel.add(messageBody);
-            messageBody.setForeground(AppColors.TEXT_MUTED);
-            try {
-                javax.swing.text.SimpleAttributeSet style = new javax.swing.text.SimpleAttributeSet();
-                javax.swing.text.StyleConstants.setForeground(style, AppColors.TEXT_MUTED);
-                javax.swing.text.StyleConstants.setItalic(style, true);
-                javax.swing.text.StyledDocument doc = messageBody.getStyledDocument();
-                doc.setCharacterAttributes(0, doc.getLength(), style, true);
-            } catch (Exception ignored) {}
         }
 
         // 3. Xóa edited badge khỏi headerRow
@@ -1027,7 +1069,9 @@ public class ChatMessageItem extends JPanel {
         int cw = contentPanel.getWidth();
         if (cw <= 0) return null;
         int padX = 12, vInset = 2;
-        int x = centerWrap.getX() + contentPanel.getX() - padX;
+        // centerWrap nằm trong overlay (= vùng CENTER) ⇒ cộng offset overlay để ra toạ độ theo `this`.
+        int overlayX = overlay != null ? overlay.getX() : 0;
+        int x = overlayX + centerWrap.getX() + contentPanel.getX() - padX;
 
         // Chiều cao bubble = chiều cao contentPanel + padding, KHÔNG bao gồm reactionWrap
         int contentH = contentPanel.getHeight();

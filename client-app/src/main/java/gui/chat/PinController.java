@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 
 /**
@@ -24,13 +25,52 @@ public class PinController {
     private final BiConsumer<Toast.Level, String> feedback;
     private final ChannelApiClient channelApi;
     private final LongSupplier activeChannelIdSupplier;
+    /** Phát "thông báo ngầm" tới client khác sau khi ghim/bỏ ghim (truyền channelId). */
+    private final LongConsumer pinChangeBroadcaster;
+
+    // Đảm bảo chỉ 1 popup ghim mở tại 1 thời điểm.
+    private PinnedMessagesDialog dialog;
+    private boolean loading;
 
     public PinController(Window parent, BiConsumer<Toast.Level, String> feedback,
-                         ChannelApiClient channelApi, LongSupplier activeChannelIdSupplier) {
+                         ChannelApiClient channelApi, LongSupplier activeChannelIdSupplier,
+                         LongConsumer pinChangeBroadcaster) {
         this.parent = parent;
         this.feedback = feedback;
         this.channelApi = channelApi;
         this.activeChannelIdSupplier = activeChannelIdSupplier;
+        this.pinChangeBroadcaster = pinChangeBroadcaster;
+    }
+
+    /** Lấy danh sách tin đã ghim của kênh (chạy nền). Dùng chung cho mở dialog + refresh real-time. */
+    private List<MessageDTO> fetchPinned(long channelId) {
+        List<Map<String, Object>> pins = channelApi.getPinnedMessages(channelId);
+        List<Long> msgIds = new ArrayList<>();
+        for (Map<String, Object> p : pins) {
+            if (p.get("messageId") != null) {
+                msgIds.add(((Number) p.get("messageId")).longValue());
+            }
+        }
+        return channelApi.getMessagesByIds(msgIds);
+    }
+
+    /** Báo cho client khác biết danh sách ghim của kênh vừa đổi. */
+    private void broadcastPinChange(long channelId) {
+        if (pinChangeBroadcaster != null) pinChangeBroadcaster.accept(channelId);
+    }
+
+    /**
+     * Nhận broadcast ghim/bỏ ghim từ client khác → nếu đang mở dialog của đúng kênh thì refresh.
+     */
+    public void onRemotePinUpdate(Long channelId) {
+        if (channelId == null || dialog == null || !dialog.isVisible()) return;
+        if (channelId != activeChannelIdSupplier.getAsLong()) return;
+        new SwingWorker<List<MessageDTO>, Void>() {
+            @Override protected List<MessageDTO> doInBackground() { return fetchPinned(channelId); }
+            @Override protected void done() {
+                try { if (dialog != null) dialog.setPinned(get()); } catch (Exception ignore) {}
+            }
+        }.execute();
     }
 
     /** Ghim 1 tin nhắn — gọi API lên backend. */
@@ -46,6 +86,7 @@ public class PinController {
                 try {
                     get();
                     feedback.accept(Toast.Level.SUCCESS, "📌 Đã ghim tin nhắn của " + msg.getSender());
+                    broadcastPinChange(channelId); // real-time cho client khác
                 } catch (Exception e) {
                     feedback.accept(Toast.Level.ERROR, "Lỗi ghim: " + e.getMessage());
                 }
@@ -55,23 +96,26 @@ public class PinController {
 
     /** Mở popup danh sách tin đã ghim — fetch từ API. */
     public void openDialog() {
+        // Nếu popup đang mở → đưa lên trước, không tạo cửa sổ mới.
+        if (dialog != null && dialog.isVisible()) {
+            dialog.toFront();
+            return;
+        }
+        if (loading) return; // đang fetch dở, bỏ qua click lặp
         long channelId = activeChannelIdSupplier.getAsLong();
         if (channelId == -1) return;
+        loading = true;
         new SwingWorker<List<MessageDTO>, Void>() {
             @Override protected List<MessageDTO> doInBackground() {
-                List<Map<String, Object>> pins = channelApi.getPinnedMessages(channelId);
-                List<Long> msgIds = new ArrayList<>();
-                for (Map<String, Object> p : pins) {
-                    if (p.get("messageId") != null) {
-                        msgIds.add(((Number) p.get("messageId")).longValue());
-                    }
-                }
-                return channelApi.getMessagesByIds(msgIds);
+                return fetchPinned(channelId);
             }
             @Override protected void done() {
+                loading = false;
                 try {
                     List<MessageDTO> fetched = get();
-                    new PinnedMessagesDialog(parent, fetched, PinController.this::unpin).setVisible(true);
+                    if (dialog != null) dialog.dispose(); // gỡ instance cũ đã ẩn
+                    dialog = new PinnedMessagesDialog(parent, fetched, PinController.this::unpin);
+                    dialog.setVisible(true);
                 } catch (Exception e) {
                     feedback.accept(Toast.Level.ERROR, "Lỗi lấy danh sách ghim: " + e.getMessage());
                 }
@@ -92,6 +136,7 @@ public class PinController {
                 try {
                     get();
                     feedback.accept(Toast.Level.SUCCESS, "Đã bỏ ghim tin nhắn.");
+                    broadcastPinChange(channelId); // real-time cho client khác
                 } catch (Exception e) {
                     feedback.accept(Toast.Level.ERROR, "Lỗi bỏ ghim: " + e.getMessage());
                 }

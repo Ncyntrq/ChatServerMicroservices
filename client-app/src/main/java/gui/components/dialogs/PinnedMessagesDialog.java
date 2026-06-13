@@ -26,7 +26,8 @@ public class PinnedMessagesDialog extends JDialog {
 
     public PinnedMessagesDialog(Window owner, List<MessageDTO> pinned, Consumer<MessageDTO> onUnpin) {
         super(owner, "Tin nhắn đã ghim", ModalityType.MODELESS);
-        this.pinned = pinned;
+        // Copy ra list nội bộ có thể sửa ⇒ cập nhật real-time (setPinned) khi nhận broadcast ghim/bỏ ghim.
+        this.pinned = new java.util.ArrayList<>(pinned != null ? pinned : List.of());
         this.onUnpin = onUnpin;
 
         setSize(420, 460);
@@ -61,6 +62,13 @@ public class PinnedMessagesDialog extends JDialog {
         root.add(scroll, BorderLayout.CENTER);
 
         setContentPane(root);
+        renderList();
+    }
+
+    /** Cập nhật danh sách ghim real-time (gọi khi nhận broadcast ghim/bỏ ghim từ client khác). */
+    public void setPinned(List<MessageDTO> list) {
+        pinned.clear();
+        if (list != null) pinned.addAll(list);
         renderList();
     }
 

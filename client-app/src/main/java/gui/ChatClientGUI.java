@@ -109,8 +109,10 @@ public class ChatClientGUI extends JFrame {
         this.rightSidebar = new RightSidebarView(sessionUsername, this::openAssignRoleDialog, this::confirmKick);
         this.unreadSync = new UnreadCountSync(notificationApi, serverSidebar, channelSidebar, friendSidebar, sessionUsername);
         this.fileUpload = new FileUploadController(this, fileApi, wsClient, sessionUsername, this::toast, chatInput::setUploading);
-        this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId);
         this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast);
+        // Sau khi ghim/bỏ ghim → broadcast marker kèm channelId để client khác refresh real-time.
+        this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId,
+                cid -> outbound.broadcast(MessageType.CHAT, "[SYSTEM_PIN_UPDATE]", activeServerId, cid, null));
 
         // Khởi tạo SystemTray (icon notification khi app minimize)
         gui.notification.SystemTrayManager.get().init(this);
@@ -590,6 +592,10 @@ public class ChatClientGUI extends JFrame {
     private void handleIncoming(MessageDTO msg) {
         if (msg.getType() == MessageType.PRIVATE && "[SYSTEM_FRIEND_UPDATE]".equals(msg.getContent())) {
             if (activeServerId == -1) loadPresence(); // tải lại bạn bè, không in ra UI
+            return;
+        }
+        if ("[SYSTEM_PIN_UPDATE]".equals(msg.getContent())) {
+            pinController.onRemotePinUpdate(msg.getChannelId()); // refresh dialog ghim nếu đang mở đúng kênh
             return;
         }
         if ("[SYSTEM_CHANNEL_UPDATE]".equals(msg.getContent())) {

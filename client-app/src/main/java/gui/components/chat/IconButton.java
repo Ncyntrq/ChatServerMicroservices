@@ -60,6 +60,12 @@ public class IconButton extends JButton {
         this(icon, null);
     }
 
+    /** Biến thể icon nhỏ gọn (vd toolbar tin nhắn): icon vẽ tay + kích thước tùy chỉnh. */
+    public IconButton(Icon icon, ActionListener onClick, int size) {
+        this(icon, onClick);
+        setPreferredSize(new Dimension(size, size));
+    }
+
     /** Biến thể nhỏ gọn (vd toolbar tin nhắn): font emoji nhỏ + kích thước tùy chỉnh. */
     public IconButton(String iconText, ActionListener onClick, int size) {
         this(iconText, onClick);
