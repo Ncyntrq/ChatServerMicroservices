@@ -23,14 +23,22 @@ public class AuthHeader extends JPanel {
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
+                try {
+                    java.net.URL url = getClass().getResource("/logo/logo.png");
+                    if (url != null) {
+                        Image img = javax.imageio.ImageIO.read(url).getScaledInstance(size, size, Image.SCALE_SMOOTH);
+                        g2.drawImage(img, x, y, null);
+                        g2.dispose();
+                        return;
+                    }
+                } catch (Exception e) {}
+
                 // Gradient background
                 GradientPaint gp = new GradientPaint(x, y, AppColors.BRAND_PRIMARY,
                         x + size, y + size, Color.decode("#EB459E"));
                 g2.setPaint(gp);
                 g2.fillOval(x, y, size, size);
 
-                // Icon 💬 — vẽ ảnh Twemoji để đồng nhất mọi OS; fallback drawString nếu chưa nạp/offline.
-                // Chỉ ĐỌC cache ở đây (không fetch) để không chặn EDT — prefetch + repaint làm bên dưới.
                 java.awt.image.BufferedImage emoji =
                         gui.components.chat.EmojiHelper.cachedImageForChar("💬", 30);
                 if (emoji != null) {

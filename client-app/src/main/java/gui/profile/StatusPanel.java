@@ -26,7 +26,7 @@ public class StatusPanel extends JPanel {
         PresenceStatusIcon.Status.INVISIBLE,
     };
 
-    public StatusPanel(UserProfileApiClient profileApi) {
+    public StatusPanel(UserProfileApiClient profileApi, PresenceStatusIcon.Status initialStatus) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(AppColors.BG_PRIMARY);
         setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
@@ -56,8 +56,13 @@ public class StatusPanel extends JPanel {
             card.setAlignmentX(Component.LEFT_ALIGNMENT);
             add(card);
             add(Box.createVerticalStrut(8));
+            if (st == initialStatus) {
+                radios[i].setSelected(true);
+            }
         }
-        radios[0].setSelected(true); // Default: ONLINE
+        if (group.getSelection() == null) {
+            radios[0].setSelected(true); // Default fallback
+        }
 
         add(Box.createVerticalStrut(20));
 

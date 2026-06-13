@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.fonts.roboto.FlatRobotoFont;
-import gui.landing.LandingFrame;
+import gui.auth.AuthFrame;
 import gui.theme.AppColors;
 import gui.theme.Theme;
 import gui.theme.ThemeManager;
@@ -30,7 +30,7 @@ public class ClientApplication {
                 gui.setVisible(true);
                 gui.startSession();
             } else {
-                new LandingFrame().setVisible(true);
+                new AuthFrame().setVisible(true);
             }
         });
     }

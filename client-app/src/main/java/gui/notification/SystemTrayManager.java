@@ -81,6 +81,14 @@ public class SystemTrayManager {
 
     /** Tạo một logo mặc định bằng Java2D nếu app chưa có ảnh logo */
     private Image createTrayIconImage() {
+        try {
+            java.net.URL url = getClass().getResource("/logo/logo.png");
+            if (url != null) {
+                return javax.imageio.ImageIO.read(url);
+            }
+        } catch (Exception e) {
+            System.err.println("Could not load logo.png: " + e.getMessage());
+        }
         int size = 64;
         BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = img.createGraphics();

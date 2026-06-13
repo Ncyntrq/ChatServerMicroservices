@@ -103,7 +103,7 @@ public class UserFooterPanel extends JPanel {
         // Nút cài đặt — GearIcon (Java2D)
         IconButton settingsBtn = new IconButton(AppIcons.gear(16), e -> {
             Window owner = SwingUtilities.getWindowAncestor(this);
-            UserSettingsDialog dialog = new UserSettingsDialog(owner, () -> {
+            gui.profile.UserSettingsDialog dialog = new gui.profile.UserSettingsDialog(owner, currentStatus, () -> {
                 loadUserAvatar(userAvatar, username);
                 if (onUserChanged != null) onUserChanged.run();
             });
@@ -227,10 +227,14 @@ public class UserFooterPanel extends JPanel {
     }
 
     /** Cập nhật trạng thái local + gọi API async. */
-    private void applyStatus(PresenceStatusIcon.Status st) {
+    public void setStatusVisual(PresenceStatusIcon.Status st) {
         currentStatus = st;
         statusLabel.setText(st.toVietnamese());
         repaint();
+    }
+
+    private void applyStatus(PresenceStatusIcon.Status st) {
+        setStatusVisual(st);
 
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() {

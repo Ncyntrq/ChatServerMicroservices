@@ -29,6 +29,17 @@ public class PresenceApiClient {
         }
     }
 
+    // P3.1 — Lấy toàn bộ trạng thái
+    public Map<String, String> getAllStatuses() {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/presence/all-statuses";
+        HttpResponse<String> resp = sendGet(url);
+        try {
+            return json.readValue(resp.body(), new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            throw new ApiException("Lỗi parse danh sách trạng thái: " + e.getMessage(), e);
+        }
+    }
+
     // P4 — Kiểm tra trạng thái 1 user
     public Map<String, Object> getUserStatus(String userId) {
         String url = ApiConfig.GATEWAY_HTTP + "/api/presence/status/" + userId;

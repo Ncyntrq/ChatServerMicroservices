@@ -42,9 +42,16 @@ public class PresenceService {
         return userStatusMap.values().stream()
                 .filter(user -> user.getStatus() == UserStatus.Status.ONLINE
                              || user.getStatus() == UserStatus.Status.IDLE
-                             || user.getStatus() == UserStatus.Status.AWAY)
+                             || user.getStatus() == UserStatus.Status.AWAY
+                             || user.getStatus() == UserStatus.Status.DO_NOT_DISTURB)
                 .map(UserStatus::getUserId)
                 .collect(Collectors.toList());
+    }
+
+    public Map<String, String> getAllStatuses() {
+        return userStatusMap.values().stream()
+                .filter(user -> user.getStatus() != UserStatus.Status.OFFLINE)
+                .collect(Collectors.toMap(UserStatus::getUserId, s -> s.getStatus().name()));
     }
 
     public boolean isOnline(String username) {

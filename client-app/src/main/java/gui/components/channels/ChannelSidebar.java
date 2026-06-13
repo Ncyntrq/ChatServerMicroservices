@@ -114,6 +114,12 @@ public class ChannelSidebar extends JPanel {
         }
     }
 
+    public void updateUserStatus(String statusStr) {
+        if (accountFooter != null) {
+            accountFooter.setStatusVisual(gui.components.PresenceStatusIcon.Status.from(statusStr));
+        }
+    }
+
     public void loadChannels(long serverId, String serverName) {
         this.activeServerId = serverId;
         if (serverName != null) titleLabel.setText(serverName + " ⏷");

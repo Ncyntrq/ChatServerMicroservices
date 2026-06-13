@@ -15,7 +15,10 @@ import java.awt.event.MouseEvent;
 
 public class LoginPanel extends JPanel {
 
-    public LoginPanel(AuthDialog parent) {
+    private final AuthFrame parent;
+
+    public LoginPanel(AuthFrame parent) {
+        this.parent = parent;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
         setBackground(AppColors.BG_PRIMARY);
@@ -61,10 +64,7 @@ public class LoginPanel extends JPanel {
                 protected void done() {
                     try {
                         String username = get();
-                        Window window = SwingUtilities.getWindowAncestor(LoginPanel.this);
-                        Window owner = window != null ? window.getOwner() : null;
-                        if (window != null) window.dispose();
-                        if (owner != null) owner.dispose(); // đóng LandingFrame nếu có
+                        parent.dispose();
 
                         ChatClientGUI mainGui = new ChatClientGUI(username);
                         mainGui.setVisible(true);

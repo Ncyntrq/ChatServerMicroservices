@@ -57,6 +57,7 @@ public class  ChatMessageItem extends JPanel {
     private JPanel reactionBadgePanel;
     private JPanel reactionWrap;
     private boolean editedBadgeShown = false;
+    private JComponent attachmentComponent;
 
     /** Layout gọn cho tin nhắn liên tiếp cùng người gửi (gộp nhóm). */
     private final boolean isConsecutive;
@@ -428,7 +429,8 @@ public class  ChatMessageItem extends JPanel {
         Attachment att = parseAttachment(message.getContent());
         this.isAttachment = att != null;
         if (att != null) {
-            contentPanel.add(att.isImage() ? buildImageAttachment(att) : buildFileCard(att));
+            attachmentComponent = att.isImage() ? buildImageAttachment(att) : buildFileCard(att);
+            contentPanel.add(attachmentComponent);
         } else {
             messageBody = createTextBody(message.getContent(), compact ? 0 : 3);
             contentPanel.add(messageBody);
@@ -937,8 +939,6 @@ public class  ChatMessageItem extends JPanel {
                 }
                 if (hasEditedBadge) {
                     toRemove.add(c);
-                } else if (isAttachment) {
-                    toRemove.add(c);
                 }
             }
         }
@@ -946,6 +946,11 @@ public class  ChatMessageItem extends JPanel {
             contentPanel.remove(c);
         }
         
+        if (attachmentComponent != null) {
+            contentPanel.remove(attachmentComponent);
+            attachmentComponent = null;
+        }
+
         // Nếu là tin nhắn đính kèm, messageBody có thể chưa được tạo, cần tạo mới để hiển thị chữ "Tin nhắn bị gỡ"
         if (isAttachment && messageBody == null) {
             messageBody = buildDeletedBody();

@@ -14,7 +14,10 @@ import java.awt.event.MouseEvent;
 
 public class RegisterPanel extends JPanel {
 
-    public RegisterPanel(AuthDialog parent) {
+    private final AuthFrame parent;
+
+    public RegisterPanel(AuthFrame parent) {
+        this.parent = parent;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
         setBackground(AppColors.BG_PRIMARY);

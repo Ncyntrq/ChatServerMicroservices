@@ -17,15 +17,18 @@ public class AuthGraphicPanel extends JPanel {
         logoRow.setOpaque(false);
         logoRow.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel logoIcon = new JLabel("💬");
-        logoIcon.setFont(AppFonts.EMOJI.deriveFont(28f));
-        logoIcon.setForeground(Color.WHITE);
+        try {
+            java.net.URL url = getClass().getResource("/logo/logo.png");
+            if (url != null) {
+                Image img = javax.imageio.ImageIO.read(url).getScaledInstance(48, 48, Image.SCALE_SMOOTH);
+                logoRow.add(new JLabel(new ImageIcon(img)));
+            }
+        } catch (Exception e) {}
 
         JLabel logoText = new JLabel("ChatServer");
         logoText.setFont(AppFonts.HEADING_LG.deriveFont(Font.BOLD, 32f));
         logoText.setForeground(Color.WHITE);
 
-        logoRow.add(logoIcon);
         logoRow.add(logoText);
 
         JLabel desc = new JLabel("<html><div style='text-align: center; color: rgba(255,255,255,0.8); width: 250px;'>" 

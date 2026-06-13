@@ -59,8 +59,12 @@ public class UserListItem extends JPanel {
      * @param isOnline    hiển thị màu tên sáng hay mờ ban đầu.
      */
     public UserListItem(String username, String customStatus, Color statusColor, boolean isOnline) {
-        this.username = username; // Lưu lại username để dùng cho kiểm tra biệt danh
-        this.currentStatus = resolveStatusFromColor(statusColor, isOnline);
+        this(username, customStatus, resolveStatusFromColor(statusColor, isOnline).name());
+    }
+
+    public UserListItem(String username, String customStatus, String statusName) {
+        this.username = username;
+        this.currentStatus = PresenceStatusIcon.Status.from(statusName);
 
         setLayout(new BorderLayout(10, 0));
         setOpaque(false);
@@ -102,7 +106,8 @@ public class UserListItem extends JPanel {
         // --- ÁP DỤNG BIỆT DANH LOCAL BAN ĐẦU ---
         String localNickname = gui.utils.NicknameManager.getNickname(username);
         nameLabel = new JLabel(localNickname != null ? localNickname : username);
-        nameLabel.setForeground(isOnline ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
+        boolean online = currentStatus != PresenceStatusIcon.Status.OFFLINE && currentStatus != PresenceStatusIcon.Status.INVISIBLE;
+        nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
         nameLabel.setFont(AppFonts.BODY_BOLD);
         textPanel.add(nameLabel);
 
@@ -196,15 +201,21 @@ public class UserListItem extends JPanel {
         if (unreadCount == 0) {
             nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
         }
-        // Cập nhật text trạng thái (chỉ nếu không có custom status text)
-        String cur = statusTextLabel.getText();
-        for (PresenceStatusIcon.Status s : PresenceStatusIcon.Status.values()) {
-            if (s.toVietnamese().equals(cur)) {
-                // Đang dùng text mặc định → đổi theo status mới
+        
+        // Nếu không có custom status từ profile, thì dùng text mặc định
+        if (statusTextLabel != null) {
+            String cur = statusTextLabel.getText();
+            boolean isDefault = false;
+            for (PresenceStatusIcon.Status s : PresenceStatusIcon.Status.values()) {
+                if (s.toVietnamese().equals(cur)) {
+                    isDefault = true; break;
+                }
+            }
+            if (isDefault) {
                 statusTextLabel.setText(newStatus.toVietnamese());
-                break;
             }
         }
+        
         repaint();
     }
 

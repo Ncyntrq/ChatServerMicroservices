@@ -19,7 +19,7 @@ public class UserSettingsDialog extends JDialog {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cards = new JPanel(cardLayout);
 
-    public UserSettingsDialog(Window owner, Runnable onProfileChanged) {
+    public UserSettingsDialog(Window owner, gui.components.PresenceStatusIcon.Status initialStatus, Runnable onProfileChanged) {
         super(owner, ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         setBackground(AppColors.BG_PRIMARY);
@@ -91,7 +91,7 @@ public class UserSettingsDialog extends JDialog {
         
         cards.add(pep, "Profile");
         cards.add(new AccountSecurityPanel(), "Security");
-        cards.add(new StatusPanel(profileApi), "Status");
+        cards.add(new StatusPanel(profileApi, initialStatus), "Status");
         cards.add(new AppearancePanel(this), "Appearance");
 
         // --- ESC Close Button ---
@@ -167,13 +167,31 @@ public class UserSettingsDialog extends JDialog {
             if ("Logout".equals(cardName)) {
                 int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?", "Logout", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION) {
-                    SessionManager.get().clear();
-                    Window owner = SwingUtilities.getWindowAncestor(UserSettingsDialog.this);
-                    if (owner != null) {
-                        owner.dispose();
-                    }
-                    new gui.landing.LandingFrame().setVisible(true);
-                    dispose();
+                    new SwingWorker<Void, Void>() {
+                        @Override
+                        protected Void doInBackground() {
+                            try {
+                                network.PresenceApiClient pApi = new network.PresenceApiClient();
+                                pApi.updatePresenceStatus("ONLINE");
+                                network.UserProfileApiClient uApi = new network.UserProfileApiClient();
+                                uApi.updateStatus("");
+                            } catch (Exception ignore) {}
+                            return null;
+                        }
+                        @Override
+                        protected void done() {
+                            SessionManager.get().clear();
+                            Window owner = SwingUtilities.getWindowAncestor(gui.profile.UserSettingsDialog.this);
+                            if (owner instanceof gui.ChatClientGUI) {
+                                try { ((gui.ChatClientGUI) owner).disconnect(); } catch (Exception ignore) {}
+                            }
+                            if (owner != null) {
+                                owner.dispose();
+                            }
+                            new gui.auth.AuthFrame().setVisible(true);
+                            dispose();
+                        }
+                    }.execute();
                 }
             } else {
                 cardLayout.show(cards, cardName);

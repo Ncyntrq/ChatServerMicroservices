@@ -91,45 +91,51 @@ public class RightSidebarView extends JScrollPane {
         repaint();
     }
 
-    public void renderServerMembers(List<String> allUsers, List<String> onlineUsers, String ownerId) {
+    public void renderServerMembers(List<String> allUsers, java.util.Map<String, String> onlineStatuses, String ownerId) {
         memberContent.removeAll();
         memberItems.clear();
 
         List<String> onlineList = new ArrayList<>();
         List<String> offlineList = new ArrayList<>();
         for (String u : allUsers) {
-            if (onlineUsers.contains(u)) onlineList.add(u);
+            if (onlineStatuses != null && onlineStatuses.containsKey(u)) onlineList.add(u);
             else offlineList.add(u);
         }
         boolean isOwner = sessionUsername.equals(ownerId);
 
         memberContent.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + onlineList.size()));
         memberContent.add(Box.createVerticalStrut(5));
-        for (String username : onlineList) addMemberItem(username, AppColors.STATUS_ONLINE, true, isOwner);
+        for (String username : onlineList) {
+            String status = onlineStatuses.get(username);
+            addMemberItem(username, status, isOwner);
+        }
 
         memberContent.add(Box.createVerticalStrut(12));
         memberContent.add(new SidebarCategoryHeader("NGOẠI TUYẾN — " + offlineList.size()));
         memberContent.add(Box.createVerticalStrut(5));
-        for (String username : offlineList) addMemberItem(username, AppColors.STATUS_OFFLINE, false, isOwner);
+        for (String username : offlineList) {
+            addMemberItem(username, "OFFLINE", isOwner);
+        }
 
         memberSection.setTitle("Thành viên — " + allUsers.size());
         memberContent.revalidate();
         memberContent.repaint();
     }
 
-    public void renderOnline(List<String> usernames) {
+    public void renderOnline(java.util.Map<String, String> statuses) {
         memberContent.removeAll();
         memberItems.clear();
-        memberContent.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + usernames.size()));
+        memberContent.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + statuses.size()));
         memberContent.add(Box.createVerticalStrut(5));
-        for (String username : usernames) {
+        for (java.util.Map.Entry<String, String> entry : statuses.entrySet()) {
+            String username = entry.getKey();
             if (username == null || username.isBlank()) continue;
             String name = username.trim();
-            UserListItem item = new UserListItem(name, null, AppColors.STATUS_ONLINE, true);
+            UserListItem item = new UserListItem(name, null, entry.getValue());
             memberItems.put(name, item);
             memberContent.add(item);
         }
-        memberSection.setTitle("Thành viên — " + usernames.size());
+        memberSection.setTitle("Thành viên — " + statuses.size());
         memberContent.revalidate();
         memberContent.repaint();
     }
@@ -141,10 +147,10 @@ public class RightSidebarView extends JScrollPane {
         });
     }
 
-    private void addMemberItem(String username, Color statusColor, boolean online, boolean isOwner) {
+    private void addMemberItem(String username, String statusName, boolean isOwner) {
         if (username == null || username.isBlank()) return;
         String name = username.trim();
-        UserListItem item = new UserListItem(name, null, statusColor, online);
+        UserListItem item = new UserListItem(name, null, statusName);
         boolean canModerate = isOwner
                 || PermissionCache.get().can(PermissionCache.KICK_MEMBER)
                 || PermissionCache.get().can(PermissionCache.MANAGE_ROLES);

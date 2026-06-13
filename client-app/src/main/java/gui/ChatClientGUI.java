@@ -92,6 +92,12 @@ public class ChatClientGUI extends JFrame {
 
     public ChatClientGUI(String sessionUsername) {
         setTitle("Chat Server v2.0 — " + sessionUsername);
+        try {
+            java.net.URL url = getClass().getResource("/logo/logo.png");
+            if (url != null) {
+                setIconImage(javax.imageio.ImageIO.read(url));
+            }
+        } catch (Exception e) {}
         // Mở theo ~80% màn hình (cap 1200×750, sàn 900×600) để hợp mọi kích thước/độ phân giải.
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int w = Math.max(900, Math.min(1200, (int) (screen.width * 0.8)));
@@ -141,10 +147,16 @@ public class ChatClientGUI extends JFrame {
         add(eastContainer, BorderLayout.EAST);
 
         addWindowListener(new WindowAdapter() {
-            @Override public void windowClosing(WindowEvent e) { wsClient.close(); }
+            @Override public void windowClosing(WindowEvent e) { disconnect(); }
         });
 
         installZoomKeybindings();
+    }
+
+    public void disconnect() {
+        if (wsClient != null) {
+            wsClient.close();
+        }
     }
 
     // ---------------------------------------------------------------
@@ -326,7 +338,7 @@ public class ChatClientGUI extends JFrame {
                 chatHistoryView.setPlaceholderText("Welcome to ChatServer! Select a server, channel, or friend to start chatting.");
             }
             clearChat();
-            rightSidebar.renderOnline(List.of());
+            rightSidebar.renderOnline(java.util.Collections.emptyMap());
             loadPresence();
         } else {
             this.activePrivateUser = null;
@@ -390,6 +402,12 @@ public class ChatClientGUI extends JFrame {
         }
         java.util.Collections.reverse(atts);
         return atts;
+    }
+
+    private void refreshSidebarAttachments() {
+        if (activeChannelId > 0 || activePrivateUser != null) {
+            rightSidebar.setAttachments(extractAttachments(chatHistoryView.getAllMessages()));
+        }
     }
 
     /** Mở DM với 1 người bạn. */
@@ -466,8 +484,8 @@ public class ChatClientGUI extends JFrame {
 
     private void loadPresence() {
         if (activeServerId <= 0) {
-            new SwingWorker<List<String>, Void>() {
-                @Override protected List<String> doInBackground() { return presenceApi.getOnlineUsers(); }
+            new SwingWorker<java.util.Map<String, String>, Void>() {
+                @Override protected java.util.Map<String, String> doInBackground() { return presenceApi.getAllStatuses(); }
                 @Override protected void done() {
                     try { friendSidebar.loadFriendsAndRequests(get()); } catch (Exception ignore) {}
                 }
@@ -495,7 +513,7 @@ public class ChatClientGUI extends JFrame {
         new SwingWorker<java.util.Map<String, Object>, Void>() {
             @Override protected java.util.Map<String, Object> doInBackground() {
                 java.util.Map<String, Object> details = serverApi.getServerDetails(serverId);
-                List<String> online = presenceApi.getOnlineUsers();
+                java.util.Map<String, String> online = presenceApi.getAllStatuses();
                 return java.util.Map.of("details", details, "online", online);
             }
             @Override
@@ -504,10 +522,10 @@ public class ChatClientGUI extends JFrame {
                 try {
                     java.util.Map<String, Object> result = get();
                     java.util.Map<String, Object> details = (java.util.Map<String, Object>) result.get("details");
-                    List<String> online = (List<String>) result.get("online");
+                    java.util.Map<String, String> statuses = (java.util.Map<String, String>) result.get("online");
 
                     List<java.util.Map<String, Object>> members = (List<java.util.Map<String, Object>>) details.get("members");
-                    List<String> allUsers = new ArrayList<>();
+                    List<String> allUsers = new java.util.ArrayList<>();
                     if (members != null) {
                         for (java.util.Map<String, Object> m : members) {
                             Object uid = m.get("userId");
@@ -518,7 +536,7 @@ public class ChatClientGUI extends JFrame {
                     if (serverData == null) serverData = details;
                     String ownerId = String.valueOf(serverData.get("ownerId"));
 
-                    rightSidebar.renderServerMembers(allUsers, online, ownerId);
+                    rightSidebar.renderServerMembers(allUsers, statuses, ownerId);
 
                     // ---> NOTE 3: Nạp toàn bộ thành viên của Server vào danh sách Tag @
                     chatInput.setAvailableMentions(allUsers);
@@ -531,9 +549,9 @@ public class ChatClientGUI extends JFrame {
     }
 
     /** Cập nhật danh sách online (fallback hoặc trigger từ WS LIST). */
-    private void setOnlineUsers(List<String> usernames) {
+    private void setOnlineUsers(java.util.Map<String, String> statuses) {
         if (activeServerId > 0) { loadServerMembersAndPresence(activeServerId); return; }
-        rightSidebar.renderOnline(usernames);
+        rightSidebar.renderOnline(statuses);
     }
 
     /** Mở dialog cấp Role cho 1 thành viên (context menu RightSidebarView). */
@@ -633,6 +651,7 @@ public class ChatClientGUI extends JFrame {
                 if (belongsToActiveChannel(msg)) {
                     chatHistoryView.applyDelete(msg);
                     pinController.removeByMessageId(msg.getMessageId());
+                    refreshSidebarAttachments();
                 }
             }
             case JOIN, LEAVE -> loadPresence();
@@ -644,17 +663,25 @@ public class ChatClientGUI extends JFrame {
                 }
             }
             case STATUS -> {
-                // Cập nhật trạng thái real-time: sender=username, content=statusName (vd "IDLE")
                 String who = msg.getSender();
                 String statusStr = msg.getContent();
-                if (who != null && statusStr != null && !sessionUsername.equals(who)) {
+                if (who != null && statusStr != null) {
                     rightSidebar.updateUserStatus(who, statusStr);
                     friendSidebar.updateUserStatus(who, statusStr);
+                    if (sessionUsername.equals(who)) {
+                        channelSidebar.updateUserStatus(statusStr);
+                    }
+                    // Force a full reload to move users between ONLINE/OFFLINE sections
+                    loadPresence();
                 }
             }
             case PING, PONG -> { /* ignore */ }
             case LIST -> {
-                if (msg.getContent() != null) setOnlineUsers(List.of(msg.getContent().split(",")));
+                if (msg.getContent() != null) {
+                    java.util.Map<String, String> map = new java.util.HashMap<>();
+                    for (String u : msg.getContent().split(",")) map.put(u.trim(), "ONLINE");
+                    setOnlineUsers(map);
+                }
             }
             case REACT -> {
                 if (belongsToActiveChannel(msg)) chatHistoryView.applyReaction(msg);
@@ -670,6 +697,7 @@ public class ChatClientGUI extends JFrame {
         if (belongsToActiveChannel(msg)) {
             chatHistoryView.appendMessage(msg);
             unreadSync.ack(msg);
+            refreshSidebarAttachments();
         } else {
             unreadSync.refresh();
         }

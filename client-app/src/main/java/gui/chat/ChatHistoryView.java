@@ -281,4 +281,15 @@ public class ChatHistoryView extends JScrollPane {
         }
         if (target != null) target.startEditing();
     }
+
+    /** Trả về danh sách tất cả các tin nhắn đang hiển thị. */
+    public java.util.List<MessageDTO> getAllMessages() {
+        java.util.List<MessageDTO> list = new java.util.ArrayList<>();
+        for (ChatMessageItem item : messageItems.values()) {
+            if (item.getMessage() != null) {
+                list.add(item.getMessage());
+            }
+        }
+        return list;
+    }
 }

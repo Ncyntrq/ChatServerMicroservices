@@ -6,23 +6,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
-public class AuthDialog extends JDialog {
+public class AuthFrame extends JFrame {
 
     private final JPanel cards;
     private final CardLayout cardLayout;
 
-    public AuthDialog() {
-        this((Window) null);
-    }
-
-    public AuthDialog(Window owner) {
-        super(owner, ModalityType.APPLICATION_MODAL);
+    public AuthFrame() {
+        super("Authentication");
         setUndecorated(true);
-        setTitle("Authentication");
-        setModal(true);
         setSize(900, 600);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 20, 20));
 
         // Header containing close button (for the Right Panel)
@@ -36,7 +30,7 @@ public class AuthDialog extends JDialog {
         closeBtn.setContentAreaFilled(false);
         closeBtn.setBorderPainted(false);
         closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeBtn.addActionListener(e -> dispose());
+        closeBtn.addActionListener(e -> System.exit(0));
         
         closeBtn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {

@@ -33,8 +33,8 @@ public class PresenceController {
     /**
      * P1 — Đăng ký online.
      * Hỗ trợ 2 cách gọi:
-     *   - Từ Gateway (qua header): X-User-Id
-     *   - Từ messaging-service internal (qua query param): ?username=xxx
+     * - Từ Gateway (qua header): X-User-Id
+     * - Từ messaging-service internal (qua query param): ?username=xxx
      */
     @PostMapping("/connect")
     public ResponseEntity<Map<String, String>> connect(
@@ -58,15 +58,21 @@ public class PresenceController {
         return ResponseEntity.ok(Map.of("message", "User disconnected", "status", "OFFLINE"));
     }
 
-    /** P3 — Danh sách online */
+    /** P3 — Danh sách online (giữ cho tương thích ngược) */
     @GetMapping("/online")
     public ResponseEntity<List<String>> getOnlineUsers() {
         return ResponseEntity.ok(presenceService.getOnlineUsers());
     }
 
+    /** P3.1 — Lấy toàn bộ trạng thái user (từ điển userId -> status) */
+    @GetMapping("/all-statuses")
+    public ResponseEntity<Map<String, String>> getAllStatuses() {
+        return ResponseEntity.ok(presenceService.getAllStatuses());
+    }
+
     /** P4 — Kiểm tra trạng thái user */
     @GetMapping("/status/{userId}")
-    public ResponseEntity<UserStatus> getStatus(@PathVariable String userId) {
+    public ResponseEntity<UserStatus> getStatus(@PathVariable("userId") String userId) {
         return ResponseEntity.ok(presenceService.getUserStatus(userId));
     }
 
@@ -74,7 +80,7 @@ public class PresenceController {
     @PutMapping("/status")
     public ResponseEntity<Map<String, String>> updateCustomStatus(
             @RequestHeader("X-User-Id") String userId,
-            @RequestParam UserStatus.Status status) {
+            @RequestParam("status") UserStatus.Status status) {
         presenceService.updateCustomStatus(userId, status);
         return ResponseEntity.ok(Map.of("message", "Status updated to " + status));
     }
@@ -83,8 +89,10 @@ public class PresenceController {
      * Helper: ưu tiên header X-User-Id, fallback sang query param username.
      */
     private String resolveUserId(String headerUserId, String paramUsername) {
-        if (headerUserId != null && !headerUserId.isBlank()) return headerUserId;
-        if (paramUsername != null && !paramUsername.isBlank()) return paramUsername;
+        if (headerUserId != null && !headerUserId.isBlank())
+            return headerUserId;
+        if (paramUsername != null && !paramUsername.isBlank())
+            return paramUsername;
         throw new IllegalArgumentException("Thiếu thông tin userId (header X-User-Id hoặc param username)");
     }
 }

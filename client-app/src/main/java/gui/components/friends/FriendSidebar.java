@@ -98,7 +98,7 @@ public class FriendSidebar extends JPanel {
         }
     }
 
-    public void loadFriendsAndRequests(List<String> onlineUsers) {
+    public void loadFriendsAndRequests(java.util.Map<String, String> onlineStatuses) {
         new SwingWorker<Void, Void>() {
             List<String> friends;
             List<String> pending;
@@ -113,7 +113,7 @@ public class FriendSidebar extends JPanel {
             @Override
             protected void done() {
                 try {
-                    renderLists(friends, pending, onlineUsers);
+                    renderLists(friends, pending, onlineStatuses);
                 } catch (Exception ex) {
                     listPanel.removeAll();
                     JLabel err = new JLabel("Failed to load friends");
@@ -160,7 +160,7 @@ public class FriendSidebar extends JPanel {
     }
 
 
-    private void renderLists(List<String> friends, List<String> pending, List<String> onlineUsers) {
+    private void renderLists(List<String> friends, List<String> pending, java.util.Map<String, String> onlineStatuses) {
         listPanel.removeAll();
         friendItems.clear();
 
@@ -221,14 +221,14 @@ public class FriendSidebar extends JPanel {
                 acceptBtn.addActionListener(e -> {
                     friendApi.acceptRequest(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
-                    loadFriendsAndRequests(onlineUsers);
+                    loadFriendsAndRequests(onlineStatuses);
                 });
 
                 JButton rejectBtn = ghostActionButton("Ignore", AppColors.DANGER, "Ignore Request");
                 rejectBtn.addActionListener(e -> {
                     friendApi.rejectOrRemoveFriend(req);
                     if (onFriendAction != null) onFriendAction.accept(req);
-                    loadFriendsAndRequests(onlineUsers);
+                    loadFriendsAndRequests(onlineStatuses);
                 });
 
                 btnPanel.add(acceptBtn);
@@ -243,11 +243,12 @@ public class FriendSidebar extends JPanel {
         }
 
         // 2. Online
-        List<String> onlineFriends = friends.stream().filter(onlineUsers::contains).toList();
+        List<String> onlineFriends = friends.stream().filter(f -> onlineStatuses != null && onlineStatuses.containsKey(f)).toList();
         listPanel.add(new SidebarCategoryHeader("ONLINE — " + onlineFriends.size()));
         listPanel.add(Box.createVerticalStrut(4));
         for (String f : onlineFriends) {
-            UserListItem item = new UserListItem(f, null, AppColors.STATUS_ONLINE, true);
+            String statusName = onlineStatuses.get(f);
+            UserListItem item = new UserListItem(f, null, statusName);
             item.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseClicked(java.awt.event.MouseEvent e) {
                     if (onFriendSelected != null) onFriendSelected.accept(f);
@@ -260,11 +261,11 @@ public class FriendSidebar extends JPanel {
         listPanel.add(Box.createVerticalStrut(10));
 
         // 3. Offline
-        List<String> offlineFriends = friends.stream().filter(f -> !onlineUsers.contains(f)).toList();
+        List<String> offlineFriends = friends.stream().filter(f -> onlineStatuses == null || !onlineStatuses.containsKey(f)).toList();
         listPanel.add(new SidebarCategoryHeader("OFFLINE — " + offlineFriends.size()));
         listPanel.add(Box.createVerticalStrut(4));
         for (String f : offlineFriends) {
-            UserListItem item = new UserListItem(f, null, AppColors.STATUS_OFFLINE, false);
+            UserListItem item = new UserListItem(f, null, "OFFLINE");
             item.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseClicked(java.awt.event.MouseEvent e) {
                     if (onFriendSelected != null) onFriendSelected.accept(f);
