@@ -21,6 +21,7 @@ public class ReactionDetailsDialog extends JDialog {
     private final JPanel listPanel;
     private final JPanel tabsPanel;
     private String currentActiveTab;
+    private JScrollPane scrollPane;
 
     private final Map<String, List<MessageDTO.ReactionDTO>> groupedReactions = new LinkedHashMap<>();
     private final List<JPanel> tabPanels = new ArrayList<>();
@@ -62,14 +63,24 @@ public class ReactionDetailsDialog extends JDialog {
 
         // --- Khu vực Danh sách (BorderLayout.CENTER) ---
         listPanel = new JPanel();
+        listPanel.setOpaque(true);
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(AppColors.BG_PRIMARY);
 
-        JScrollPane scrollPane = new JScrollPane(listPanel);
+        JPanel scrollContentWrapper = new JPanel(new BorderLayout());
+        scrollContentWrapper.setOpaque(true);
+        scrollContentWrapper.setBackground(AppColors.BG_PRIMARY);
+        scrollContentWrapper.add(listPanel, BorderLayout.NORTH);
+
+        scrollPane = new JScrollPane(scrollContentWrapper);
         scrollPane.setBorder(null);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // BẮT BUỘC THÊM 2 DÒNG NÀY ĐỂ CHỐNG GHOSTING KHI DANH SÁCH BỊ CO NGẮN:
+        scrollPane.getViewport().setOpaque(true);
+        scrollPane.getViewport().setBackground(AppColors.BG_PRIMARY);
 
         add(scrollPane, BorderLayout.CENTER);
 
@@ -157,6 +168,17 @@ public class ReactionDetailsDialog extends JDialog {
 
         listPanel.revalidate();
         listPanel.repaint();
+
+        // BẮT BUỘC THÊM ĐỂ XÓA BÓNG MA:
+        if (scrollPane != null) {
+            scrollPane.revalidate();
+            scrollPane.repaint();
+            scrollPane.getViewport().revalidate();
+            scrollPane.getViewport().repaint();
+        }
+        
+        ReactionDetailsDialog.this.revalidate();
+        ReactionDetailsDialog.this.repaint();
     }
 
     // --- Inner class cho mỗi dòng hiển thị ---
@@ -192,7 +214,7 @@ public class ReactionDetailsDialog extends JDialog {
             emojiLabel.setIconTextGap(8);
             emojiLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
             emojiLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // Padding cha đã lo
-            
+
             EmojiHelper.iconForCharAsync(r.getEmoji(), 24, icon -> emojiLabel.setIcon(icon));
 
             add(emojiLabel, BorderLayout.EAST);
