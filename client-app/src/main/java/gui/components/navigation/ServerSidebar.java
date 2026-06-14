@@ -29,6 +29,9 @@ public class ServerSidebar extends JPanel {
     // Cache unread cuối cùng — re-apply sau rebuild để badge không mất khi điều hướng
     private final Map<Long, Integer> lastUnread = new java.util.HashMap<>();
 
+    private final java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(ServerSidebar.class);
+    private final java.util.List<Long> pinnedServerIds = new java.util.LinkedList<>();
+
     private BiConsumer<Long, String> onServerSelected;
     private java.util.function.Consumer<Long> onServerChanged;
     private long activeServerId = -1;
@@ -45,6 +48,16 @@ public class ServerSidebar extends JPanel {
         setLayout(new BorderLayout());
         setBackground(AppColors.BG_TERTIARY);
         setPreferredSize(new Dimension(72, 0));
+
+        String saved = prefs.get("pinned_servers", "");
+        if (!saved.isEmpty()) {
+            for (String s : saved.split(",")) {
+                try {
+                    long id = Long.parseLong(s);
+                    if (!pinnedServerIds.contains(id)) pinnedServerIds.add(id);
+                } catch (Exception ignore) {}
+            }
+        }
 
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
@@ -102,30 +115,42 @@ public class ServerSidebar extends JPanel {
         listPanel.add(separator);
         listPanel.add(Box.createVerticalStrut(5));
 
+        // Tách danh sách thành Ghim và Chưa ghim
+        java.util.List<Map<String, Object>> pinnedServers = new java.util.ArrayList<>();
+        java.util.List<Map<String, Object>> unpinnedServers = new java.util.ArrayList<>();
+
+        Map<Long, Map<String, Object>> serverMap = new java.util.HashMap<>();
         for (Map<String, Object> server : servers) {
-            long id = asLong(server.get("id"));
-            String name = str(server.get("name"));
-            String iconUrl = str(server.get("icon"));
-            serverNames.put(id, name);
-            serverIconUrls.put(id, iconUrl);
-            String symbol = (name == null || name.isBlank()) ? "?" : name.substring(0, 1).toUpperCase();
+            serverMap.put(asLong(server.get("id")), server);
+        }
 
-            ServerIconItem item = new ServerIconItem(symbol);
-            serverItems.put(id, item);
-            item.setAlignmentX(Component.CENTER_ALIGNMENT);
-            item.setActive(id == activeServerId);
-
-            if (iconUrl != null && !iconUrl.isBlank()) {
-                if (!iconUrl.startsWith("http")) iconUrl = network.ApiConfig.GATEWAY_HTTP + iconUrl;
-                item.loadServerIconFromUrl(iconUrl);
+        for (Long id : pinnedServerIds) {
+            Map<String, Object> server = serverMap.remove(id);
+            if (server != null) {
+                pinnedServers.add(server);
             }
+        }
+        unpinnedServers.addAll(serverMap.values());
 
-            item.setOnClick(() -> {
-                activeServerId = id;
-                if (onServerSelected != null) onServerSelected.accept(id, name);
-                refreshActiveStates();
-            });
-            listPanel.add(item);
+        for (Map<String, Object> server : pinnedServers) {
+            renderServerIcon(server, true);
+        }
+
+        if (!pinnedServers.isEmpty() && !unpinnedServers.isEmpty()) {
+            listPanel.add(Box.createVerticalStrut(5));
+            JPanel separator2 = new JPanel() {
+                @Override public Dimension getPreferredSize() { return new Dimension(32, 2); }
+                @Override public Dimension getMinimumSize()   { return new Dimension(32, 2); }
+                @Override public Dimension getMaximumSize()   { return new Dimension(32, 2); }
+            };
+            separator2.setAlignmentX(Component.CENTER_ALIGNMENT);
+            separator2.setBackground(AppColors.BG_HOVER);
+            listPanel.add(separator2);
+            listPanel.add(Box.createVerticalStrut(5));
+        }
+
+        for (Map<String, Object> server : unpinnedServers) {
+            renderServerIcon(server, false);
         }
 
         listPanel.add(Box.createVerticalStrut(5));
@@ -148,6 +173,55 @@ public class ServerSidebar extends JPanel {
                 }
             }
         }
+    }
+
+    private void renderServerIcon(Map<String, Object> server, boolean isPinned) {
+        long id = asLong(server.get("id"));
+        String name = str(server.get("name"));
+        String iconUrl = str(server.get("icon"));
+        serverNames.put(id, name);
+        serverIconUrls.put(id, iconUrl);
+        String symbol = (name == null || name.isBlank()) ? "?" : name.substring(0, 1).toUpperCase();
+
+        ServerIconItem item = new ServerIconItem(symbol);
+        serverItems.put(id, item);
+        item.setAlignmentX(Component.CENTER_ALIGNMENT);
+        item.setActive(id == activeServerId);
+
+        if (iconUrl != null && !iconUrl.isBlank()) {
+            if (!iconUrl.startsWith("http")) iconUrl = network.ApiConfig.GATEWAY_HTTP + iconUrl;
+            item.loadServerIconFromUrl(iconUrl);
+        }
+
+        item.setOnClick(() -> {
+            activeServerId = id;
+            if (onServerSelected != null) onServerSelected.accept(id, name);
+            refreshActiveStates();
+        });
+
+        item.setOnContextMenu(() -> {
+            JPopupMenu menu = new JPopupMenu();
+            JMenuItem pinItem = new JMenuItem(isPinned ? "Bỏ ghim máy chủ" : "Ghim máy chủ");
+            pinItem.addActionListener(e -> {
+                if (isPinned) {
+                    pinnedServerIds.remove(id);
+                } else {
+                    pinnedServerIds.remove(id); // Xóa khỏi vị trí cũ nếu có
+                    pinnedServerIds.add(0, id); // Lên đầu (LIFO)
+                }
+                savePinnedServers();
+                loadServers();
+            });
+            menu.add(pinItem);
+            menu.show(item, item.getWidth(), item.getHeight() / 2);
+        });
+
+        listPanel.add(item);
+    }
+
+    private void savePinnedServers() {
+        String s = pinnedServerIds.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        prefs.put("pinned_servers", s);
     }
 
     public void updateUnreadCounts(Map<Long, Integer> unreadCounts) {
