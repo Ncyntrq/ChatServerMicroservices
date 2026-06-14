@@ -23,15 +23,21 @@ import java.io.File;
 import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
 
-public class  ChatMessageItem extends JPanel {
+public class ChatMessageItem extends JPanel {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter FULL_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    /** Callback cho các thao tác trên tin nhắn. ChatClientGUI cung cấp implementation. */
+    /**
+     * Callback cho các thao tác trên tin nhắn. ChatClientGUI cung cấp
+     * implementation.
+     */
     public interface MessageActions {
         void onEdit(MessageDTO message, String newContent);
+
         void onDelete(MessageDTO message);
+
         void onPin(MessageDTO message);
+
         void onReply(MessageDTO message);
     }
 
@@ -50,7 +56,7 @@ public class  ChatMessageItem extends JPanel {
     // Components dùng cho inline-edit & cập nhật động
     private JPanel contentPanel;
     private JPanel centerWrap; // bọc content + reaction (GridBag)
-    private JPanel overlay;    // bọc centerWrap + toolbar nổi (định vị tuyệt đối theo bong bóng)
+    private JPanel overlay; // bọc centerWrap + toolbar nổi (định vị tuyệt đối theo bong bóng)
     private JPanel headerRow;
     private JTextPane messageBody;
     private JPanel toolbar;
@@ -69,7 +75,7 @@ public class  ChatMessageItem extends JPanel {
 
     /** Constructor với hành động (sửa/xóa/ghim). */
     public ChatMessageItem(MessageDTO message, boolean isHighlighted,
-                           String currentUser, MessageActions actions) {
+            String currentUser, MessageActions actions) {
         this(message, isHighlighted, currentUser, actions, false);
     }
 
@@ -79,7 +85,7 @@ public class  ChatMessageItem extends JPanel {
     }
 
     public ChatMessageItem(MessageDTO message, boolean isHighlighted,
-                           String currentUser, MessageActions actions, boolean isConsecutive) {
+            String currentUser, MessageActions actions, boolean isConsecutive) {
         this.message = message;
         this.currentUser = currentUser;
         this.actions = actions;
@@ -110,11 +116,14 @@ public class  ChatMessageItem extends JPanel {
             // Tin gộp nhóm (consecutive) dùng CHUNG layout, chỉ ẩn avatar + header
             // ⇒ vẫn đủ tính năng: attachment, wrap, và toolbar Sửa/Ghim/Xóa.
             buildChatLayout(message, isConsecutive);
-            // Panel hover: giờ (cho tin compact) + nút "⋯" (nếu có quyền). Tự bỏ qua nếu rỗng.
+            // Panel hover: giờ (cho tin compact) + nút "⋯" (nếu có quyền). Tự bỏ qua nếu
+            // rỗng.
             buildHoverBar();
         }
-        // Gắn listener lên CẢ hàng để mọi lần con trỏ đổi vùng đều có sự kiện; việc hiện/ẩn
-        // do updateHover quyết định dựa trên con trỏ có nằm trong bubble/toolbar hay không.
+        // Gắn listener lên CẢ hàng để mọi lần con trỏ đổi vùng đều có sự kiện; việc
+        // hiện/ẩn
+        // do updateHover quyết định dựa trên con trỏ có nằm trong bubble/toolbar hay
+        // không.
         installHover(this);
     }
 
@@ -137,13 +146,17 @@ public class  ChatMessageItem extends JPanel {
                 : AppColors.TEXT_MUTED);
         iconLabel.setFont(AppFonts.BODY_SM);
 
-        // Content — giới hạn bề rộng để tin hệ thống/lỗi dài tự wrap, không kéo giãn hàng.
+        // Content — giới hạn bề rộng để tin hệ thống/lỗi dài tự wrap, không kéo giãn
+        // hàng.
         JTextPane content = new JTextPane() {
-            @Override public Dimension getPreferredSize() {
+            @Override
+            public Dimension getPreferredSize() {
                 setSize(maxBubbleWidth(), Short.MAX_VALUE);
                 return super.getPreferredSize();
             }
-            @Override public Dimension getMaximumSize() {
+
+            @Override
+            public Dimension getMaximumSize() {
                 return new Dimension(maxBubbleWidth(), getPreferredSize().height);
             }
         };
@@ -176,29 +189,35 @@ public class  ChatMessageItem extends JPanel {
     }
 
     /** Thân tin dạng text: Xử lý hiển thị Tag @ (Màu xanh) và bẻ wrap từ dài */
-    private JTextPane createTextBody(String content, int topPadding) {
+    private JTextPane createTextBody(String content, int topPadding, int bottomPadding) {
         final String raw = content == null ? "" : content;
         JTextPane pane = new JTextPane() {
-            @Override public Dimension getPreferredSize() {
+            @Override
+            public Dimension getPreferredSize() {
                 int cap = maxBubbleWidth();
                 FontMetrics fm = getFontMetrics(getFont());
                 int longest = 0;
-                for (String line : raw.split("\n", -1)) longest = Math.max(longest, fm.stringWidth(line));
+                for (String line : raw.split("\n", -1))
+                    longest = Math.max(longest, fm.stringWidth(line));
                 int w = Math.max(24, Math.min(cap, longest + 6));
                 setSize(w, Short.MAX_VALUE);
                 return new Dimension(w, super.getPreferredSize().height);
             }
-            @Override public Dimension getMaximumSize() { return getPreferredSize(); }
+
+            @Override
+            public Dimension getMaximumSize() {
+                return getPreferredSize();
+            }
         };
         pane.setEditorKit(new WrapEditorKit());
         pane.setEditable(false);
         makeNonInteractive(pane); // chặn focus/bôi đen/con trỏ soạn thảo
         pane.setOpaque(false);
         pane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pane.setBorder(BorderFactory.createEmptyBorder(topPadding, 0, 0, 0));
+        pane.setBorder(BorderFactory.createEmptyBorder(topPadding, 0, bottomPadding, 0));
         EmojiHelper.renderTextWithEmojis(pane, raw);
 
-        //CLICK VÀO TAG MENTION @USERNAME
+        // CLICK VÀO TAG MENTION @USERNAME
         pane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -217,7 +236,8 @@ public class  ChatMessageItem extends JPanel {
                         if (word.startsWith("@") && word.length() > 1) {
                             String targetUser = word.substring(1);
                             // Bỏ qua nếu click vào @all
-                            if (targetUser.equalsIgnoreCase("all")) return;
+                            if (targetUser.equalsIgnoreCase("all"))
+                                return;
 
                             Window owner = SwingUtilities.getWindowAncestor(ChatMessageItem.this);
                             if (owner instanceof Frame) {
@@ -253,19 +273,23 @@ public class  ChatMessageItem extends JPanel {
     }
 
     /**
-     * Biến JTextPane chỉ-đọc thành "không tương tác": không nhận focus, không bôi đen,
-     * không hiện con trỏ soạn thảo. Dùng cho thân tin nhắn (chỉ hiển thị + render emoji).
+     * Biến JTextPane chỉ-đọc thành "không tương tác": không nhận focus, không bôi
+     * đen,
+     * không hiện con trỏ soạn thảo. Dùng cho thân tin nhắn (chỉ hiển thị + render
+     * emoji).
      */
     private static void makeNonInteractive(JTextPane pane) {
         pane.setFocusable(false);
-        pane.setHighlighter(null);            // bỏ chọn/bôi đen text
-        pane.getCaret().setVisible(false);    // ẩn con trỏ nhấp nháy
+        pane.setHighlighter(null); // bỏ chọn/bôi đen text
+        pane.getCaret().setVisible(false); // ẩn con trỏ nhấp nháy
         pane.setCursor(Cursor.getDefaultCursor()); // không hiện con trỏ chữ "I"
     }
 
     /**
-     * Dựng layout tin nhắn. {@code compact==true} (tin gộp nhóm cùng người gửi) ẩn avatar + header,
-     * nhưng vẫn dùng CHUNG phần thân + được gắn toolbar ⇒ đủ tính năng như tin đầu nhóm.
+     * Dựng layout tin nhắn. {@code compact==true} (tin gộp nhóm cùng người gửi) ẩn
+     * avatar + header,
+     * nhưng vẫn dùng CHUNG phần thân + được gắn toolbar ⇒ đủ tính năng như tin đầu
+     * nhóm.
      */
     private void buildChatLayout(MessageDTO message, boolean compact) {
         String senderName = message.getSender();
@@ -300,7 +324,8 @@ public class  ChatMessageItem extends JPanel {
             west = spacer;
         } else {
             String initial = senderName != null && !senderName.isEmpty()
-                    ? senderName.substring(0, 1).toUpperCase() : "?";
+                    ? senderName.substring(0, 1).toUpperCase()
+                    : "?";
             avatar = new AvatarBadge(initial, col);
 
             // Đính kèm sự kiện click Profile
@@ -342,21 +367,25 @@ public class  ChatMessageItem extends JPanel {
 
             leftHeader.add(senderLabel);
 
-            // #1: ProfileLoader (cache + gộp request trùng) → tối đa 1 HTTP/user thay vì 1/tin nhắn
+            // #1: ProfileLoader (cache + gộp request trùng) → tối đa 1 HTTP/user thay vì
+            // 1/tin nhắn
             final AvatarBadge avatarRef = avatar;
             gui.utils.ProfileLoader.load(senderName, profile -> {
-                if (profile == null) return;
+                if (profile == null)
+                    return;
 
                 // 2. Chỉ nạp DisplayName từ API nếu NGƯỜI DÙNG KHÔNG CÓ BIỆT DANH
                 if (gui.utils.NicknameManager.getNickname(senderName) == null) {
                     Object dn = profile.get("displayName");
-                    if (dn != null && !dn.toString().isBlank()) senderLabel.setText(dn.toString());
+                    if (dn != null && !dn.toString().isBlank())
+                        senderLabel.setText(dn.toString());
                 }
 
                 Object av = profile.get("avatarUrl");
                 if (av != null && avatarRef != null) {
                     String url = av.toString();
-                    if (!url.startsWith("http")) url = network.ApiConfig.GATEWAY_HTTP + url;
+                    if (!url.startsWith("http"))
+                        url = network.ApiConfig.GATEWAY_HTTP + url;
                     avatarRef.loadAvatarFromUrl(url);
                 }
             });
@@ -383,7 +412,8 @@ public class  ChatMessageItem extends JPanel {
 
             // Timestamp
             String timeStr = message.getTimestamp() != null
-                    ? message.getTimestamp().format(TIME_FMT) : "Bây giờ";
+                    ? message.getTimestamp().format(TIME_FMT)
+                    : "Bây giờ";
             JLabel timeLabel = new JLabel(timeStr);
             timeLabel.setFont(AppFonts.CAPTION);
             timeLabel.setForeground(new Color(0x80, 0x84, 0x8E, 0x99));
@@ -405,18 +435,19 @@ public class  ChatMessageItem extends JPanel {
             if (snippet != null && snippet.length() > 100) {
                 snippet = snippet.substring(0, 100) + "...";
             }
-            JLabel replyLabel = new JLabel("<html><i>Trả lời " + message.getReplyToSender() + ": " + snippet + "</i></html>");
+            JLabel replyLabel = new JLabel(
+                    "<html><i>Trả lời " + message.getReplyToSender() + ": " + snippet + "</i></html>");
             replyLabel.setFont(AppFonts.TINY);
             replyLabel.setForeground(AppColors.TEXT_MUTED);
             replyLabel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 2, 0, 0, AppColors.TEXT_MUTED),
-                    BorderFactory.createEmptyBorder(0, 6, 2, 0)
-            ));
+                    BorderFactory.createEmptyBorder(0, 6, 2, 0)));
             replyLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             replyLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    gui.chat.ChatHistoryView historyView = (gui.chat.ChatHistoryView) SwingUtilities.getAncestorOfClass(gui.chat.ChatHistoryView.class, ChatMessageItem.this);
+                    gui.chat.ChatHistoryView historyView = (gui.chat.ChatHistoryView) SwingUtilities
+                            .getAncestorOfClass(gui.chat.ChatHistoryView.class, ChatMessageItem.this);
                     if (historyView != null) {
                         historyView.scrollToMessage(message.getReplyToMessageId());
                     }
@@ -432,7 +463,7 @@ public class  ChatMessageItem extends JPanel {
             attachmentComponent = att.isImage() ? buildImageAttachment(att) : buildFileCard(att);
             contentPanel.add(attachmentComponent);
         } else {
-            messageBody = createTextBody(message.getContent(), compact ? 0 : 3);
+            messageBody = createTextBody(message.getContent(), compact ? 10 : 3, compact ? 6 : 10);
             contentPanel.add(messageBody);
         }
 
@@ -457,49 +488,83 @@ public class  ChatMessageItem extends JPanel {
         };
         reactionBadgePanel.setOpaque(false);
         reactionBadgePanel.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
-        
-        // Tạo wrapper để canh lề reactionBadgePanel: theo bong bóng (trái cho người khác, phải cho mình).
+
+        // Tạo wrapper để canh lề reactionBadgePanel: theo bong bóng (trái cho người
+        // khác, phải cho mình).
         reactionWrap = new JPanel(new FlowLayout(isOwn ? FlowLayout.RIGHT : FlowLayout.LEFT, 0, 0));
         reactionWrap.setOpaque(false);
-        reactionWrap.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        reactionWrap.setBorder(BorderFactory.createEmptyBorder(2, 0, 6, 0));
         reactionWrap.add(reactionBadgePanel);
-        
+
         renderReactions();
 
-        // Bọc content trong GridBag: content ôm sát (gridx0) + glue đẩy về trái (gridx2).
-        // Toolbar sẽ chèn vào gridx1 (cạnh tin) trong buildToolbar. weighty=1 ⇒ căn giữa dọc.
+        // Bọc content trong GridBag: content ôm sát (gridx0) + glue đẩy về trái
+        // (gridx2).
+        // Toolbar sẽ chèn vào gridx1 (cạnh tin) trong buildToolbar. weighty=1 ⇒ căn
+        // giữa dọc.
         centerWrap = new JPanel(new GridBagLayout());
         centerWrap.setOpaque(false);
 
-        // Tin của mình → nội dung dồn về PHẢI (glue ở trái); người khác → dồn TRÁI (glue ở phải).
         int contentGx = isOwn ? 1 : 0;
         int glueGx = isOwn ? 0 : 2;
-        int contentAnchor = isOwn ? GridBagConstraints.EAST : GridBagConstraints.WEST;
+        int contentAnchor = isOwn ? GridBagConstraints.NORTHEAST : GridBagConstraints.NORTHWEST;
 
         // Row 0: contentPanel (message body)
         GridBagConstraints cc = new GridBagConstraints();
-        cc.gridx = contentGx; cc.gridy = 0; cc.anchor = contentAnchor; cc.weighty = 1; cc.fill = GridBagConstraints.NONE;
+        cc.gridx = contentGx;
+        cc.gridy = 0;
+        cc.anchor = contentAnchor;
+        cc.weighty = 2; // Đẩy lên sát trên
+        cc.fill = GridBagConstraints.NONE;
         centerWrap.add(contentPanel, cc);
 
         // Row 1: reactionWrap — riêng biệt, KHÔNG nằm trong contentPanel
         // ⇒ không ảnh hưởng chiều rộng bubble
         GridBagConstraints rc = new GridBagConstraints();
-        rc.gridx = contentGx; rc.gridy = 1; rc.anchor = contentAnchor; rc.fill = GridBagConstraints.NONE;
+        rc.gridx = contentGx;
+        rc.gridy = 1;
+        rc.anchor = contentAnchor;
+        rc.weighty = 0;
+        rc.fill = GridBagConstraints.NONE;
         centerWrap.add(reactionWrap, rc);
 
+        // Row 2: vertical glue để đẩy toàn bộ row 0 và row 1 lên trên cùng
+        GridBagConstraints pushDown = new GridBagConstraints();
+        pushDown.gridx = contentGx;
+        pushDown.gridy = 2;
+        pushDown.weighty = 1;
+        centerWrap.add(Box.createVerticalGlue(), pushDown);
+
         GridBagConstraints gl = new GridBagConstraints();
-        gl.gridx = glueGx; gl.gridy = 0; gl.gridheight = 2; gl.weightx = 1; gl.fill = GridBagConstraints.HORIZONTAL;
+        gl.gridx = glueGx;
+        gl.gridy = 0;
+        gl.gridheight = 2;
+        gl.weightx = 1;
+        gl.fill = GridBagConstraints.HORIZONTAL;
         centerWrap.add(Box.createHorizontalGlue(), gl);
 
-        // Overlay: centerWrap là lớp nền (lấp đầy), toolbar nổi lên trên định vị tuyệt đối.
-        // ⇒ toolbar không tranh chỗ ngang với nội dung nên tin dài vẫn hiện được toolbar.
+        // Overlay: centerWrap là lớp nền (lấp đầy), toolbar nổi lên trên định vị tuyệt
+        // đối.
+        // ⇒ toolbar không tranh chỗ ngang với nội dung nên tin dài vẫn hiện được
+        // toolbar.
         overlay = new JPanel(null) {
-            @Override public Dimension getPreferredSize() { return centerWrap.getPreferredSize(); }
-            @Override public Dimension getMinimumSize() { return centerWrap.getMinimumSize(); }
-            @Override public Dimension getMaximumSize() {
+            @Override
+            public Dimension getPreferredSize() {
+                return centerWrap.getPreferredSize();
+            }
+
+            @Override
+            public Dimension getMinimumSize() {
+                return centerWrap.getMinimumSize();
+            }
+
+            @Override
+            public Dimension getMaximumSize() {
                 return new Dimension(Integer.MAX_VALUE, centerWrap.getMaximumSize().height);
             }
-            @Override public void doLayout() {
+
+            @Override
+            public void doLayout() {
                 centerWrap.setBounds(0, 0, getWidth(), getHeight());
                 centerWrap.doLayout(); // lay out con ngay để đọc đúng kích thước bong bóng
                 layoutFloatingToolbar();
@@ -515,13 +580,16 @@ public class  ChatMessageItem extends JPanel {
     /**
      * Định vị toolbar nổi theo bong bóng nội dung:
      * - Tin ngắn → đặt NGAY BÊN PHẢI bong bóng (không che chữ).
-     * - Tin dài (bong bóng rộng) → neo sát mép phải vùng hiển thị ⇒ luôn nhìn thấy, responsive.
+     * - Tin dài (bong bóng rộng) → neo sát mép phải vùng hiển thị ⇒ luôn nhìn thấy,
+     * responsive.
      */
     private void layoutFloatingToolbar() {
-        if (toolbar == null || overlay == null || contentPanel == null) return;
+        if (toolbar == null || overlay == null || contentPanel == null)
+            return;
         Dimension ts = toolbar.getPreferredSize();
         int overlayW = overlay.getWidth();
-        // contentPanel nằm trong centerWrap (đã lấp đầy overlay tại 0,0) ⇒ toạ độ trùng overlay.
+        // contentPanel nằm trong centerWrap (đã lấp đầy overlay tại 0,0) ⇒ toạ độ trùng
+        // overlay.
         int bubbleLeft = centerWrap.getX() + contentPanel.getX();
         int bubbleRight = bubbleLeft + contentPanel.getWidth();
         int bubbleTop = centerWrap.getY() + contentPanel.getY();
@@ -529,14 +597,15 @@ public class  ChatMessageItem extends JPanel {
         int gap = 8;
         int x;
         if (isOwn) {
-            // Tin của mình (bong bóng bên phải) → toolbar nổi bên TRÁI bong bóng, neo mép trái nếu hết chỗ.
+            // Tin của mình (bong bóng bên phải) → toolbar nổi bên TRÁI bong bóng, neo mép
+            // trái nếu hết chỗ.
             x = (bubbleLeft - gap - ts.width >= 0)
                     ? bubbleLeft - gap - ts.width
                     : 0;
         } else {
             x = (bubbleRight + gap + ts.width <= overlayW)
-                    ? bubbleRight + gap                   // bên phải bong bóng (tin ngắn)
-                    : Math.max(0, overlayW - ts.width);   // neo mép phải (tin dài)
+                    ? bubbleRight + gap // bên phải bong bóng (tin ngắn)
+                    : Math.max(0, overlayW - ts.width); // neo mép phải (tin dài)
         }
 
         // Luôn căn giữa dọc toolbar theo bong bóng tin (mọi độ dài).
@@ -547,7 +616,8 @@ public class  ChatMessageItem extends JPanel {
     }
 
     private void addEditedBadge() {
-        if (editedBadgeShown) return; 
+        if (editedBadgeShown)
+            return;
         JLabel editedBadge = new JLabel("<html><i>(đã sửa)</i></html>");
         editedBadge.setFont(AppFonts.TINY);
         editedBadge.setForeground(AppColors.TEXT_MUTED);
@@ -565,7 +635,7 @@ public class  ChatMessageItem extends JPanel {
             topWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
             topWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 20)); // Giữ chiều cao nhỏ nhất
             topWrap.add(editedBadge, BorderLayout.EAST);
-            
+
             contentPanel.add(topWrap, 0); // Chèn lên trên cùng của contentPanel
             contentPanel.revalidate();
             contentPanel.repaint();
@@ -578,7 +648,8 @@ public class  ChatMessageItem extends JPanel {
     // ---------------------------------------------------------------
     private void buildHoverBar() {
         boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
-        if (isDeleted) return;
+        if (isDeleted)
+            return;
 
         boolean canManage = network.PermissionCache.get().can(network.PermissionCache.MANAGE_MESSAGES);
         boolean canEdit = isOwn && !isAttachment;
@@ -587,9 +658,11 @@ public class  ChatMessageItem extends JPanel {
         boolean canReply = !isSystemMsg;
         boolean hasActions = canEdit || canPin || canDelete || canReply;
 
-        // Tin compact (ẩn giờ ở header) sẽ hiện giờ nhỏ khi hover. Tin đầu nhóm đã có giờ ở header.
+        // Tin compact (ẩn giờ ở header) sẽ hiện giờ nhỏ khi hover. Tin đầu nhóm đã có
+        // giờ ở header.
         boolean showHoverTime = isConsecutive && message.getTimestamp() != null;
-        if (!hasActions && !showHoverTime) return; // không có gì để hiện → bỏ qua
+        if (!hasActions && !showHoverTime)
+            return; // không có gì để hiện → bỏ qua
 
         toolbar = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 3)) {
             @Override
@@ -627,7 +700,10 @@ public class  ChatMessageItem extends JPanel {
             reactBtn.setToolTipText("Thả cảm xúc");
             toolbar.add(reactBtn);
 
-            IconButton replyBtn = new IconButton("↩", e -> { if (actions != null) actions.onReply(message); }, btnSize);
+            IconButton replyBtn = new IconButton("↩", e -> {
+                if (actions != null)
+                    actions.onReply(message);
+            }, btnSize);
             replyBtn.setToolTipText("Trả lời");
             toolbar.add(replyBtn);
         }
@@ -640,7 +716,8 @@ public class  ChatMessageItem extends JPanel {
         }
 
         toolbar.setVisible(false);
-        // Toolbar nổi trên overlay (z-order 0 = vẽ trên cùng), định vị tuyệt đối theo bong bóng.
+        // Toolbar nổi trên overlay (z-order 0 = vẽ trên cùng), định vị tuyệt đối theo
+        // bong bóng.
         // ⇒ không chiếm chỗ layout, tin dài tới đâu toolbar vẫn hiển thị.
         if (overlay != null) {
             overlay.add(toolbar);
@@ -651,19 +728,33 @@ public class  ChatMessageItem extends JPanel {
     /** Mở menu hành động (Sửa/Ghim/Xóa) ngay dưới nút "⋯". */
     private void showActionMenu(JComponent anchor, boolean canEdit, boolean canPin, boolean canDelete) {
         JPopupMenu menu = new JPopupMenu();
-        if (canEdit) menu.add(actionItem("  Sửa tin nhắn", this::startEditing));
-        if (canPin) menu.add(actionItem("  Ghim tin nhắn", () -> { if (actions != null) actions.onPin(message); }));
-        if (canDelete) menu.add(actionItem("  Xóa tin nhắn", this::confirmDelete));
+        if (canEdit)
+            menu.add(actionItem("  Sửa tin nhắn", this::startEditing));
+        if (canPin)
+            menu.add(actionItem("  Ghim tin nhắn", () -> {
+                if (actions != null)
+                    actions.onPin(message);
+            }));
+        if (canDelete)
+            menu.add(actionItem("  Xóa tin nhắn", this::confirmDelete));
 
         menuOpen = true; // giữ toolbar hiện trong lúc menu mở (chuột rời item không ẩn nút)
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
-            @Override public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {}
-            @Override public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
                 menuOpen = false;
-                if (!isHovered && toolbar != null) toolbar.setVisible(false);
+                if (!isHovered && toolbar != null)
+                    toolbar.setVisible(false);
                 repaint();
             }
-            @Override public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+            }
         });
         menu.show(anchor, 0, anchor.getHeight());
     }
@@ -690,9 +781,11 @@ public class  ChatMessageItem extends JPanel {
     // ---------------------------------------------------------------
     /** Bắt đầu chỉnh sửa: thay messageBody bằng JTextField viền xanh. */
     public void startEditing() {
-        if (isEditing || isAttachment || messageBody == null || !isOwn) return;
+        if (isEditing || isAttachment || messageBody == null || !isOwn)
+            return;
         isEditing = true;
-        if (toolbar != null) toolbar.setVisible(false);
+        if (toolbar != null)
+            toolbar.setVisible(false);
 
         JTextField editField = new JTextField(message.getContent());
         editField.setFont(AppFonts.BODY);
@@ -730,7 +823,7 @@ public class  ChatMessageItem extends JPanel {
 
     private void showReactionMenu(JComponent anchor) {
         JPopupMenu menu = new JPopupMenu();
-        String[] emojis = {"👍", "❤️", "😂", "😮", "😢", "😡"};
+        String[] emojis = { "👍", "❤️", "😂", "😮", "😢", "😡" };
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 4));
         panel.setOpaque(false);
         for (String em : emojis) {
@@ -751,50 +844,76 @@ public class  ChatMessageItem extends JPanel {
             panel.add(btn);
         }
         menu.add(panel);
-        
+
         menuOpen = true;
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
-            @Override public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {}
-            @Override public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
                 menuOpen = false;
-                if (!isHovered && toolbar != null) toolbar.setVisible(false);
+                if (!isHovered && toolbar != null)
+                    toolbar.setVisible(false);
                 repaint();
             }
-            @Override public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+            }
         });
         menu.show(anchor, 0, anchor.getHeight());
     }
 
     public void renderReactions() {
-        if (reactionBadgePanel == null) return;
+        if (reactionBadgePanel == null)
+            return;
         reactionBadgePanel.removeAll();
         java.util.List<MessageDTO.ReactionDTO> reactions = message.getReactions();
         boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
         if (reactions == null || reactions.isEmpty() || isDeleted) {
             reactionBadgePanel.setVisible(false);
-            if (reactionWrap != null) reactionWrap.setVisible(false);
+            if (reactionWrap != null)
+                reactionWrap.setVisible(false);
             return;
         }
         reactionBadgePanel.setVisible(true);
-        if (reactionWrap != null) reactionWrap.setVisible(true);
+        if (reactionWrap != null)
+            reactionWrap.setVisible(true);
 
-        java.util.Set<String> uniqueEmojis = new java.util.LinkedHashSet<>();
+        java.util.Map<String, Integer> emojiCountMap = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.List<String>> emojiUsersMap = new java.util.HashMap<>();
         java.util.Map<String, Boolean> meReactedMap = new java.util.HashMap<>();
 
         for (MessageDTO.ReactionDTO r : reactions) {
-            uniqueEmojis.add(r.getEmoji());
-            if (r.getUserId().equals(currentUser)) {
-                meReactedMap.put(r.getEmoji(), true);
+            String emoji = r.getEmoji();
+            String userId = r.getUserId();
+            emojiCountMap.put(emoji, emojiCountMap.getOrDefault(emoji, 0) + 1);
+
+            emojiUsersMap.computeIfAbsent(emoji, k -> new java.util.ArrayList<>()).add(userId);
+
+            if (userId.equals(currentUser)) {
+                meReactedMap.put(emoji, true);
             }
         }
 
-        for (String emoji : uniqueEmojis) {
+        for (java.util.Map.Entry<String, Integer> entry : emojiCountMap.entrySet()) {
+            String emoji = entry.getKey();
+            int count = entry.getValue();
             boolean meReacted = meReactedMap.getOrDefault(emoji, false);
+            java.util.List<String> users = emojiUsersMap.get(emoji);
 
-            JButton badge = new JButton(); // Không hiện text
+            JButton badge = new JButton(String.valueOf(count));
+            badge.setFont(AppFonts.TINY);
+            badge.setForeground(AppColors.TEXT_MUTED);
             badge.setMargin(new Insets(2, 4, 2, 4));
             badge.setFocusPainted(false);
             badge.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            if (users != null && !users.isEmpty()) {
+                badge.setToolTipText("Thả bởi: " + String.join(", ", users));
+            }
 
             if (meReacted) {
                 badge.setBackground(new Color(88, 101, 242, 30));
@@ -816,14 +935,34 @@ public class  ChatMessageItem extends JPanel {
                     ex.printStackTrace();
                 }
             });
+
+            badge.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseReleased(java.awt.event.MouseEvent e) {
+                    if (SwingUtilities.isRightMouseButton(e)) {
+                        showReactionDetailsDialog(emoji, users);
+                    }
+                }
+            });
+
             reactionBadgePanel.add(badge);
         }
-        reactionBadgePanel.revalidate();
-        reactionBadgePanel.repaint();
+
+        this.revalidate();
+        this.repaint();
+    }
+
+    private void showReactionDetailsDialog(String emoji, java.util.List<String> users) {
+        if (users == null || users.isEmpty())
+            return;
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        ReactionDetailsDialog dialog = new ReactionDetailsDialog(owner, message.getReactions(), emoji);
+        dialog.setVisible(true);
     }
 
     private void finishEditing() {
-        if (!isEditing) return;
+        if (!isEditing)
+            return;
         isEditing = false;
         // Dựng lại layout content: bỏ mọi thứ sau headerRow, gắn lại messageBody
         rebuildContentBody();
@@ -832,7 +971,8 @@ public class  ChatMessageItem extends JPanel {
     private void rebuildContentBody() {
         // Xóa tất cả ngoại trừ headerRow rồi thêm lại messageBody
         for (Component c : contentPanel.getComponents()) {
-            if (c != headerRow) contentPanel.remove(c);
+            if (c != headerRow)
+                contentPanel.remove(c);
         }
         contentPanel.add(messageBody);
         contentPanel.revalidate();
@@ -842,7 +982,8 @@ public class  ChatMessageItem extends JPanel {
     private int indexInContent(Component target) {
         Component[] comps = contentPanel.getComponents();
         for (int i = 0; i < comps.length; i++) {
-            if (comps[i] == target) return i;
+            if (comps[i] == target)
+                return i;
         }
         return contentPanel.getComponentCount();
     }
@@ -870,7 +1011,8 @@ public class  ChatMessageItem extends JPanel {
                 while (matcher.find()) {
                     doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), mentionStyle, false);
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
 
             messageBody.revalidate();
         }
@@ -885,9 +1027,12 @@ public class  ChatMessageItem extends JPanel {
      * Soft-delete: thay nội dung thành "Tin nhắn bị gỡ", ẩn toolbar, reply quote,
      * edited badge, và reaction — giống Zalo/Messenger.
      */
-    /** Thân tin "Tin nhắn bị gỡ" dạng mờ-nghiêng, rộng vừa đủ chữ (createTextBody bắt độ rộng lúc tạo). */
+    /**
+     * Thân tin "Tin nhắn bị gỡ" dạng mờ-nghiêng, rộng vừa đủ chữ (createTextBody
+     * bắt độ rộng lúc tạo).
+     */
     private JTextPane buildDeletedBody() {
-        JTextPane body = createTextBody("Tin nhắn bị gỡ", headerRow == null ? 0 : 3);
+        JTextPane body = createTextBody("Tin nhắn bị gỡ", headerRow == null ? 10 : 3, headerRow == null ? 6 : 10);
         body.setForeground(AppColors.TEXT_MUTED);
         try {
             javax.swing.text.SimpleAttributeSet style = new javax.swing.text.SimpleAttributeSet();
@@ -895,7 +1040,8 @@ public class  ChatMessageItem extends JPanel {
             javax.swing.text.StyleConstants.setItalic(style, true);
             javax.swing.text.StyledDocument doc = body.getStyledDocument();
             doc.setCharacterAttributes(0, doc.getLength(), style, true);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return body;
     }
 
@@ -908,8 +1054,10 @@ public class  ChatMessageItem extends JPanel {
         message.setReplyToContent(null);
         message.setReactions(null);
 
-        // Tạo lại thân tin gọn theo "Tin nhắn bị gỡ". KHÔNG setText trên body cũ vì độ rộng
-        // bong bóng được createTextBody bắt theo nội dung LÚC TẠO ⇒ body cũ vẫn rộng theo tin gốc.
+        // Tạo lại thân tin gọn theo "Tin nhắn bị gỡ". KHÔNG setText trên body cũ vì độ
+        // rộng
+        // bong bóng được createTextBody bắt theo nội dung LÚC TẠO ⇒ body cũ vẫn rộng
+        // theo tin gốc.
         if (messageBody != null) {
             int idx = indexInContent(messageBody);
             contentPanel.remove(messageBody);
@@ -917,7 +1065,8 @@ public class  ChatMessageItem extends JPanel {
             contentPanel.add(messageBody, Math.min(idx, contentPanel.getComponentCount()));
         }
 
-        // 2. Xóa reply quote và edited badge (của tin nhắn compact) khỏi contentPanel, đồng thời xóa attachment nếu có
+        // 2. Xóa reply quote và edited badge (của tin nhắn compact) khỏi contentPanel,
+        // đồng thời xóa attachment nếu có
         java.util.List<Component> toRemove = new java.util.ArrayList<>();
         for (Component c : contentPanel.getComponents()) {
             if (c instanceof JLabel) {
@@ -926,7 +1075,8 @@ public class  ChatMessageItem extends JPanel {
                     toRemove.add(c);
                 }
             } else if (c instanceof JPanel && c != headerRow) {
-                // Kiểm tra xem JPanel này có chứa chữ (đã sửa) không (đây là topWrap của tin nhắn compact)
+                // Kiểm tra xem JPanel này có chứa chữ (đã sửa) không (đây là topWrap của tin
+                // nhắn compact)
                 boolean hasEditedBadge = false;
                 for (Component child : ((JPanel) c).getComponents()) {
                     if (child instanceof JLabel) {
@@ -945,13 +1095,14 @@ public class  ChatMessageItem extends JPanel {
         for (Component c : toRemove) {
             contentPanel.remove(c);
         }
-        
+
         if (attachmentComponent != null) {
             contentPanel.remove(attachmentComponent);
             attachmentComponent = null;
         }
 
-        // Nếu là tin nhắn đính kèm, messageBody có thể chưa được tạo, cần tạo mới để hiển thị chữ "Tin nhắn bị gỡ"
+        // Nếu là tin nhắn đính kèm, messageBody có thể chưa được tạo, cần tạo mới để
+        // hiển thị chữ "Tin nhắn bị gỡ"
         if (isAttachment && messageBody == null) {
             messageBody = buildDeletedBody();
             contentPanel.add(messageBody);
@@ -1009,20 +1160,34 @@ public class  ChatMessageItem extends JPanel {
     }
 
     private final MouseAdapter hoverAdapter = new MouseAdapter() {
-        @Override public void mouseEntered(MouseEvent e) { updateHover(e); }
-        @Override public void mouseExited(MouseEvent e) { updateHover(e); }
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            updateHover(e);
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            updateHover(e);
+        }
     };
 
-    /** Hiện toolbar CHỈ khi con trỏ nằm trong bubble (hoặc toolbar đang mở), ngược lại ẩn. */
+    /**
+     * Hiện toolbar CHỈ khi con trỏ nằm trong bubble (hoặc toolbar đang mở), ngược
+     * lại ẩn.
+     */
     private void updateHover(MouseEvent e) {
         Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
         Rectangle zone = hotZoneBounds();
         setHover(zone != null && zone.contains(p));
     }
 
-    /** Vùng "nóng" kích hoạt hover = bubble nội dung (+ toolbar khi đang hiện). Gộp để không nhấp nháy ở khe hở. */
+    /**
+     * Vùng "nóng" kích hoạt hover = bubble nội dung (+ toolbar khi đang hiện). Gộp
+     * để không nhấp nháy ở khe hở.
+     */
     private Rectangle hotZoneBounds() {
-        if (contentPanel == null) return null;
+        if (contentPanel == null)
+            return null;
         Rectangle zone = SwingUtilities.convertRectangle(
                 contentPanel.getParent(), contentPanel.getBounds(), this);
         if (toolbar != null && toolbar.isVisible()) {
@@ -1033,7 +1198,8 @@ public class  ChatMessageItem extends JPanel {
     }
 
     private void setHover(boolean hovered) {
-        if (isHovered == hovered) return;
+        if (isHovered == hovered)
+            return;
         isHovered = hovered;
         // Không ẩn toolbar khi menu "⋯" đang mở (để popup không bị đóng theo invoker).
         if (toolbar != null && !isEditing && !(menuOpen && !hovered)) {
@@ -1047,7 +1213,8 @@ public class  ChatMessageItem extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Box "frosted" ôm sát nội dung khi bật wallpaper → chữ dễ đọc, không bị hoạ tiết gây rối.
+        // Box "frosted" ôm sát nội dung khi bật wallpaper → chữ dễ đọc, không bị hoạ
+        // tiết gây rối.
         boolean wallpaper = !isSystemMsg && gui.theme.WallpaperManager.get().isEnabled();
         Rectangle box = wallpaper ? contentBubbleRect() : null;
         int arc = 16; // bo góc box tin nhắn
@@ -1080,25 +1247,31 @@ public class  ChatMessageItem extends JPanel {
     private static final int MIN_BUBBLE_H = 36;
 
     /**
-     * Box ôm sát BỀ RỘNG nội dung, CHIỀU CAO bám theo hàng (đã có chiều cao tối thiểu ổn định)
+     * Box ôm sát BỀ RỘNG nội dung, CHIỀU CAO bám theo hàng (đã có chiều cao tối
+     * thiểu ổn định)
      * ⇒ box hiển thị đầy đủ ngay từ đầu, không bị cắt, không "nhảy" khi hover.
      */
     private Rectangle contentBubbleRect() {
-        if (contentPanel == null || centerWrap == null) return null;
+        if (contentPanel == null || centerWrap == null)
+            return null;
         int cw = contentPanel.getWidth();
-        if (cw <= 0) return null;
+        if (cw <= 0)
+            return null;
         int padX = 12, vInset = 2;
-        // centerWrap nằm trong overlay (= vùng CENTER) ⇒ cộng offset overlay để ra toạ độ theo `this`.
+        // centerWrap nằm trong overlay (= vùng CENTER) ⇒ cộng offset overlay để ra toạ
+        // độ theo `this`.
         int overlayX = overlay != null ? overlay.getX() : 0;
         int x = overlayX + centerWrap.getX() + contentPanel.getX() - padX;
 
-        // Chiều cao bubble = chiều cao contentPanel + padding, KHÔNG bao gồm reactionWrap
+        // Chiều cao bubble = chiều cao contentPanel + padding, KHÔNG bao gồm
+        // reactionWrap
         int contentH = contentPanel.getHeight();
         int h = Math.max(contentH + 2 * vInset, MIN_BUBBLE_H);
 
-        // Nếu có reaction, kéo dài bubble xuống thêm 10px để tạo hiệu ứng overlap (giống Zalo)
+        // Nếu có reaction, kéo dài bubble xuống thêm 8px để tạo hiệu ứng overlap 1/3
+        // (giống Zalo)
         if (reactionWrap != null && reactionWrap.isVisible() && reactionBadgePanel.getComponentCount() > 0) {
-            h += 10;
+            h += 8;
         }
 
         return new Rectangle(x, vInset, cw + 2 * padX, h);
@@ -1107,21 +1280,26 @@ public class  ChatMessageItem extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         Dimension d = super.getPreferredSize();
-        // Bảo đảm hàng đủ cao để box hiển thị ĐẦY ĐỦ ngay từ đầu (không bị cắt) và toolbar
+        // Bảo đảm hàng đủ cao để box hiển thị ĐẦY ĐỦ ngay từ đầu (không bị cắt) và
+        // toolbar
         // hiện khi hover vẫn nằm gọn trong hàng ⇒ không "nhảy" kích thước lúc hover.
-        if (!isSystemMsg) d.height = Math.max(d.height, MIN_BUBBLE_H + 4);
+        if (!isSystemMsg)
+            d.height = Math.max(d.height, MIN_BUBBLE_H + 4);
         return d;
     }
 
     @Override
     public Dimension getMaximumSize() {
-        // Item phủ full chiều rộng (để nền hover trải đều); chỉ THÂN tin bị giới hạn (xem maxBubbleWidth).
+        // Item phủ full chiều rộng (để nền hover trải đều); chỉ THÂN tin bị giới hạn
+        // (xem maxBubbleWidth).
         return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);
     }
 
     /**
-     * Bề rộng tối đa của THÂN tin nhắn ("giới hạn 2 biên"): bám theo viewport nhưng có trần.
-     * - Màn rộng → cap ở {@code scaled(720)} ⇒ luôn chừa lề phải, không chạm 2 biên.
+     * Bề rộng tối đa của THÂN tin nhắn ("giới hạn 2 biên"): bám theo viewport nhưng
+     * có trần.
+     * - Màn rộng → cap ở {@code scaled(720)} ⇒ luôn chừa lề phải, không chạm 2
+     * biên.
      * - Màn hẹp → dùng đúng bề rộng khả dụng ⇒ vẫn wrap, không tràn/cắt chữ.
      */
     int maxBubbleWidth() {
@@ -1129,7 +1307,8 @@ public class  ChatMessageItem extends JPanel {
         java.awt.Container vp = SwingUtilities.getAncestorOfClass(JViewport.class, this);
         int reserve = gui.theme.UiScale.get().scaled(110); // avatar + khoảng cách + padding 2 bên
         int avail = (vp != null ? vp.getWidth() : 600) - reserve;
-        if (avail <= 0) avail = 600; // fallback khi chưa gắn vào viewport
+        if (avail <= 0)
+            avail = 600; // fallback khi chưa gắn vào viewport
         return Math.max(160, Math.min(avail, cap));
     }
 
@@ -1137,13 +1316,16 @@ public class  ChatMessageItem extends JPanel {
     // File đính kèm & preview ảnh (feature #9)
     // ---------------------------------------------------------------
 
-    /** Marker mã hóa attachment trong nội dung tin nhắn (text-only nên backend lưu/broadcast bình thường). */
+    /**
+     * Marker mã hóa attachment trong nội dung tin nhắn (text-only nên backend
+     * lưu/broadcast bình thường).
+     */
     public static final String ATTACH_PREFIX = "\u0001ATTACH\u0001";
     private static final String DELIM = "\u0001";
 
     /** Mã hóa metadata file vào content để gửi qua WebSocket. */
     public static String encodeAttachment(String contentType, long size,
-                                          String thumbUrl, String url, String name) {
+            String thumbUrl, String url, String name) {
         return ATTACH_PREFIX
                 + nz(contentType) + DELIM
                 + size + DELIM
@@ -1152,16 +1334,24 @@ public class  ChatMessageItem extends JPanel {
                 + nz(name);
     }
 
-    private static String nz(String s) { return s == null ? "" : s; }
+    private static String nz(String s) {
+        return s == null ? "" : s;
+    }
 
     static Attachment parseAttachment(String content) {
-        if (content == null || !content.startsWith(ATTACH_PREFIX)) return null;
+        if (content == null || !content.startsWith(ATTACH_PREFIX))
+            return null;
         String rest = content.substring(ATTACH_PREFIX.length());
         String[] p = rest.split(DELIM, 5);
-        if (p.length < 5) return null;
+        if (p.length < 5)
+            return null;
         Attachment a = new Attachment();
         a.contentType = p[0];
-        try { a.size = Long.parseLong(p[1]); } catch (Exception ignore) { a.size = 0; }
+        try {
+            a.size = Long.parseLong(p[1]);
+        } catch (Exception ignore) {
+            a.size = 0;
+        }
         a.thumbnailUrl = p[2].isEmpty() ? null : p[2];
         a.url = p[3].isEmpty() ? null : p[3];
         a.name = p[4];
@@ -1171,7 +1361,10 @@ public class  ChatMessageItem extends JPanel {
     static class Attachment {
         String contentType, thumbnailUrl, url, name;
         long size;
-        boolean isImage() { return contentType != null && contentType.startsWith("image/"); }
+
+        boolean isImage() {
+            return contentType != null && contentType.startsWith("image/");
+        }
     }
 
     private JComponent buildImageAttachment(Attachment att) {
@@ -1185,16 +1378,23 @@ public class  ChatMessageItem extends JPanel {
 
         final String loadUrl = att.thumbnailUrl != null ? att.thumbnailUrl : att.url;
         new SwingWorker<ImageIcon, Void>() {
-            @Override protected ImageIcon doInBackground() {
+            @Override
+            protected ImageIcon doInBackground() {
                 return loadScaledIcon(loadUrl, 320, 240);
             }
-            @Override protected void done() {
+
+            @Override
+            protected void done() {
                 try {
                     ImageIcon icon = get();
-                    if (icon != null) { img.setText(null); img.setIcon(icon); }
-                    else img.setText("[Không tải được ảnh]");
+                    if (icon != null) {
+                        img.setText(null);
+                        img.setIcon(icon);
+                    } else
+                        img.setText("[Không tải được ảnh]");
                 } catch (Exception e) {
-                    if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                    if (e instanceof InterruptedException)
+                        Thread.currentThread().interrupt();
                     img.setText("[Không tải được ảnh]");
                 }
                 img.revalidate();
@@ -1203,14 +1403,18 @@ public class  ChatMessageItem extends JPanel {
         }.execute();
 
         img.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { openFullImage(att); }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openFullImage(att);
+            }
         });
         return img;
     }
 
     private JComponent buildFileCard(Attachment att) {
         JPanel card = new JPanel(new BorderLayout(10, 0)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(AppColors.BG_FLOATING);
@@ -1262,33 +1466,45 @@ public class  ChatMessageItem extends JPanel {
     }
 
     /**
-     * Trích {@link ChannelAttachment} từ 1 tin nhắn có đính kèm (cho sidebar DM, vốn không có channelId).
-     * URL trong content đã là URL đầy đủ qua gateway. Trả null nếu tin không phải attachment.
+     * Trích {@link ChannelAttachment} từ 1 tin nhắn có đính kèm (cho sidebar DM,
+     * vốn không có channelId).
+     * URL trong content đã là URL đầy đủ qua gateway. Trả null nếu tin không phải
+     * attachment.
      */
     public static ChannelAttachment toChannelAttachment(MessageDTO m) {
-        if (m == null) return null;
+        if (m == null)
+            return null;
         Attachment a = parseAttachment(m.getContent());
-        if (a == null) return null;
+        if (a == null)
+            return null;
         return new ChannelAttachment(a.contentType, a.name, a.url, a.thumbnailUrl, a.size, m.getTimestamp());
     }
 
     private void downloadFile(Attachment att) {
-        if (att.url == null) return;
+        if (att.url == null)
+            return;
         JFileChooser fc = new JFileChooser();
         fc.setSelectedFile(new File(att.name != null ? att.name : "download"));
-        if (fc.showSaveDialog(SwingUtilities.getWindowAncestor(this)) != JFileChooser.APPROVE_OPTION) return;
+        if (fc.showSaveDialog(SwingUtilities.getWindowAncestor(this)) != JFileChooser.APPROVE_OPTION)
+            return;
         final File dest = fc.getSelectedFile();
 
         new SwingWorker<Void, Void>() {
             private Exception err;
-            @Override protected Void doInBackground() {
+
+            @Override
+            protected Void doInBackground() {
                 try {
                     byte[] bytes = new FileApiClient().download(att.url); // JWT qua header, chặn host lạ
                     Files.write(dest.toPath(), bytes);
-                } catch (Exception e) { err = e; }
+                } catch (Exception e) {
+                    err = e;
+                }
                 return null;
             }
-            @Override protected void done() {
+
+            @Override
+            protected void done() {
                 Window w = SwingUtilities.getWindowAncestor(ChatMessageItem.this);
                 if (err != null) {
                     JOptionPane.showMessageDialog(w, "Tải tệp thất bại: " + err.getMessage());
@@ -1312,10 +1528,14 @@ public class  ChatMessageItem extends JPanel {
     @SuppressWarnings("unused")
     private String fileEmoji(String name) {
         String n = name == null ? "" : name.toLowerCase();
-        if (n.endsWith(".pdf")) return "PDF";
-        if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z")) return "ZIP";
-        if (n.endsWith(".doc") || n.endsWith(".docx")) return "DOC";
-        if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv")) return "XLS";
+        if (n.endsWith(".pdf"))
+            return "PDF";
+        if (n.endsWith(".zip") || n.endsWith(".rar") || n.endsWith(".7z"))
+            return "ZIP";
+        if (n.endsWith(".doc") || n.endsWith(".docx"))
+            return "DOC";
+        if (n.endsWith(".xls") || n.endsWith(".xlsx") || n.endsWith(".csv"))
+            return "XLS";
         return "FILE";
     }
 }
