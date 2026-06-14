@@ -218,7 +218,7 @@ public class ChatHistoryView extends JScrollPane {
         item.renderReactions();
     }
 
-    /** Áp dụng broadcast DELETE: soft-delete — thay nội dung thành "Tin nhắn bị gỡ", ẩn toolbar/reply/reaction. */
+    /** Áp dụng broadcast DELETE: soft-delete — bật cờ isDeleted = true, ẩn nội dung. */
     public void applyDelete(MessageDTO msg) {
         if (msg.getMessageId() == null) return;
         ChatMessageItem item = messageItems.get(msg.getMessageId());

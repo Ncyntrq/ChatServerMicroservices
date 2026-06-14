@@ -23,6 +23,7 @@ public class RawChatMessage {
     public LocalDateTime timestamp;
     public MessageType type;
     public Boolean isEdited;
+    public Boolean isDeleted;
     public Long replyToMessageId;
     public String replyToSender;
     public String replyToContent;
@@ -49,6 +50,7 @@ public class RawChatMessage {
         dto.setServerId(serverId);
         dto.setMessageId(id);
         dto.setIsEdited(isEdited);
+        dto.setIsDeleted(isDeleted);
         dto.setReplyToMessageId(replyToMessageId);
         dto.setReplyToSender(replyToSender);
         dto.setReplyToContent(replyToContent);

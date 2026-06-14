@@ -24,6 +24,7 @@ public class MessageDTO {
     private Long channelId;         // ID của channel
     private Long serverId;          // ID của server
     private Boolean isEdited;       // Cờ đánh dấu tin nhắn đã chỉnh sửa
+    private Boolean isDeleted;      // Cờ đánh dấu tin nhắn đã bị thu hồi/gỡ
     private Long messageId;         // ID của tin nhắn (dùng cho EDIT/DELETE)
     private Long replyToMessageId;  // ID của tin nhắn đang trả lời
     private String replyToSender;   // Tên người gửi tin nhắn gốc
@@ -68,6 +69,9 @@ public class MessageDTO {
 
     public Boolean getIsEdited() { return isEdited; }
     public void setIsEdited(Boolean isEdited) { this.isEdited = isEdited; }
+
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
 
     public Long getMessageId() { return messageId; }
     public void setMessageId(Long messageId) { this.messageId = messageId; }

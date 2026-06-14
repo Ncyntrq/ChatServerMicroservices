@@ -229,8 +229,8 @@ public class MessageService {
     public ChatMessage deleteMessage(Long messageId) {
         ChatMessage entity = messageRepository.findById(messageId).orElse(null);
         if (entity != null) {
-            entity.setContent("Tin nhắn bị gỡ");
-            entity.setIsEdited(true);
+            entity.setContent(""); // Xóa nội dung thật
+            entity.setIsDeleted(true);
             ChatMessage saved = messageRepository.save(entity);
 
             // Bỏ ghim nếu tin nhắn này đang được ghim

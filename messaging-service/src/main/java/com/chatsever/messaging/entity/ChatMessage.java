@@ -34,6 +34,9 @@ public class ChatMessage {
     
     private Boolean isEdited;
     
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+    
     @Column(name = "reply_to_message_id")
     private Long replyToMessageId;
 
@@ -67,6 +70,8 @@ public class ChatMessage {
     public void setType(MessageType type) { this.type = type; }
     public Boolean getIsEdited() { return isEdited; }
     public void setIsEdited(Boolean isEdited) { this.isEdited = isEdited; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
     public Long getReplyToMessageId() { return replyToMessageId; }
     public void setReplyToMessageId(Long replyToMessageId) { this.replyToMessageId = replyToMessageId; }
     public String getReplyToSender() { return replyToSender; }

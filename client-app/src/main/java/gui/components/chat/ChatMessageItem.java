@@ -421,7 +421,7 @@ public class ChatMessageItem extends JPanel {
 
             headerRow.add(leftHeader, isOwn ? BorderLayout.EAST : BorderLayout.WEST);
 
-            boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
+            boolean isDeleted = Boolean.TRUE.equals(message.getIsDeleted());
             if (Boolean.TRUE.equals(message.getIsEdited()) && !isDeleted) {
                 addEditedBadge();
             }
@@ -429,7 +429,7 @@ public class ChatMessageItem extends JPanel {
             contentPanel.add(headerRow);
         }
 
-        boolean isDeletedMsg = "Tin nhắn bị gỡ".equals(message.getContent());
+        boolean isDeletedMsg = Boolean.TRUE.equals(message.getIsDeleted());
         if (message.getReplyToMessageId() != null && !isDeletedMsg) {
             String snippet = message.getReplyToContent();
             if (snippet != null && snippet.length() > 100) {
@@ -457,14 +457,20 @@ public class ChatMessageItem extends JPanel {
         }
 
         // Body chung: đính kèm (ảnh/file) hay text (emoji + wrap)
-        Attachment att = parseAttachment(message.getContent());
-        this.isAttachment = att != null;
-        if (att != null) {
-            attachmentComponent = att.isImage() ? buildImageAttachment(att) : buildFileCard(att);
-            contentPanel.add(attachmentComponent);
-        } else {
-            messageBody = createTextBody(message.getContent(), compact ? 10 : 3, compact ? 6 : 10);
+        if (isDeletedMsg) {
+            this.isAttachment = false;
+            messageBody = buildDeletedBody();
             contentPanel.add(messageBody);
+        } else {
+            Attachment att = parseAttachment(message.getContent());
+            this.isAttachment = att != null;
+            if (att != null) {
+                attachmentComponent = att.isImage() ? buildImageAttachment(att) : buildFileCard(att);
+                contentPanel.add(attachmentComponent);
+            } else {
+                messageBody = createTextBody(message.getContent(), compact ? 10 : 3, compact ? 6 : 10);
+                contentPanel.add(messageBody);
+            }
         }
 
         if (compact && Boolean.TRUE.equals(message.getIsEdited()) && !isDeletedMsg) {
@@ -647,7 +653,7 @@ public class ChatMessageItem extends JPanel {
     // Panel hover: [giờ (tin compact)] + nút "⋯" (bấm mở menu Sửa/Ghim/Xóa)
     // ---------------------------------------------------------------
     private void buildHoverBar() {
-        boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
+        boolean isDeleted = Boolean.TRUE.equals(message.getIsDeleted());
         if (isDeleted)
             return;
 
@@ -871,7 +877,7 @@ public class ChatMessageItem extends JPanel {
             return;
         reactionBadgePanel.removeAll();
         java.util.List<MessageDTO.ReactionDTO> reactions = message.getReactions();
-        boolean isDeleted = "Tin nhắn bị gỡ".equals(message.getContent());
+        boolean isDeleted = Boolean.TRUE.equals(message.getIsDeleted());
         if (reactions == null || reactions.isEmpty() || isDeleted) {
             reactionBadgePanel.setVisible(false);
             if (reactionWrap != null)
@@ -1024,7 +1030,7 @@ public class ChatMessageItem extends JPanel {
     }
 
     /**
-     * Soft-delete: thay nội dung thành "Tin nhắn bị gỡ", ẩn toolbar, reply quote,
+     * Soft-delete: bật cờ isDeleted = true, ẩn toolbar, reply quote,
      * edited badge, và reaction — giống Zalo/Messenger.
      */
     /**
@@ -1046,8 +1052,9 @@ public class ChatMessageItem extends JPanel {
     }
 
     public void applySoftDelete() {
-        // 1. Cập nhật nội dung
-        message.setContent("Tin nhắn bị gỡ");
+        // 1. Cập nhật trạng thái
+        message.setContent("");
+        message.setIsDeleted(true);
         message.setIsEdited(false);
         message.setReplyToMessageId(null);
         message.setReplyToSender(null);
