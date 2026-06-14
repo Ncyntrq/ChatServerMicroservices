@@ -41,6 +41,14 @@ public class ChannelController {
         return ResponseEntity.ok(channelService.updateChannel(channelId, request, userId));
     }
 
+    // CH8 — Ghim/Bỏ ghim channel
+    @PutMapping("/{channelId}/pin")
+    public ResponseEntity<ChannelDto> togglePinChannel(
+            @PathVariable Long channelId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
+        return ResponseEntity.ok(channelService.togglePinChannel(channelId, userId));
+    }
+
     // CH4 — Xóa channel
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteChannel(

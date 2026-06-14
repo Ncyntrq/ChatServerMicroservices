@@ -98,6 +98,12 @@ public class ChannelApiClient {
         sendDelete(url);
     }
 
+    /** CH8 — Ghim/Bỏ ghim channel */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> togglePinChannel(long channelId) {
+        return putJson("/api/channels/" + channelId + "/pin", new java.util.HashMap<>());
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------

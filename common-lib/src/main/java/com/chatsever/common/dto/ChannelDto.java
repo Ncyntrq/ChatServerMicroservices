@@ -19,4 +19,6 @@ public class ChannelDto {
     private Integer slowmode;
     // CH5 field
     private String category;
+    // CH8 field
+    private Long pinnedAt;
 }

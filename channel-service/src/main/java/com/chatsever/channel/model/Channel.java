@@ -27,4 +27,7 @@ public class Channel {
 
     // CH5: category grouping
     private String category;
+
+    // CH8: Pin channel
+    private Long pinnedAt;
 }

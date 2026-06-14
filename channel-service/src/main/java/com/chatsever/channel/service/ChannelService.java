@@ -17,4 +17,7 @@ public interface ChannelService {
     PinnedMessage pinMessage(Long channelId, Long messageId, String pinnedBy);
     void unpinMessage(Long channelId, Long messageId, String userId);
     List<PinnedMessage> getPinnedMessages(Long channelId);
+
+    // CH8 — Pin channels
+    ChannelDto togglePinChannel(Long channelId, String userId);
 }

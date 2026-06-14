@@ -147,6 +147,23 @@ public class ChannelSidebar extends JPanel {
     }
 
     private void renderChannels(List<Map<String, Object>> channels) {
+        channels.sort((c1, c2) -> {
+            Long p1 = asLongNullable(c1.get("pinnedAt"));
+            Long p2 = asLongNullable(c2.get("pinnedAt"));
+            boolean isPinned1 = p1 != null;
+            boolean isPinned2 = p2 != null;
+            if (isPinned1 && !isPinned2) return -1;
+            if (!isPinned1 && isPinned2) return 1;
+            if (isPinned1 && isPinned2) {
+                return p2.compareTo(p1); // LIFO
+            }
+            String n1 = str(c1.get("name"));
+            String n2 = str(c2.get("name"));
+            if (n1 == null) n1 = "";
+            if (n2 == null) n2 = "";
+            return n1.compareToIgnoreCase(n2);
+        });
+
         listPanel.removeAll();
         channelItems.clear();
 
@@ -167,7 +184,7 @@ public class ChannelSidebar extends JPanel {
                     listPanel.add(Box.createVerticalStrut(4));
                     addedTextHeader = true;
                 }
-                listPanel.add(buildItem(ch, false));
+                listPanel.add(buildItem(ch, false, asLongNullable(ch.get("pinnedAt")) != null));
                 listPanel.add(Box.createVerticalStrut(4));
             }
         }
@@ -180,7 +197,7 @@ public class ChannelSidebar extends JPanel {
                     listPanel.add(Box.createVerticalStrut(4));
                     addedVoiceHeader = true;
                 }
-                listPanel.add(buildItem(ch, true));
+                listPanel.add(buildItem(ch, true, asLongNullable(ch.get("pinnedAt")) != null));
                 listPanel.add(Box.createVerticalStrut(4));
             }
         }
@@ -221,7 +238,7 @@ public class ChannelSidebar extends JPanel {
         }
     }
 
-    private ChannelListItem buildItem(Map<String, Object> ch, boolean isVoice) {
+    private ChannelListItem buildItem(Map<String, Object> ch, boolean isVoice, boolean isPinned) {
         long id = asLong(ch.get("id"));
         String name = str(ch.get("name"));
         String topic = str(ch.get("topic"));
@@ -230,7 +247,7 @@ public class ChannelSidebar extends JPanel {
         item.setOnClick(() -> {
             if (onChannelSelected != null) onChannelSelected.accept(id);
         });
-        item.setOnContextMenu(() -> showChannelMenu(item, id, name, topic));
+        item.setOnContextMenu(() -> showChannelMenu(item, id, name, topic, isPinned));
         
         channelItems.put(id, item);
         return item;
@@ -296,8 +313,34 @@ public class ChannelSidebar extends JPanel {
         menu.show(anchor, 0, anchor.getHeight());
     }
 
-    private void showChannelMenu(Component anchor, long channelId, String name, String topic) {
+    private void showChannelMenu(Component anchor, long channelId, String name, String topic, boolean isPinned) {
         JPopupMenu menu = new JPopupMenu();
+
+        if (network.PermissionCache.get().can(network.PermissionCache.MANAGE_CHANNEL)) {
+            JMenuItem pinItem = new JMenuItem(isPinned ? "Bỏ ghim kênh" : "Ghim kênh");
+            pinItem.addActionListener(e -> {
+                new SwingWorker<Void, Void>() {
+                    @Override
+                    protected Void doInBackground() {
+                        channelApi.togglePinChannel(channelId);
+                        return null;
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            get();
+                            loadChannels(activeServerId, titleLabel.getText().replace(" ⏷", ""));
+                            if (onChannelChanged != null) onChannelChanged.run();
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(ChannelSidebar.this, "Error toggling pin: " + ex.getMessage());
+                        }
+                    }
+                }.execute();
+            });
+            menu.add(pinItem);
+            menu.addSeparator();
+        }
+
         JMenuItem editItem = new JMenuItem("Edit Channel");
         JMenuItem deleteItem = new JMenuItem("Delete Channel");
         Window owner = SwingUtilities.getWindowAncestor(this);
@@ -345,6 +388,14 @@ public class ChannelSidebar extends JPanel {
             try { return Long.parseLong(o.toString()); } catch (NumberFormatException ignore) {}
         }
         return -1;
+    }
+
+    private static Long asLongNullable(Object o) {
+        if (o instanceof Number n) return n.longValue();
+        if (o != null) {
+            try { return Long.parseLong(o.toString()); } catch (NumberFormatException ignore) {}
+        }
+        return null;
     }
 
     private static String str(Object o) {

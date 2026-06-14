@@ -115,6 +115,25 @@ public class ChannelServiceImpl implements ChannelService {
         return pinnedMessageRepository.findByChannelIdOrderByPinnedAtDesc(channelId);
     }
 
+    // CH8 — Ghim kênh (Channel)
+    @Override
+    @Transactional
+    public ChannelDto togglePinChannel(Long channelId, String userId) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new RuntimeException("Channel not found: " + channelId));
+
+        checkPermission(channel.getServerId(), userId, 8); // MANAGE_CHANNEL
+
+        if (channel.getPinnedAt() != null) {
+            channel.setPinnedAt(null);
+        } else {
+            channel.setPinnedAt(System.currentTimeMillis());
+        }
+
+        channel = channelRepository.save(channel);
+        return mapToDto(channel);
+    }
+
     private ChannelDto mapToDto(Channel channel) {
         return ChannelDto.builder()
                 .id(channel.getId())
@@ -124,6 +143,7 @@ public class ChannelServiceImpl implements ChannelService {
                 .topic(channel.getTopic())
                 .slowmode(channel.getSlowmode())
                 .category(channel.getCategory())
+                .pinnedAt(channel.getPinnedAt())
                 .build();
     }
 
