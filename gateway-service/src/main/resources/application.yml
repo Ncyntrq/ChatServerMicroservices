@@ -36,7 +36,7 @@ spring:
         - id: role-service-nested
           uri: ${ROLE_SERVICE_URL:http://localhost:8091}
           predicates:
-            - Path=/api/servers/*/roles/**, /api/servers/*/members/*/roles/**, /api/servers/*/permissions/**, /api/servers/*/kick/**, /api/servers/*/ban/**
+            - Path=/api/servers/*/roles/**, /api/servers/roles/**, /api/servers/*/members/*/roles/**, /api/servers/*/permissions/**, /api/servers/*/kick/**, /api/servers/*/ban/**
 
         # =========================================================
         # NHÓM 2: CÁC ROUTE TỔNG QUÁT (ĐẶT BÊN DƯỚI)

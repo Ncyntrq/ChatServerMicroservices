@@ -23,8 +23,7 @@ public class ServerController {
             @PathVariable Long serverId,
             @PathVariable String userId,
             @RequestBody Map<String, Object> payload) {
-        List<Number> roleIdNumbers = (List<Number>) payload.get("roleIds");
-        List<Long> roleIds = roleIdNumbers.stream().map(Number::longValue).toList();
+        List<String> roleIds = (List<String>) payload.get("roleIds");
         serverService.updateMemberRoles(serverId, userId, roleIds);
         return ResponseEntity.ok(Map.of("message", "Cập nhật roles thành công"));
     }

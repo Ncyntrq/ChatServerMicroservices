@@ -114,7 +114,7 @@ public class RoleApiClient {
                     Object roleIdsObj = m.get("roleIds");
                     if (roleIdsObj instanceof List<?> list) {
                         return list.stream()
-                                .map(o -> String.valueOf(((Number) o).longValue()))
+                                .map(String::valueOf)
                                 .toList();
                     }
                 }

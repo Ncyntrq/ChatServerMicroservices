@@ -25,7 +25,7 @@ public class Member {
     @CollectionTable(name = "member_role_ids", joinColumns = @JoinColumn(name = "member_id"))
     @Column(name = "role_id")
     @Builder.Default
-    private List<Long> roleIds = new ArrayList<>();
+    private List<String> roleIds = new ArrayList<>();
 
     private LocalDateTime joinedAt;
 

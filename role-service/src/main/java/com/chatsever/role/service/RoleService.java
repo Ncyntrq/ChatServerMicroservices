@@ -126,7 +126,7 @@ public class RoleService {
             String url = serverServiceUrl + "/api/servers/" + serverId + "/members/" + userId + "/roles";
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
-            Map<String, Object> body = Map.of("roleIds", roleIds.stream().map(Long::valueOf).toList());
+            Map<String, Object> body = Map.of("roleIds", roleIds);
             restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
         } catch (Exception e) {
             log.error("Lỗi gán role cho member: {}", e.getMessage());
@@ -174,8 +174,8 @@ public class RoleService {
                 if (members != null) {
                     for (Map<String, Object> member : members) {
                         if (userId.equals(member.get("userId"))) {
-                            List<Number> roleIdNumbers = (List<Number>) member.get("roleIds");
-                            if (roleIdNumbers == null || roleIdNumbers.isEmpty()) {
+                            List<String> roleIdStrings = (List<String>) member.get("roleIds");
+                            if (roleIdStrings == null || roleIdStrings.isEmpty()) {
                                 // Không có role → dùng Member default
                                 return Map.of(
                                         "userId", userId,
@@ -187,9 +187,7 @@ public class RoleService {
                             }
 
                             // 3. Tính effective permissions = OR tất cả role permissions
-                            List<String> roleIds = roleIdNumbers.stream()
-                                    .map(n -> String.valueOf(n.longValue()))
-                                    .toList();
+                            List<String> roleIds = roleIdStrings;
                             List<Role> roles = roleRepository.findByIdIn(roleIds);
                             int effectiveMask = 0;
                             String highestRole = "Member";

@@ -215,7 +215,7 @@ public class ServerServiceImpl implements ServerService {
     // R2 — Cập nhật roleIds cho member (gọi từ role-service)
     @Override
     @Transactional
-    public void updateMemberRoles(Long serverId, String userId, List<Long> roleIds) {
+    public void updateMemberRoles(Long serverId, String userId, List<String> roleIds) {
         Member member = memberRepository.findByServerIdAndUserId(serverId, userId)
                 .orElseThrow(() -> new RuntimeException("Member not found: " + userId + " in server " + serverId));
         member.setRoleIds(roleIds);
