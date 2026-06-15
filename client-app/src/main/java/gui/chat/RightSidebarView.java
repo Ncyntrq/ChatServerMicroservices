@@ -91,7 +91,16 @@ public class RightSidebarView extends JScrollPane {
         repaint();
     }
 
-    public void renderServerMembers(List<String> allUsers, java.util.Map<String, String> onlineStatuses, String ownerId) {
+    /**
+     * Render danh sách thành viên server (phân nhóm online/offline).
+     *
+     * @param allUsers      tất cả userId của server
+     * @param onlineStatuses map userId → status string của những người online
+     * @param ownerId       userId của owner (dùng để hiển thị menu quản lý)
+     * @param roleColors    map userId → Color theo role có priority cao nhất (null OK)
+     */
+    public void renderServerMembers(List<String> allUsers, java.util.Map<String, String> onlineStatuses,
+                                    String ownerId, java.util.Map<String, Color> roleColors) {
         memberContent.removeAll();
         memberItems.clear();
 
@@ -102,19 +111,20 @@ public class RightSidebarView extends JScrollPane {
             else offlineList.add(u);
         }
         boolean isOwner = sessionUsername.equals(ownerId);
+        java.util.Map<String, Color> rc = (roleColors != null) ? roleColors : java.util.Map.of();
 
         memberContent.add(new SidebarCategoryHeader("TRỰC TUYẾN — " + onlineList.size()));
         memberContent.add(Box.createVerticalStrut(5));
         for (String username : onlineList) {
             String status = onlineStatuses.get(username);
-            addMemberItem(username, status, isOwner);
+            addMemberItem(username, status, isOwner, rc.get(username));
         }
 
         memberContent.add(Box.createVerticalStrut(12));
         memberContent.add(new SidebarCategoryHeader("NGOẠI TUYẾN — " + offlineList.size()));
         memberContent.add(Box.createVerticalStrut(5));
         for (String username : offlineList) {
-            addMemberItem(username, "OFFLINE", isOwner);
+            addMemberItem(username, "OFFLINE", isOwner, rc.get(username));
         }
 
         memberSection.setTitle("Thành viên — " + allUsers.size());
@@ -147,10 +157,12 @@ public class RightSidebarView extends JScrollPane {
         });
     }
 
-    private void addMemberItem(String username, String statusName, boolean isOwner) {
+    private void addMemberItem(String username, String statusName, boolean isOwner, Color roleColor) {
         if (username == null || username.isBlank()) return;
         String name = username.trim();
         UserListItem item = new UserListItem(name, null, statusName);
+        // Áp màu role nếu có
+        if (roleColor != null) item.setRoleColor(roleColor);
         boolean canModerate = isOwner
                 || PermissionCache.get().can(PermissionCache.KICK_MEMBER)
                 || PermissionCache.get().can(PermissionCache.MANAGE_ROLES);

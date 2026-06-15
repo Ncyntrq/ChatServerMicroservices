@@ -20,16 +20,27 @@ public class UserListItem extends JPanel {
     // Kích thước icon trạng thái overlay lên avatar (góc dưới phải)
     private static final int STATUS_ICON_SIZE = 14;
 
-    private final String username; // Thêm biến lưu trữ username gốc
+    private final String username;
     private PresenceStatusIcon.Status currentStatus;
     private final AvatarBadge avatar;
     private final JLabel nameLabel;
     private final JLabel statusTextLabel;
     private boolean isHovered = false;
     private Runnable onContextMenu;
+    /** Màu role được cấp cho user này trong server (null = dùng màu mặc định online/offline). */
+    private Color roleColor = null;
 
     public void setOnContextMenu(Runnable onContextMenu) {
         this.onContextMenu = onContextMenu;
+    }
+
+    /**
+     * Đặt màu role cho user này — tên sẽ hiển thị bằng màu role thay vì màu online/offline mặc định.
+     * Truyền null để xoá và trở về màu mặc định.
+     */
+    public void setRoleColor(Color color) {
+        this.roleColor = color;
+        applyNameColor();
     }
 
     private int unreadCount = 0;
@@ -113,9 +124,8 @@ public class UserListItem extends JPanel {
         // --- ÁP DỤNG BIỆT DANH LOCAL BAN ĐẦU ---
         String localNickname = gui.utils.NicknameManager.getNickname(username);
         nameLabel = new JLabel(localNickname != null ? localNickname : username);
-        boolean online = currentStatus != PresenceStatusIcon.Status.OFFLINE && currentStatus != PresenceStatusIcon.Status.INVISIBLE;
-        nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
         nameLabel.setFont(AppFonts.BODY_BOLD);
+        applyNameColor();
         textPanel.add(nameLabel);
 
         String defaultStatusText = customStatus != null && !customStatus.isBlank()
@@ -203,10 +213,8 @@ public class UserListItem extends JPanel {
         PresenceStatusIcon.Status newStatus = PresenceStatusIcon.Status.from(statusStr);
         this.currentStatus = newStatus;
 
-        boolean online = newStatus != PresenceStatusIcon.Status.OFFLINE
-                && newStatus != PresenceStatusIcon.Status.INVISIBLE;
         if (unreadCount == 0) {
-            nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
+            applyNameColor();
         }
 
         // Nếu không có custom status từ profile, thì dùng text mặc định
@@ -285,6 +293,20 @@ public class UserListItem extends JPanel {
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    /**
+     * Áp màu cho nameLabel: ưu tiên roleColor nếu có,
+     * ngược lại dùng TEXT_HEADER (online) hoặc TEXT_MUTED (offline).
+     */
+    private void applyNameColor() {
+        if (roleColor != null) {
+            nameLabel.setForeground(roleColor);
+        } else {
+            boolean online = currentStatus != PresenceStatusIcon.Status.OFFLINE
+                    && currentStatus != PresenceStatusIcon.Status.INVISIBLE;
+            nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
+        }
+    }
 
     /** Suy ra Status từ màu AppColors để tương thích ngược với code cũ. */
     private static PresenceStatusIcon.Status resolveStatusFromColor(Color c, boolean isOnline) {

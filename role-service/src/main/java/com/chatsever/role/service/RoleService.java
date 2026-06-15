@@ -313,28 +313,31 @@ public class RoleService {
     // ========================================================================
     @Transactional
     public void createDefaultRoles(String serverId) {
-        // Owner role (priority cao nhất)
+        // Owner role — toàn quyền (ALL = 1023 với 10 bit mới)
         roleRepository.save(Role.builder()
                 .serverId(serverId).roleName("Owner")
                 .color("#FFD700").permissionBitmask(Permission.ALL)
                 .isDefault(true).priority(100).build());
 
+        // Admin — gần toàn quyền, trừ ADMIN bit (ADMIN_DEFAULT = 191)
         roleRepository.save(Role.builder()
                 .serverId(serverId).roleName("Admin")
                 .color("#FF4500").permissionBitmask(Permission.ADMIN_DEFAULT)
                 .isDefault(true).priority(80).build());
 
+        // Moderator — đọc + quản lý tin nhắn + kick (MODERATOR_DEFAULT = 11)
         roleRepository.save(Role.builder()
                 .serverId(serverId).roleName("Moderator")
                 .color("#2ECC71").permissionBitmask(Permission.MODERATOR_DEFAULT)
                 .isDefault(true).priority(50).build());
 
+        // Member — chỉ đọc kênh (MEMBER_DEFAULT = 1)
         roleRepository.save(Role.builder()
                 .serverId(serverId).roleName("Member")
                 .color("#95A5A6").permissionBitmask(Permission.MEMBER_DEFAULT)
                 .isDefault(true).priority(10).build());
 
-        log.info("Created default roles for server: {}", serverId);
+        log.info("Created default roles for server: {} (bitmask schema v2)", serverId);
     }
 
     // ========================================================================

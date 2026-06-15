@@ -514,17 +514,27 @@ public class ChatClientGUI extends JFrame {
             @Override protected java.util.Map<String, Object> doInBackground() {
                 java.util.Map<String, Object> details = serverApi.getServerDetails(serverId);
                 java.util.Map<String, String> online = presenceApi.getAllStatuses();
-                return java.util.Map.of("details", details, "online", online);
+                // Cũng tải danh sách roles để tính roleColor cho từng member
+                java.util.List<java.util.Map<String, Object>> roles =
+                        new network.RoleApiClient().getRoles(serverId);
+                java.util.Map<String, Object> combined = new java.util.HashMap<>();
+                combined.put("details", details);
+                combined.put("online", online);
+                combined.put("roles", roles);
+                return combined;
             }
             @Override
             @SuppressWarnings("unchecked")
             protected void done() {
                 try {
                     java.util.Map<String, Object> result = get();
-                    java.util.Map<String, Object> details = (java.util.Map<String, Object>) result.get("details");
-                    java.util.Map<String, String> statuses = (java.util.Map<String, String>) result.get("online");
+                    java.util.Map<String, Object> details   = (java.util.Map<String, Object>) result.get("details");
+                    java.util.Map<String, String> statuses  = (java.util.Map<String, String>) result.get("online");
+                    java.util.List<java.util.Map<String, Object>> roles =
+                            (java.util.List<java.util.Map<String, Object>>) result.get("roles");
 
-                    List<java.util.Map<String, Object>> members = (List<java.util.Map<String, Object>>) details.get("members");
+                    List<java.util.Map<String, Object>> members =
+                            (List<java.util.Map<String, Object>>) details.get("members");
                     List<String> allUsers = new java.util.ArrayList<>();
                     if (members != null) {
                         for (java.util.Map<String, Object> m : members) {
@@ -536,9 +546,13 @@ public class ChatClientGUI extends JFrame {
                     if (serverData == null) serverData = details;
                     String ownerId = String.valueOf(serverData.get("ownerId"));
 
-                    rightSidebar.renderServerMembers(allUsers, statuses, ownerId);
+                    // Tính màu role cho từng member (role priority cao nhất → lấy màu đó)
+                    java.util.Map<String, java.awt.Color> roleColors =
+                            computeRoleColors(members, roles);
 
-                    // ---> NOTE 3: Nạp toàn bộ thành viên của Server vào danh sách Tag @
+                    rightSidebar.renderServerMembers(allUsers, statuses, ownerId, roleColors);
+
+                    // Nạp toàn bộ thành viên của Server vào danh sách Tag @
                     chatInput.setAvailableMentions(allUsers);
 
                 } catch (Exception ex) {
@@ -548,15 +562,74 @@ public class ChatClientGUI extends JFrame {
         }.execute();
     }
 
+    /**
+     * Tính map username → Color dựa trên role có priority cao nhất mà member đó sở hữu.
+     * Role màu trắng (#FFFFFF) hoặc không có màu sẽ bị bỏ qua (tránh màu vô hình trên nền sáng).
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<String, java.awt.Color> computeRoleColors(
+            List<java.util.Map<String, Object>> members,
+            java.util.List<java.util.Map<String, Object>> roles) {
+        if (members == null || roles == null) return java.util.Map.of();
+
+        // Build id → role map
+        java.util.Map<String, java.util.Map<String, Object>> roleById = new java.util.HashMap<>();
+        for (java.util.Map<String, Object> r : roles) {
+            String id = String.valueOf(r.get("id"));
+            roleById.put(id, r);
+        }
+
+        java.util.Map<String, java.awt.Color> result = new java.util.HashMap<>();
+        for (java.util.Map<String, Object> member : members) {
+            String username = String.valueOf(member.get("userId"));
+            Object roleIdsObj = member.get("roleIds");
+            if (!(roleIdsObj instanceof java.util.List<?> list) || list.isEmpty()) continue;
+
+            int highestPriority = -1;
+            java.awt.Color bestColor = null;
+            for (Object o : list) {
+                if (!(o instanceof Number n)) continue;
+                String rid = String.valueOf(n.longValue());
+                java.util.Map<String, Object> role = roleById.get(rid);
+                if (role == null) continue;
+                Object priObj = role.get("priority");
+                int priority = (priObj instanceof Number p) ? p.intValue() : 0;
+                String colorHex = String.valueOf(role.get("color"));
+                if (priority > highestPriority && colorHex != null
+                        && colorHex.startsWith("#")
+                        && !colorHex.equalsIgnoreCase("#ffffff")
+                        && !colorHex.equalsIgnoreCase("#FFFFFF")) {
+                    try {
+                        bestColor = java.awt.Color.decode(colorHex);
+                        highestPriority = priority;
+                    } catch (Exception ignore) {}
+                }
+            }
+            if (bestColor != null) result.put(username, bestColor);
+        }
+        return result;
+    }
+
     /** Cập nhật danh sách online (fallback hoặc trigger từ WS LIST). */
     private void setOnlineUsers(java.util.Map<String, String> statuses) {
         if (activeServerId > 0) { loadServerMembersAndPresence(activeServerId); return; }
         rightSidebar.renderOnline(statuses);
     }
 
-    /** Mở dialog cấp Role cho 1 thành viên (context menu RightSidebarView). */
+    /**
+     * Mở dialog cấp Role cho 1 thành viên.
+     * Sau khi cấp thành công:
+     *  1. Broadcast [SYSTEM_SERVER_UPDATE] → mọi client trong server tự động reload
+     *  2. Reload lại permissions + members của chính mình để đổi màu ngay lập tức
+     */
     private void openAssignRoleDialog(String username) {
-        new gui.server.AssignRoleDialog(this, activeServerId, username).setVisible(true);
+        new gui.server.AssignRoleDialog(this, activeServerId, username, () -> {
+            // Broadcast để mọi client trong server thấy đổi màu username
+            outbound.broadcast(com.chatsever.common.enums.MessageType.CHAT,
+                    "[SYSTEM_SERVER_UPDATE]", activeServerId, null, null);
+            // Reload lại cho chính mình ngay không đợi WS
+            loadPermissionsAndMembers(activeServerId);
+        }).setVisible(true);
     }
 
     /** Xác nhận + thực thi Kick 1 thành viên (context menu RightSidebarView). */

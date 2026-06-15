@@ -96,6 +96,34 @@ public class RoleApiClient {
         }
     }
 
+    /**
+     * Lấy danh sách roleId (String) hiện tại của 1 member trong server.
+     * Gọi GET /api/servers/{serverId} và extract members[].roleIds cho userId tương ứng.
+     * Trả về List rỗng nếu không tìm thấy hoặc lỗi.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getMemberRoleIds(long serverId, String userId) {
+        String url = ApiConfig.GATEWAY_HTTP + "/api/servers/" + serverId;
+        try {
+            HttpResponse<String> resp = sendGet(url);
+            Map<String, Object> body = json.readValue(resp.body(), new TypeReference<Map<String, Object>>() {});
+            List<Map<String, Object>> members = (List<Map<String, Object>>) body.get("members");
+            if (members == null) return List.of();
+            for (Map<String, Object> m : members) {
+                if (userId.equals(String.valueOf(m.get("userId")))) {
+                    Object roleIdsObj = m.get("roleIds");
+                    if (roleIdsObj instanceof List<?> list) {
+                        return list.stream()
+                                .map(o -> String.valueOf(((Number) o).longValue()))
+                                .toList();
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return List.of();
+    }
+
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
