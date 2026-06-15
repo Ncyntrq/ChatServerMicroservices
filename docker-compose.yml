@@ -13,6 +13,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark {absolute, \\\"2048MiB\\\"}"
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
@@ -69,7 +70,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:8081
       - SERVER_SERVICE_URL=http://server-service:8085
@@ -100,7 +101,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
@@ -120,7 +121,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -142,7 +143,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -160,7 +161,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx512m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx384m
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -185,7 +186,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_presence_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -208,7 +209,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -225,7 +226,7 @@ services:
     image: hoangnguyen1007/notification-service:${IMAGE_TAG:-latest}
     container_name: notification-service
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -250,7 +251,7 @@ services:
     image: hoangnguyen1007/file-service:${IMAGE_TAG:-latest}
     container_name: file-service
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx512m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -276,7 +277,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -296,7 +297,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -315,7 +316,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_friend_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
