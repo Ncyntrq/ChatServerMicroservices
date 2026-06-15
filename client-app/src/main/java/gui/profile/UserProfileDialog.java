@@ -134,10 +134,14 @@ public class UserProfileDialog extends JDialog {
                     "Đặt biệt danh cho " + username + " (Chỉ mình bạn thấy):",
                     gui.utils.NicknameManager.getNickname(username));
 
-            if (newNick != null) { // Người dùng bấm OK
+            if (newNick != null) {
                 gui.utils.NicknameManager.setNickname(username, newNick);
                 nameLabel.setText(newNick.isBlank() ? finalDisplayName : newNick);
-                JOptionPane.showMessageDialog(this, "Đã lưu biệt danh! Khởi động lại chat hoặc click sang kênh khác để làm mới.");
+
+                Window ownerWindow = getOwner();
+                if (ownerWindow instanceof gui.ChatClientGUI) {
+                    ((gui.ChatClientGUI) ownerWindow).applyNicknameChange();
+                }
             }
         });
 
@@ -185,25 +189,33 @@ public class UserProfileDialog extends JDialog {
         mainPanel.add(bioPanel);
         add(mainPanel, BorderLayout.CENTER);
 
-        // --- THANH CÔNG CỤ NÚT BẤM DƯỚI CÙNG (Thêm Nhắn tin) ---
+        // --- THANH CÔNG CỤ NÚT BẤM DƯỚI CÙNG ---
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         bottomPanel.setBackground(AppColors.BG_TERTIARY);
 
-        JButton chatBtn = new JButton("Nhắn tin");
-        chatBtn.setFont(AppFonts.BODY_BOLD);
-        chatBtn.addActionListener(e -> {
-            Window ownerWindow = getOwner();
-            if (ownerWindow instanceof gui.ChatClientGUI) {
-                ((gui.ChatClientGUI) ownerWindow).openDirectMessage(username);
-                dispose(); // Đóng dialog sau khi chuyển trang
-            }
-        });
+        boolean isOwnProfile = false;
+        Window ownerWindow = getOwner();
+        if (ownerWindow instanceof gui.ChatClientGUI) {
+            String myUsername = ((gui.ChatClientGUI) ownerWindow).getSessionUsername();
+            isOwnProfile = username.equals(myUsername);
+        }
+
+        if (!isOwnProfile) {
+            JButton chatBtn = new JButton("Nhắn tin");
+            chatBtn.setFont(AppFonts.BODY_BOLD);
+            chatBtn.addActionListener(e -> {
+                if (ownerWindow instanceof gui.ChatClientGUI) {
+                    ((gui.ChatClientGUI) ownerWindow).openDirectMessage(username);
+                    dispose();
+                }
+            });
+            bottomPanel.add(chatBtn);
+        }
 
         JButton closeBtn = new JButton("Đóng");
         closeBtn.setFont(AppFonts.BODY_BOLD);
         closeBtn.addActionListener(e -> dispose());
 
-        bottomPanel.add(chatBtn);
         bottomPanel.add(closeBtn);
         add(bottomPanel, BorderLayout.SOUTH);
     }

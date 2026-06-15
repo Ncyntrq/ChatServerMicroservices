@@ -22,12 +22,12 @@ public class ChatInputContainer extends JPanel {
     private final JScrollPane inputScroll;
     private final JButton sendButton;
     private final JProgressBar uploadBar;
-    
+
     // --- Reply panel ---
     private JPanel replyPreviewPanel;
     private JLabel replyLabel;
     private Long replyToMessageId;
-    
+
     private Runnable onAttach = () -> {};
     private Runnable onSend = () -> {};
     private final JPopupMenu mentionPopup = new JPopupMenu();
@@ -35,12 +35,7 @@ public class ChatInputContainer extends JPanel {
 
     // Hàm để ChatClientGUI truyền dữ liệu thật vào
     public void setAvailableMentions(java.util.List<String> mentions) {
-        this.availableMentions = new java.util.ArrayList<>();
-        this.availableMentions.add("all");
-
-        if (mentions != null) {
-            this.availableMentions.addAll(mentions);
-        }
+        this.availableMentions = mentions != null ? mentions : new java.util.ArrayList<>();
     }
 
     /** Gắn handler khi bấm nút đính kèm (+). */
@@ -60,6 +55,9 @@ public class ChatInputContainer extends JPanel {
 
         // Make the whole container have rounded corners
         putClientProperty("JComponent.arc", 12);
+
+        // --- CẤU HÌNH POPUP MENTION TRÁNH LỖI CƯỚP FOCUS ---
+        mentionPopup.setFocusable(false);
 
         // --- 1. Left icon (Plus/Attach) ---
         IconButton plusButton = new IconButton("+", e -> onAttach.run());
@@ -98,8 +96,11 @@ public class ChatInputContainer extends JPanel {
         // --- Xử lý Tag (@) Mention ---
         inputArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { checkMention(); }
-            @Override public void removeUpdate(DocumentEvent e) { checkMention(); }
             @Override public void changedUpdate(DocumentEvent e) { checkMention(); }
+            @Override public void removeUpdate(DocumentEvent e) {
+                // KHI XÓA KÝ TỰ (BACKSPACE) THÌ ẨN POPUP VÀ DỪNG ĐỀ XUẤT ĐỂ KHÔNG BỊ MẤT FOCUS
+                SwingUtilities.invokeLater(() -> mentionPopup.setVisible(false));
+            }
         });
 
         inputScroll = new JScrollPane(inputArea,
@@ -347,10 +348,30 @@ public class ChatInputContainer extends JPanel {
 
     private void showMentionPopup(String query, int wordStart, int caret) {
         mentionPopup.removeAll();
-
         boolean hasItem = false;
-        // Quét trên danh sách thực tế đã được truyền từ Server vào
+
+        // 1. CHÈN MỤC @ALL LÊN ĐẦU TIÊN
+        if ("all".startsWith(query.toLowerCase())) {
+            JMenuItem itemAll = new JMenuItem("all (Mọi người)");
+            itemAll.setFont(AppFonts.BODY_BOLD);
+            itemAll.setForeground(AppColors.BRAND_PRIMARY); // Highlight cho dễ nhìn
+            itemAll.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            itemAll.addActionListener(e -> {
+                try {
+                    inputArea.getDocument().remove(wordStart, inputArea.getCaretPosition() - wordStart);
+                    inputArea.getDocument().insertString(wordStart, "@all ", null);
+                    mentionPopup.setVisible(false);
+                    inputArea.requestFocusInWindow();
+                } catch (Exception ex) {}
+            });
+            mentionPopup.add(itemAll);
+            hasItem = true;
+        }
+
+        // 2. TÌM KIẾM CÁC USER KHÁC
         for (String member : availableMentions) {
+            if (member.equalsIgnoreCase("all")) continue; // Bỏ qua chữ all (nếu có sẵn trong list) để không bị trùng
+
             // Lọc danh sách theo từ khoá đang gõ
             if (member.toLowerCase().startsWith(query.toLowerCase())) {
                 JMenuItem item = new JMenuItem(member);

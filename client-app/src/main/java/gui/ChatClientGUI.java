@@ -890,4 +890,18 @@ public class ChatClientGUI extends JFrame {
             chatHistoryView.scrollToMessage(msgId);
         }).setVisible(true);
     }
+
+    public String getSessionUsername() {
+        return this.sessionUsername;
+    }
+
+    public void applyNicknameChange() {
+        loadPresence();
+
+        if (activePrivateUser != null) {
+            openDirectMessage(activePrivateUser);
+        } else if (activeChannelId != -1) {
+            onChannelSelected(activeChannelId);
+        }
+    }
 }

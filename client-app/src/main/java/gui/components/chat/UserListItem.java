@@ -79,8 +79,15 @@ public class UserListItem extends JPanel {
                 if (SwingUtilities.isRightMouseButton(e) && onContextMenu != null) {
                     onContextMenu.run();
                 } else if (SwingUtilities.isLeftMouseButton(e)) {
-                    // Mở profile khi click chuột trái
+                    // Không mở profile nếu click vào nick hệ thống
                     if (username == null || username.equals("SYSTEM") || username.equalsIgnoreCase("admin")) return;
+
+                    // ---> ĐOẠN FIX: KHÔNG mở Profile nếu đang ở thanh Bạn bè / Chat riêng bên trái
+                    if (SwingUtilities.getAncestorOfClass(gui.components.friends.FriendSidebar.class, UserListItem.this) != null ||
+                            SwingUtilities.getAncestorOfClass(gui.components.mini.FriendListPanel.class, UserListItem.this) != null) {
+                        return; // Nhường sự kiện lại để click này mở khung chat!
+                    }
+                    // <--- KẾT THÚC ĐOẠN FIX
 
                     Window owner = SwingUtilities.getWindowAncestor(UserListItem.this);
                     if (owner instanceof Frame) {
@@ -201,7 +208,7 @@ public class UserListItem extends JPanel {
         if (unreadCount == 0) {
             nameLabel.setForeground(online ? AppColors.TEXT_HEADER : AppColors.TEXT_MUTED);
         }
-        
+
         // Nếu không có custom status từ profile, thì dùng text mặc định
         if (statusTextLabel != null) {
             String cur = statusTextLabel.getText();
@@ -215,7 +222,7 @@ public class UserListItem extends JPanel {
                 statusTextLabel.setText(newStatus.toVietnamese());
             }
         }
-        
+
         repaint();
     }
 
