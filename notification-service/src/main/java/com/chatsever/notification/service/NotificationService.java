@@ -201,8 +201,8 @@ public class NotificationService {
     @SuppressWarnings("unchecked")
     public List<String> getServerMembers(Long serverId) {
         try {
-            // Sử dụng port 8085 của server-service thay vì 8081
-            String url = "http://localhost:8085/api/servers/" + serverId;
+            // Sử dụng URL thông qua Docker network
+            String url = "http://server-service:8085/api/servers/" + serverId;
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.containsKey("members")) {
                 List<Map<String, Object>> members = (List<Map<String, Object>>) response.get("members");
