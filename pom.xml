@@ -103,9 +103,9 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.13.0</version>
                     <configuration>
-                        <!-- Dùng <release> thay vì <source>+<target>:
-                             --release 17 = set source + target + system modules path cùng lúc
-                             Loại bỏ warning "system modules path not set" → compile nhanh hơn -->
+                        <!-- Dùng release thay vì source+target:
+                             Dùng cờ release 17 = set source + target + system modules path cùng lúc
+                             Loại bỏ warning system modules path not set -> compile nhanh hơn -->
                         <release>17</release>
                         <compilerArgs>
                             <arg>-parameters</arg>

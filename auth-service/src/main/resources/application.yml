@@ -2,6 +2,8 @@ server:
   port: 8081
 
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:docker}
   application:
     name: auth-service
   datasource:
@@ -40,7 +42,4 @@ management:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
 
-# Kích hoạt Spring profile để logback-spring.xml dùng JSON appender
-spring:
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:docker}
+
