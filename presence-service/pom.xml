@@ -82,10 +82,8 @@
 				<configuration>
 					<source>17</source>
 					<target>17</target>
-					<fork>true</fork>
+					<!-- Bỏ fork=true và các -J--add-opens (chỉ dùng được với fork mode) -->
 					<compilerArgs>
-						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
 						<arg>-parameters</arg>
 					</compilerArgs>
 				</configuration>

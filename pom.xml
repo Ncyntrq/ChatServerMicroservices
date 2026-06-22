@@ -79,6 +79,19 @@
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-logback-encoder.version}</version>
             </dependency>
+            <!-- OTLP Exporter: chỉ cần runtime (Spring auto-config nạp qua SPI)
+                 → không vào compile classpath → giảm thời gian compile -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-exporter-otlp</artifactId>
+                <scope>runtime</scope>
+            </dependency>
+            <!-- Micrometer Tracing Bridge: cũng chỉ cần runtime -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bridge-otel</artifactId>
+                <scope>runtime</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -92,7 +105,9 @@
                     <configuration>
                         <source>17</source>
                         <target>17</target>
-                        <fork>true</fork>
+                        <!-- fork=false: compile trong cùng JVM với Maven → nhanh hơn nhiều
+                             Bỏ fork=true vì khi thêm OTel BOM (dependency tree lớn),
+                             mỗi forked JVM phải load hàng trăm JAR → compile chậm 4-5x -->
                         <compilerArgs>
                             <arg>-parameters</arg>
                         </compilerArgs>
