@@ -7,9 +7,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-COPY target/${SERVICE_NAME}-1.0.0-SNAPSHOT.jar app.jar
-
-RUN chown appuser:appgroup app.jar
+COPY --chown=appuser:appgroup target/${SERVICE_NAME}-1.0.0-SNAPSHOT.jar app.jar
 
 USER appuser
 
