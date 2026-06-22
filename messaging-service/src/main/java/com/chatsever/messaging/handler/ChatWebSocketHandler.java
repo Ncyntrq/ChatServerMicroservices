@@ -11,12 +11,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import com.chatsever.common.dto.AuthResponse;
+import com.chatsever.common.util.JwtClaimsExtractor;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -25,16 +24,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageService messageService;
-    private final RestTemplate restTemplate;
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
-    private final String authUrl;
+    private final String jwtSecret;
     private final ObjectMapper objectMapper;
 
 
-    public ChatWebSocketHandler(MessageService messageService, RestTemplate restTemplate, @Value("${services.auth-url}") String authUrl) {
+    public ChatWebSocketHandler(MessageService messageService, @Value("${jwt.secret}") String jwtSecret) {
         this.messageService = messageService;
-        this.restTemplate = restTemplate;
-        this.authUrl = authUrl;
+        this.jwtSecret = jwtSecret;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -44,14 +41,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
        String token = extractToken(session);
        try {
-           Map<String, String> request = Map.of("token", token);
-           AuthResponse response = restTemplate.postForObject(authUrl + "/api/auth/validate", request, AuthResponse.class);
-           if(response != null && response.getUsername() != null) {
-               String username = response.getUsername();
+           // RBAC phi tập trung: tự verify JWT bằng shared secret, KHÔNG gọi lại auth-service
+           String username = JwtClaimsExtractor.verifyAndGetSubject(token, jwtSecret);
+           if (username != null && !username.isBlank()) {
                sessions.put(username, session);
                session.getAttributes().put("username", username);
                messageService.notifyPresence(username, "connect");
                messageService.broadcastToChannel(new MessageDTO(MessageType.JOIN, "SERVER", null, username + " đã vào!", LocalDateTime.now()));
+           } else {
+               session.close(new CloseStatus(4001, "Token không hợp lệ"));
            }
        } catch (Exception e) {
            session.close(new CloseStatus(4001, "Xác thực thất bại: " + e.getMessage()));

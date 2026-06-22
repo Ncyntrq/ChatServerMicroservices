@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - hpa.yaml
+  - ingress.yaml
+# Prod: bật HPA + Ingress, tăng replica cho service traffic cao.
+# BẢO MẬT: Secret `chatserver-secrets` KHÔNG nằm trong overlay này — phải tạo
+# out-of-band bằng SealedSecrets/ExternalSecrets hoặc `kubectl create secret`
+# với giá trị unique mỗi môi trường (xem base/secret.example.yaml). KHÔNG commit.
+patches:
+  - target:
+      kind: Deployment
+      name: gateway-service
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: messaging-service
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2

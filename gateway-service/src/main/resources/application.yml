@@ -110,7 +110,7 @@ spring:
 
 # Cấu hình bảo mật để JwtAuthFilter sử dụng
 jwt:
-  secret: ${JWT_SECRET:chatsever-jwt-secret-key-2026-safe-key}
+  secret: ${JWT_SECRET}
 
 # Cấu hình Health Check (G3)
 management:

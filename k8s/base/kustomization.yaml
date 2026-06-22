@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: chatserver
+# LƯU Ý BẢO MẬT: KHÔNG đưa Secret vào base.
+# Secret được nạp out-of-band ở mỗi môi trường:
+#   - dev: overlays/dev/secret.yaml (giá trị chỉ dùng local)
+#   - prod: tạo qua SealedSecrets / ExternalSecrets / `kubectl create secret` (KHÔNG commit)
+# Template tham khảo: base/secret.example.yaml
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - infra/mysql.yaml
+  - infra/rabbitmq.yaml
+  - infra/minio.yaml
+  - services/gateway-service.yaml
+  - services/auth-service.yaml
+  - services/messaging-service.yaml
+  - services/presence-service.yaml
+  - services/log-service.yaml
+  - services/server-service.yaml
+  - services/channel-service.yaml
+  - services/notification-service.yaml
+  - services/file-service.yaml
+  - services/user-profile-service.yaml
+  - services/role-service.yaml
+  - services/friend-service.yaml

@@ -9,10 +9,15 @@ spring:
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:root}
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: ${SPRING_JPA_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}
     show-sql: true
   servlet:
     multipart:

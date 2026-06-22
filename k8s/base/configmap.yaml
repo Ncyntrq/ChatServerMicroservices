@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatserver-config
+  namespace: chatserver
+data:
+  TZ: "Asia/Ho_Chi_Minh"
+  SPRING_DATASOURCE_USERNAME: "root"
+  SPRING_RABBITMQ_HOST: "rabbitmq"
+  SPRING_JPA_DDL_AUTO: "validate"
+  SPRING_FLYWAY_ENABLED: "true"
+  MINIO_ENDPOINT: "http://minio:9000"
+  # Service-to-service URLs (khớp tên biến trong application.yml)
+  AUTH_SERVICE_URL: "http://auth-service:8081"
+  SERVER_SERVICE_URL: "http://server-service:8085"
+  CHANNEL_SERVICE_URL: "http://channel-service:8086"
+  MESSAGING_SERVICE_URL: "http://messaging-service:8082"
+  MESSAGING_WS_URL: "ws://messaging-service:8082"
+  PRESENCE_SERVICE_URL: "http://presence-service:8083"
+  FILE_SERVICE_URL: "http://file-service:8089"
+  LOG_SERVICE_URL: "http://log-service:8084"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8088"
+  ROLE_SERVICE_URL: "http://role-service:8091"
+  USER_PROFILE_URL: "http://user-profile-service:8090"
+  FRIEND_SERVICE_URL: "http://friend-service:8092"
