@@ -1,25 +1,16 @@
-# Stage 1: Extract các layer từ file JAR
-FROM eclipse-temurin:17-jre-alpine as builder
-ARG SERVICE_NAME
-WORKDIR /app
-COPY target/${SERVICE_NAME}-1.0.0-SNAPSHOT.jar app.jar
-# Chạy tool của Spring Boot để bóc tách layer (giúp tối ưu cache)
-RUN java -Djarmode=layertools -jar app.jar extract
-
-# Stage 2: Build image thực tế cực nhẹ
 FROM eclipse-temurin:17-jre-alpine
+
+ARG SERVICE_NAME
 ARG EXPOSED_PORT=8080
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
-# Copy từng layer vào (Layer dependencies nặng nhất nhưng không bao giờ đổi -> sẽ được Docker cache 100%)
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/application/ ./
+COPY target/${SERVICE_NAME}-1.0.0-SNAPSHOT.jar app.jar
 
-RUN chown -R appuser:appgroup /app
+RUN chown appuser:appgroup app.jar
+
 USER appuser
 
 ENV TZ=Asia/Ho_Chi_Minh
@@ -27,5 +18,4 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -
 
 EXPOSE ${EXPOSED_PORT}
 
-# Sử dụng JarLauncher của Spring Boot 3.2 để chạy các layer
-ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -jar /app/app.jar"]
