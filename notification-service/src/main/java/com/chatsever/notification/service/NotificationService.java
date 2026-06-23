@@ -203,6 +203,7 @@ public class NotificationService {
     @SuppressWarnings("unchecked")
     public List<String> getServerMembers(Long serverId) {
         try {
+            // Sử dụng URL thông qua Docker network
             return serverServiceClient.getServerMembers(serverId);
         } catch (Exception e) {
             log.error("Failed to fetch server members for serverId={}", serverId, e);
