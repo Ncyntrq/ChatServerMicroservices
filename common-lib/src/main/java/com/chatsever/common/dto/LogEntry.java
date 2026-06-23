@@ -1,4 +1,4 @@
-package com.chatsever.messaging.dto;
+package com.chatsever.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -62,4 +62,3 @@ public class LogEntry {
     public Long getServerId() { return serverId; }
     public void setServerId(Long serverId) { this.serverId = serverId; }
 }
-

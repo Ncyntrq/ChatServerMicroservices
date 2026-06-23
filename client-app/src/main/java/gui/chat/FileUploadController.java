@@ -4,7 +4,7 @@ import gui.components.chat.ChatMessageItem;
 import gui.components.feedback.Toast;
 import network.ChatWebSocketClient;
 import network.FileApiClient;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.*;
@@ -114,4 +114,3 @@ public class FileUploadController {
         return dot >= 0 ? name.substring(dot + 1).toLowerCase() : "";
     }
 }
-

@@ -3,7 +3,7 @@ package gui.components.dialogs;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 import network.ChannelApiClient;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -202,4 +202,3 @@ public class SearchDialog extends JDialog {
         return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }
-

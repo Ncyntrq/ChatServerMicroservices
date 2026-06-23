@@ -6,7 +6,8 @@ import com.chatsever.friend.repository.FriendshipRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.chatsever.friend.adapter.UserGrpcAdapter;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,9 @@ import java.util.stream.Collectors;
 public class FriendController {
 
     private final FriendshipRepository repository;
-    private final UserGrpcAdapter userServiceClient;
 
-    public FriendController(FriendshipRepository repository, UserGrpcAdapter userServiceClient) {
+    public FriendController(FriendshipRepository repository) {
         this.repository = repository;
-        this.userServiceClient = userServiceClient;
     }
 
     // 1. Get accepted friends
@@ -53,11 +52,14 @@ public class FriendController {
             return ResponseEntity.badRequest().body(Map.of("message", "Username không hợp lệ"));
         }
 
+        // Check if user exists via user-profile-service
+        RestTemplate restTemplate = new RestTemplate();
+        String userProfileUrl = System.getenv("USER_PROFILE_URL");
+        if (userProfileUrl == null) userProfileUrl = "http://user-profile-service:8090";
         try {
-            boolean exists = userServiceClient.checkUserExists(targetUser);
-            if (!exists) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Không tìm thấy username này trong hệ thống."));
-            }
+            restTemplate.getForEntity(userProfileUrl + "/api/users/" + targetUser + "/profile", Object.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Không tìm thấy username này trong hệ thống."));
         } catch (Exception e) {
             // Log error, assume user exists or fallback
         }

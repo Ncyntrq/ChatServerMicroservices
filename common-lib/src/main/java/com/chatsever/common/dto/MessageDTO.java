@@ -1,4 +1,4 @@
-package com.chatsever.notification.dto;
+package com.chatsever.common.dto;
 
 import com.chatsever.common.enums.MessageType;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -118,4 +118,3 @@ public class MessageDTO {
         public void setCount(int count) { this.count = count; }
     }
 }
-

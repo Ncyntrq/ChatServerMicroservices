@@ -1,4 +1,4 @@
-package com.chatsever.auth.dto;
+package com.chatsever.common.dto;
 
 import lombok.*;
 

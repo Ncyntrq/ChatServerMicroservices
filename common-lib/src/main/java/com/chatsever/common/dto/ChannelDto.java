@@ -1,4 +1,4 @@
-package com.chatsever.channel.dto;
+package com.chatsever.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,4 +22,3 @@ public class ChannelDto {
     // CH8 field
     private Long pinnedAt;
 }
-

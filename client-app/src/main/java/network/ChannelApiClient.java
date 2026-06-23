@@ -1,6 +1,6 @@
 package network;
 
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -275,4 +275,3 @@ public class ChannelApiClient {
         }
     }
 }
-

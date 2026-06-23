@@ -2,7 +2,7 @@ package network;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -43,4 +43,3 @@ public class PrivateMessageApiClient {
         }
     }
 }
-

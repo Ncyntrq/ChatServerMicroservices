@@ -1,6 +1,6 @@
 package network;
 
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -110,4 +110,3 @@ public class ChatWebSocketClient {
         }
     }
 }
-

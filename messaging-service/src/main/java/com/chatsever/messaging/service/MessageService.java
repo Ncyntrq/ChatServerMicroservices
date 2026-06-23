@@ -4,8 +4,8 @@ import com.chatsever.grpc.role.*;
 import com.chatsever.grpc.server.*;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 
-import com.chatsever.messaging.dto.LogEntry;
-import com.chatsever.messaging.dto.MessageDTO;
+import com.chatsever.common.dto.LogEntry;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.entity.MessageReaction;
@@ -290,3 +290,4 @@ public class MessageService {
         });
     }
 }
+

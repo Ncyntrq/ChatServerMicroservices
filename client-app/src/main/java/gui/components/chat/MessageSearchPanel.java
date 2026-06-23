@@ -2,7 +2,7 @@ package gui.components.chat;
 
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import network.MessageSearchApiClient;
 
 import javax.swing.*;
@@ -176,4 +176,3 @@ public class MessageSearchPanel extends JDialog {
         @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { onChange.run(); }
     }
 }
-

@@ -1,6 +1,6 @@
 package com.chatsever.channel.service;
 
-import com.chatsever.channel.dto.ChannelDto;
+import com.chatsever.common.dto.ChannelDto;
 import com.chatsever.grpc.channel.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -94,3 +94,4 @@ public class ChannelGrpcServiceImpl extends ChannelServiceGrpc.ChannelServiceImp
         }
     }
 }
+

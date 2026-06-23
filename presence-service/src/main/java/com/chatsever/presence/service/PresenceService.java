@@ -1,6 +1,6 @@
 package com.chatsever.presence.service;
 
-import com.chatsever.presence.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.presence.model.UserStatus;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -99,3 +99,4 @@ public class PresenceService {
         }
     }
 }
+

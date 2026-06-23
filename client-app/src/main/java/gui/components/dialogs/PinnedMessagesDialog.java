@@ -1,6 +1,6 @@
 package gui.components.dialogs;
 
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import gui.components.AvatarBadge;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
@@ -170,4 +170,3 @@ public class PinnedMessagesDialog extends JDialog {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }
-

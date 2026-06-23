@@ -3,7 +3,7 @@ package com.chatsever.auth.service;
 import com.chatsever.grpc.auth.AuthServiceGrpc;
 import com.chatsever.grpc.auth.ValidateTokenRequest;
 import com.chatsever.grpc.auth.ValidateTokenResponse;
-import com.chatsever.auth.dto.AuthResponse;
+import com.chatsever.common.dto.AuthResponse;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,3 +42,4 @@ public class AuthGrpcServiceImpl extends AuthServiceGrpc.AuthServiceImplBase {
         }
     }
 }
+

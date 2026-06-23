@@ -1,4 +1,4 @@
-package com.chatsever.server.dto;
+package com.chatsever.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +20,3 @@ public class MemberDto {
     private List<Long> roleIds;
     private LocalDateTime joinedAt;
 }
-

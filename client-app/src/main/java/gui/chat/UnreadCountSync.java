@@ -4,7 +4,7 @@ import gui.components.channels.ChannelSidebar;
 import gui.components.friends.FriendSidebar;
 import gui.components.navigation.ServerSidebar;
 import network.NotificationApiClient;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.SwingWorker;
@@ -97,4 +97,3 @@ public class UnreadCountSync {
         }.execute();
     }
 }
-

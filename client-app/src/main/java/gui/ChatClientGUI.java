@@ -24,7 +24,7 @@ import network.ServerApiClient;
 import network.SessionManager;
 import network.PrivateMessageApiClient;
 import network.FileApiClient;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.*;

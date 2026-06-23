@@ -5,7 +5,7 @@ import gui.components.chat.VerticalScrollablePanel;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 import gui.theme.ThinScrollBarUI;
-import network.dto.MessageDTO;
+import com.chatsever.common.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.*;
@@ -293,4 +293,3 @@ public class ChatHistoryView extends JScrollPane {
         return list;
     }
 }
-
