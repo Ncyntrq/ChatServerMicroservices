@@ -4,6 +4,3 @@
 *.iml
 .vscode/
 .env
-.gemini/
-*/target/
-target/
