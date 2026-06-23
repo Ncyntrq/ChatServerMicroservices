@@ -5,6 +5,9 @@ server:
   port: 8084    # Port API
 
 spring:
+  mvc:
+    problemdetails:
+      enabled: true
   application:
     name: log-service
   rabbitmq:
@@ -32,3 +35,5 @@ management:
     metrics:
       export:
         enabled: true
+
+

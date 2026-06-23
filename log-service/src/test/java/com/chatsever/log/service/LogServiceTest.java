@@ -1,6 +1,6 @@
 package com.chatsever.log.service;
 
-import com.chatsever.common.dto.LogEntry;
+import com.chatsever.log.dto.LogEntry;
 import com.chatsever.log.dto.PagedResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -79,3 +79,4 @@ class LogServiceTest {
         assertTrue(page.content().isEmpty());
     }
 }
+

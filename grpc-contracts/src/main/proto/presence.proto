@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package presence;
+
+option java_multiple_files = true;
+option java_package = "com.chatsever.grpc.presence";
+option java_outer_classname = "PresenceProto";
+
+service PresenceService {
+    rpc NotifyPresence (NotifyPresenceRequest) returns (EmptyPresenceResponse);
+}
+
+message NotifyPresenceRequest {
+    string username = 1;
+    string action = 2; // "connect" or "disconnect"
+}
+
+message EmptyPresenceResponse {}

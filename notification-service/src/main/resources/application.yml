@@ -5,6 +5,9 @@ server:
   port: 8088
 
 spring:
+  mvc:
+    problemdetails:
+      enabled: true
   application:
     name: notification-service
   # Dev: H2 in-memory | Docker: MySQL (override bằng env vars)
@@ -41,3 +44,5 @@ management:
     metrics:
       export:
         enabled: true
+
+

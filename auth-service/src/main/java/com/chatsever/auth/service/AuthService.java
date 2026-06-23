@@ -1,8 +1,8 @@
 package com.chatsever.auth.service;
 
 import com.chatsever.auth.dto.ChangePasswordRequest;
-import com.chatsever.common.dto.AuthRequest;
-import com.chatsever.common.dto.AuthResponse;
+import com.chatsever.auth.dto.AuthRequest;
+import com.chatsever.auth.dto.AuthResponse;
 import com.chatsever.auth.model.RefreshToken;
 import com.chatsever.auth.model.User;
 import com.chatsever.auth.repository.RefreshTokenRepository;
@@ -144,3 +144,4 @@ public class AuthService {
         return token;
     }
 }
+

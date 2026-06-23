@@ -10,7 +10,7 @@ import com.chatsever.notification.repository.NotificationRepository;
 import com.chatsever.notification.repository.ReadStatusRepository;
 import com.chatsever.notification.repository.UnreadCounterRepository;
 import com.chatsever.notification.model.UnreadCounter;
-import org.springframework.web.client.RestTemplate;
+import com.chatsever.notification.adapter.ServerInfoGrpcAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -38,14 +38,16 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final ReadStatusRepository readStatusRepository;
     private final UnreadCounterRepository unreadCounterRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final ServerInfoGrpcAdapter serverServiceClient;
 
     public NotificationService(NotificationRepository notificationRepository,
                                ReadStatusRepository readStatusRepository,
-                               UnreadCounterRepository unreadCounterRepository) {
+                               UnreadCounterRepository unreadCounterRepository,
+                               ServerInfoGrpcAdapter serverServiceClient) {
         this.notificationRepository = notificationRepository;
         this.readStatusRepository = readStatusRepository;
         this.unreadCounterRepository = unreadCounterRepository;
+        this.serverServiceClient = serverServiceClient;
     }
 
     /**
@@ -201,15 +203,7 @@ public class NotificationService {
     @SuppressWarnings("unchecked")
     public List<String> getServerMembers(Long serverId) {
         try {
-            // Sử dụng URL thông qua Docker network
-            String url = "http://server-service:8085/api/servers/" + serverId;
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.containsKey("members")) {
-                List<Map<String, Object>> members = (List<Map<String, Object>>) response.get("members");
-                return members.stream()
-                        .map(m -> (String) m.get("userId"))
-                        .collect(Collectors.toList());
-            }
+            return serverServiceClient.getServerMembers(serverId);
         } catch (Exception e) {
             log.error("Failed to fetch server members for serverId={}", serverId, e);
         }

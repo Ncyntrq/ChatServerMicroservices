@@ -1,11 +1,15 @@
 package com.chatsever.server.service.impl;
 
+import com.chatsever.grpc.channel.*;
+import com.chatsever.grpc.role.*;
+import com.chatsever.server.adapter.ChannelGrpcAdapter;
+import com.chatsever.server.adapter.RoleGrpcAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.chatsever.server.model.Member;
 import com.chatsever.server.model.Server;
 import com.chatsever.server.repository.MemberRepository;
 import com.chatsever.server.repository.ServerRepository;
-import com.chatsever.server.client.ChannelClient;
-import com.chatsever.server.client.RoleClient;
 import com.chatsever.server.service.ServerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +28,12 @@ import java.util.UUID;
 public class ServerServiceImpl implements ServerService {
     private final ServerRepository serverRepository;
     private final MemberRepository memberRepository;
-    private final ChannelClient channelClient;
-    private final RoleClient roleClient;
+
+    @Autowired
+    private ChannelGrpcAdapter channelServiceClient;
+
+    @Autowired
+    private RoleGrpcAdapter roleServiceClient;
 
     @Override
     @Transactional
@@ -42,16 +50,15 @@ public class ServerServiceImpl implements ServerService {
                 .roleIds(new ArrayList<>())
                 .build());
                 
-        // Không khởi tạo 4 Role mặc định nữa theo yêu cầu của user (bỏ role null)
-        // roleClient.initDefaultRoles(saved.getId());
-
         // Tạo kênh chat mặc định: "General"
         try {
-            java.util.Map<String, Object> req = new java.util.HashMap<>();
-            req.put("name", "General");
-            req.put("serverId", saved.getId());
-            req.put("type", "TEXT");
-            channelClient.createChannel(req, ownerId);
+            CreateChannelRequest req = CreateChannelRequest.newBuilder()
+                    .setName("General")
+                    .setServerId(saved.getId())
+                    .setType("TEXT")
+                    .setUserId(ownerId)
+                    .build();
+            channelServiceClient.createChannel(req);
         } catch (Exception e) {
             // Không hủy tiến trình nếu tạo kênh lỗi
         }
@@ -80,8 +87,26 @@ public class ServerServiceImpl implements ServerService {
 
         Map<String, Object> details = new HashMap<>();
         details.put("server", s);
-        // Gọi API qua channel-service để lấy danh sách kênh (Microservices Inter-communication)
-        details.put("channels", channelClient.getChannelsByServerId(serverId));
+        
+        // Gọi API qua channel-service để lấy danh sách kênh
+        try {
+            GetChannelsRequest req = GetChannelsRequest.newBuilder().setServerId(serverId).build();
+            GetChannelsResponse resp = channelServiceClient.getChannelsByServerId(req);
+            
+            List<Map<String, Object>> channelList = new ArrayList<>();
+            for (ChannelResponse ch : resp.getChannelsList()) {
+                channelList.add(Map.of(
+                    "id", ch.getId(),
+                    "serverId", ch.getServerId(),
+                    "name", ch.getName(),
+                    "type", ch.getType()
+                ));
+            }
+            details.put("channels", channelList);
+        } catch (Exception e) {
+            details.put("channels", new ArrayList<>());
+        }
+        
         details.put("members", memberRepository.findByServerId(serverId));
 
         return details;
@@ -102,13 +127,6 @@ public class ServerServiceImpl implements ServerService {
         return serverRepository.save(s);
     }
 
-    /**
-     * Chuẩn hóa & kiểm tra URL icon trước khi lưu DB (defense-in-depth).
-     * - URL tuyệt đối / protocol-relative → chỉ giữ phần path (vô hiệu hóa host lạ).
-     * - Chỉ chấp nhận path nội bộ "/api/files/...".
-     * Trả về path tương đối an toàn, hoặc null nếu không hợp lệ.
-     * Chống lộ Bearer token khi client tải icon từ host do attacker kiểm soát.
-     */
     private static String toSafeRelativeMediaUrl(String raw) {
         if (raw == null) return null;
         String v = raw.trim();
@@ -136,8 +154,14 @@ public class ServerServiceImpl implements ServerService {
         }
 
         memberRepository.deleteByServerId(id);
-        // Gọi API qua channel-service để dọn dẹp các kênh liên quan
-        channelClient.deleteChannelsByServerId(id);
+        
+        try {
+            DeleteChannelsRequest req = DeleteChannelsRequest.newBuilder().setServerId(id).build();
+            channelServiceClient.deleteChannelsByServerId(req);
+        } catch (Exception e) {
+            // Log
+        }
+        
         serverRepository.delete(s);
     }
 
@@ -165,8 +189,12 @@ public class ServerServiceImpl implements ServerService {
     private void processJoin(Long serverId, String uid) {
         // R6 - Kiểm tra xem user có bị ban khỏi server này không
         try {
-            Map<String, Object> banCheck = roleClient.checkBanned(serverId, uid);
-            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
+            CheckBannedRequest req = CheckBannedRequest.newBuilder()
+                    .setServerId(serverId)
+                    .setUserId(uid)
+                    .build();
+            CheckBannedResponse resp = roleServiceClient.checkBanned(req);
+            if (resp.getIsBanned()) {
                 throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
             }
         } catch (RuntimeException e) {
@@ -176,7 +204,6 @@ public class ServerServiceImpl implements ServerService {
         }
 
         if(!memberRepository.existsByServerIdAndUserId(serverId, uid)) {
-            // Khởi tạo danh sách roleIds rỗng
             memberRepository.save(Member.builder()
                     .serverId(serverId)
                     .userId(uid)
@@ -190,7 +217,6 @@ public class ServerServiceImpl implements ServerService {
         Server s = serverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Server not found"));
 
-        // Kiểm tra quyền Owner bằng ownerId lưu trong Server thay vì Enum
         if(s.getOwnerId().equals(uid)) {
             throw new RuntimeException("Owner cannot leave the server");
         }
@@ -212,7 +238,6 @@ public class ServerServiceImpl implements ServerService {
         return serverRepository.save(s).getInviteCode();
     }
 
-    // R2 — Cập nhật roleIds cho member (gọi từ role-service)
     @Override
     @Transactional
     public void updateMemberRoles(Long serverId, String userId, List<String> roleIds) {
@@ -222,7 +247,6 @@ public class ServerServiceImpl implements ServerService {
         memberRepository.save(member);
     }
 
-    // Auto-join: đảm bảo user là member của server (nếu chưa thì tự thêm)
     @Override
     @Transactional
     public void ensureMember(Long serverId, String userId) {
@@ -239,13 +263,15 @@ public class ServerServiceImpl implements ServerService {
     
     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
         try {
-            Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
-            if (perms != null && perms.containsKey("permissionBitmask")) {
-                int bitmask = (int) perms.get("permissionBitmask");
-                // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
-                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
-                    return; // Có quyền
-                }
+            GetPermissionsRequest req = GetPermissionsRequest.newBuilder()
+                    .setServerId(serverId)
+                    .setUserId(userId)
+                    .build();
+            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
+            
+            int bitmask = resp.getPermissionBitmask();
+            if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                return;
             }
             throw new RuntimeException("Bạn không có đủ quyền (cần " + requiredPermissionBit + " hoặc ADMIN)");
         } catch (RuntimeException e) {

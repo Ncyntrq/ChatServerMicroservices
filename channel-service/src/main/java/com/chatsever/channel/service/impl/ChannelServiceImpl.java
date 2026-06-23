@@ -6,10 +6,12 @@ import com.chatsever.channel.model.PinnedMessage;
 import com.chatsever.channel.repository.ChannelRepository;
 import com.chatsever.channel.repository.PinnedMessageRepository;
 import com.chatsever.channel.service.ChannelService;
-import com.chatsever.common.dto.ChannelDto;
+import com.chatsever.channel.dto.ChannelDto;
 import com.chatsever.channel.dto.ChannelRequest;
-import com.chatsever.channel.client.RoleClient;
+import com.chatsever.grpc.role.*;
+import com.chatsever.channel.adapter.RoleGrpcAdapter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +24,9 @@ public class ChannelServiceImpl implements ChannelService {
 
     private final ChannelRepository channelRepository;
     private final PinnedMessageRepository pinnedMessageRepository;
-    private final RoleClient roleClient;
+    
+    @Autowired
+    private RoleGrpcAdapter roleServiceClient;
 
     @Override
     @Transactional
@@ -50,7 +54,6 @@ public class ChannelServiceImpl implements ChannelService {
                 .collect(Collectors.toList());
     }
 
-    // CH3 — Cập nhật channel (đổi tên, topic, slowmode, category)
     @Override
     @Transactional
     public ChannelDto updateChannel(Long id, ChannelRequest request, String userId) {
@@ -83,7 +86,6 @@ public class ChannelServiceImpl implements ChannelService {
         channelRepository.deleteByServerId(serverId);
     }
 
-    // CH6 — Ghim tin nhắn
     @Override
     @Transactional
     public PinnedMessage pinMessage(Long channelId, Long messageId, String pinnedBy) {
@@ -91,14 +93,12 @@ public class ChannelServiceImpl implements ChannelService {
                 .orElseThrow(() -> new RuntimeException("Channel not found: " + channelId));
         checkPermission(channel.getServerId(), pinnedBy, 4); // MANAGE_MESSAGES
         
-        // Check if already pinned
         if (pinnedMessageRepository.findByChannelIdAndMessageId(channelId, messageId).isPresent()) {
             throw new RuntimeException("Tin nhắn đã được ghim");
         }
         return pinnedMessageRepository.save(new PinnedMessage(channelId, messageId, pinnedBy));
     }
 
-    // CH6 — Bỏ ghim
     @Override
     @Transactional
     public void unpinMessage(Long channelId, Long messageId, String userId) {
@@ -109,13 +109,11 @@ public class ChannelServiceImpl implements ChannelService {
         pinnedMessageRepository.deleteByChannelIdAndMessageId(channelId, messageId);
     }
 
-    // CH7 — Danh sách tin nhắn đã ghim
     @Override
     public List<PinnedMessage> getPinnedMessages(Long channelId) {
         return pinnedMessageRepository.findByChannelIdOrderByPinnedAtDesc(channelId);
     }
 
-    // CH8 — Ghim kênh (Channel)
     @Override
     @Transactional
     public ChannelDto togglePinChannel(Long channelId, String userId) {
@@ -149,13 +147,15 @@ public class ChannelServiceImpl implements ChannelService {
 
     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
         try {
-            java.util.Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
-            if (perms != null && perms.containsKey("permissionBitmask")) {
-                int bitmask = (int) perms.get("permissionBitmask");
-                // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
-                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
-                    return; // Có quyền
-                }
+            GetPermissionsRequest req = GetPermissionsRequest.newBuilder()
+                    .setServerId(serverId)
+                    .setUserId(userId)
+                    .build();
+            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
+            
+            int bitmask = resp.getPermissionBitmask();
+            if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                return;
             }
             throw new RuntimeException("Bạn không có đủ quyền (cần " + requiredPermissionBit + " hoặc ADMIN)");
         } catch (RuntimeException e) {

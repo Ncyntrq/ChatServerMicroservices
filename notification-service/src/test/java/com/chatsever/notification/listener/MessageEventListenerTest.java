@@ -1,6 +1,6 @@
 package com.chatsever.notification.listener;
 
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.notification.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.notification.model.Notification;
 import com.chatsever.notification.model.NotificationType;
@@ -145,3 +145,4 @@ class MessageEventListenerTest {
         verifyNoInteractions(notificationService);
     }
 }
+

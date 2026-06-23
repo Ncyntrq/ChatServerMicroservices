@@ -4,6 +4,7 @@ WORKDIR /build
 
 COPY pom.xml ./
 COPY common-lib/pom.xml common-lib/pom.xml
+COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
 COPY server-service/pom.xml server-service/pom.xml
 COPY channel-service/pom.xml channel-service/pom.xml
@@ -16,7 +17,6 @@ COPY file-service/pom.xml file-service/pom.xml
 COPY user-profile-service/pom.xml user-profile-service/pom.xml
 COPY role-service/pom.xml role-service/pom.xml
 COPY friend-service/pom.xml friend-service/pom.xml
-COPY client-app/pom.xml client-app/pom.xml
 
 RUN mvn dependency:go-offline -pl friend-service -am -q || true
 

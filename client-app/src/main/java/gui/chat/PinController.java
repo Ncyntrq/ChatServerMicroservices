@@ -3,7 +3,7 @@ package gui.chat;
 import gui.components.dialogs.PinnedMessagesDialog;
 import gui.components.feedback.Toast;
 import network.ChannelApiClient;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 
 import javax.swing.*;
 import java.awt.Window;
@@ -154,3 +154,4 @@ public class PinController {
         // No-op: không còn local list
     }
 }
+

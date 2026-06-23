@@ -1,6 +1,6 @@
 package com.chatsever.log.controller;
 
-import com.chatsever.common.dto.LogEntry;
+import com.chatsever.log.dto.LogEntry;
 import com.chatsever.log.dto.PagedResponse;
 import com.chatsever.log.service.LogService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,3 +37,4 @@ public class LogController {
         return logService.getHistory(page, size, eventType);
     }
 }
+

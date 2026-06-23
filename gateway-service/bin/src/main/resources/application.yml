@@ -4,6 +4,9 @@ server:
   port: 8080
 
 spring:
+  mvc:
+    problemdetails:
+      enabled: true
   application:
     name: gateway-service
   cloud:
@@ -125,3 +128,4 @@ management:
     metrics:
       export:
         enabled: true
+

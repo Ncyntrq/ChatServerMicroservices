@@ -1,7 +1,7 @@
 package network;
 
-import com.chatsever.common.dto.AuthRequest;
-import com.chatsever.common.dto.AuthResponse;
+import network.dto.AuthRequest;
+import network.dto.AuthResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -121,3 +121,5 @@ public class AuthApiClient {
         return body;
     }
 }
+
+

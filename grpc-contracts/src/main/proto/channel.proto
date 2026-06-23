@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package channel;
+
+option java_multiple_files = true;
+option java_package = "com.chatsever.grpc.channel";
+option java_outer_classname = "ChannelProto";
+
+service ChannelService {
+    rpc GetChannelsByServerId (GetChannelsRequest) returns (GetChannelsResponse);
+    rpc CreateChannel (CreateChannelRequest) returns (ChannelResponse);
+    rpc DeleteChannelsByServerId (DeleteChannelsRequest) returns (EmptyChannelResponse);
+    rpc RemovePinnedMessage (RemovePinnedMessageRequest) returns (EmptyChannelResponse);
+}
+
+message RemovePinnedMessageRequest {
+    int64 channelId = 1;
+    int64 messageId = 2;
+    string userId = 3;
+}
+
+message EmptyChannelResponse {}
+
+message ChannelResponse {
+    int64 id = 1;
+    int64 serverId = 2;
+    string name = 3;
+    string type = 4;
+}
+
+message GetChannelsRequest {
+    int64 serverId = 1;
+}
+
+message GetChannelsResponse {
+    repeated ChannelResponse channels = 1;
+}
+
+message CreateChannelRequest {
+    int64 serverId = 1;
+    string name = 2;
+    string type = 3;
+    string userId = 4;
+}
+
+message DeleteChannelsRequest {
+    int64 serverId = 1;
+}

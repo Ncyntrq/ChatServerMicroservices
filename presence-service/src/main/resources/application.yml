@@ -2,6 +2,9 @@ server:
   port: 8083
 
 spring:
+  mvc:
+    problemdetails:
+      enabled: true
   application:
     name: presence-service
   datasource:
@@ -26,3 +29,4 @@ management:
     metrics:
       export:
         enabled: true
+

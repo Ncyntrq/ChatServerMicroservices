@@ -2,7 +2,7 @@ package network;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -67,3 +67,4 @@ public class MessageSearchApiClient {
         return URLEncoder.encode(s == null ? "" : s, StandardCharsets.UTF_8);
     }
 }
+
