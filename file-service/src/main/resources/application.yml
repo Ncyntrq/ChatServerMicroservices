@@ -5,9 +5,6 @@ server:
   port: 8089                          # Port chạy file-service
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: file-service
   # --- Cấu hình Database (H2 in-memory cho dev, MySQL cho Docker/production) ---
@@ -54,4 +51,3 @@ management:
     metrics:
       export:
         enabled: true
-

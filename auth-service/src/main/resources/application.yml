@@ -2,9 +2,6 @@ server:
   port: 8081
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: auth-service
   datasource:
@@ -35,4 +32,3 @@ management:
     metrics:
       export:
         enabled: true
-

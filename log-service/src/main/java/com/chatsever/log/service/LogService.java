@@ -134,5 +134,3 @@ public class LogService {
         return result;
     }
 }
-
-

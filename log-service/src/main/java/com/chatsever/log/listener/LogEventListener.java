@@ -30,5 +30,3 @@ public class LogEventListener {
         logService.log(entry);
     }
 }
-
-

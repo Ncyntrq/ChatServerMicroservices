@@ -79,5 +79,3 @@ class LogServiceTest {
         assertTrue(page.content().isEmpty());
     }
 }
-
-

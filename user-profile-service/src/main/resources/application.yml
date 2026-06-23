@@ -2,9 +2,6 @@ server:
   port: 8090
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: user-profile-service
   datasource:
@@ -34,4 +31,3 @@ management:
     metrics:
       export:
         enabled: true
-
