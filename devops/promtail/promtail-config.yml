@@ -36,7 +36,7 @@ scrape_configs:
         filters:
           # Chỉ scrape containers trong network chat-net
           - name: network
-            values: ["chat-server-microservices_chat-net"]
+            values: ["chat-net"]
 
     relabel_configs:
       # Lấy tên container làm label "container"
