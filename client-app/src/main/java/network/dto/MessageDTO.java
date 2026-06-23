@@ -1,4 +1,4 @@
-package com.chatsever.common.dto;
+package network.dto;
 
 import com.chatsever.common.enums.MessageType;
 import com.fasterxml.jackson.annotation.JsonFormat;

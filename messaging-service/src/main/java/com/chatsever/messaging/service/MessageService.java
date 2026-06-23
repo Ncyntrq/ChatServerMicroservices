@@ -1,7 +1,7 @@
 package com.chatsever.messaging.service;
 
-import com.chatsever.common.dto.LogEntry;
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.messaging.dto.LogEntry;
+import com.chatsever.messaging.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.grpc.role.*;
 import com.chatsever.messaging.adapter.RoleGrpcAdapter;

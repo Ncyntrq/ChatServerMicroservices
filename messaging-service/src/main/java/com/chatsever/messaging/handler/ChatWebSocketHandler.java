@@ -1,7 +1,7 @@
 package com.chatsever.messaging.handler;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.messaging.dto.MessageDTO;
 
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.messaging.service.MessageService;

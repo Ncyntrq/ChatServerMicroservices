@@ -6,7 +6,7 @@ import com.chatsever.channel.model.PinnedMessage;
 import com.chatsever.channel.repository.ChannelRepository;
 import com.chatsever.channel.repository.PinnedMessageRepository;
 import com.chatsever.channel.service.ChannelService;
-import com.chatsever.common.dto.ChannelDto;
+import com.chatsever.channel.dto.ChannelDto;
 import com.chatsever.channel.dto.ChannelRequest;
 import com.chatsever.grpc.role.*;
 import com.chatsever.channel.adapter.RoleGrpcAdapter;

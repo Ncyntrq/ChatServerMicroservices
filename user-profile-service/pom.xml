@@ -51,6 +51,17 @@
             <artifactId>common-lib</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+        <!-- gRPC Server -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-spring-boot-starter</artifactId>
+            <version>3.1.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>com.chatsever</groupId>
+            <artifactId>grpc-contracts</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

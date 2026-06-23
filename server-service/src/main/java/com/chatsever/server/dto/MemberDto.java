@@ -1,4 +1,4 @@
-package com.chatsever.common.dto;
+package com.chatsever.server.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

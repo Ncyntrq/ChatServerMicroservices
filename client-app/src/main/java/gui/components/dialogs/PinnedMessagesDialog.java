@@ -1,6 +1,6 @@
 package gui.components.dialogs;
 
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import gui.components.AvatarBadge;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
