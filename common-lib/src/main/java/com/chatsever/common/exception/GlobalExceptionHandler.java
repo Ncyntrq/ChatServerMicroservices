@@ -32,6 +32,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ProblemDetail handleRuntime(RuntimeException ex) {
+        String exName = ex.getClass().getName();
+        if (exName.contains("CallNotPermittedException")) {
+            log.warn("Circuit Breaker is OPEN: {}", ex.getMessage());
+            ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Dịch vụ hiện đang quá tải hoặc không khả dụng. Vui lòng thử lại sau.");
+            problemDetail.setTitle("Service Unavailable");
+            problemDetail.setType(URI.create("https://api.chatserver.com/errors/service-unavailable"));
+            problemDetail.setProperty("timestamp", Instant.now());
+            return problemDetail;
+        }
+        if (exName.contains("StatusRuntimeException")) {
+            log.warn("gRPC Call Failed: {}", ex.getMessage());
+            ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Không thể kết nối đến dịch vụ nội bộ (gRPC).");
+            problemDetail.setTitle("gRPC Error");
+            problemDetail.setType(URI.create("https://api.chatserver.com/errors/grpc-error"));
+            problemDetail.setProperty("timestamp", Instant.now());
+            return problemDetail;
+        }
+
         log.warn("Runtime exception: {}", ex.getMessage());
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problemDetail.setTitle("Runtime Error");
