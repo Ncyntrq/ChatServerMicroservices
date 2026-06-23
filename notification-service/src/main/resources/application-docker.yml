@@ -1,8 +1,5 @@
 # Override cho môi trường Docker — notification-service
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/${MYSQL_DATABASE:chatserver_notifications}
     username: ${MYSQL_USER:chatapp}
@@ -15,5 +12,3 @@ spring:
   h2:
     console:
       enabled: false
-
-
