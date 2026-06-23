@@ -368,7 +368,7 @@ services:
 
 networks:
   chat-net:
-    driver: bridge
+    external: true
     name: chat-net
 
 volumes:
