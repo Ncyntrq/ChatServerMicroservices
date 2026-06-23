@@ -2,9 +2,6 @@ server:
   port: 8086
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: channel-service
   datasource:
@@ -29,22 +26,3 @@ management:
     metrics:
       export:
         enabled: true
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      default:
-        registerHealthIndicator: true
-        slidingWindowSize: 10
-        permittedNumberOfCallsInHalfOpenState: 3
-        slidingWindowType: COUNT_BASED
-        minimumNumberOfCalls: 5
-        waitDurationInOpenState: 5000
-        failureRateThreshold: 50
-        eventConsumerBufferSize: 10
-  retry:
-    instances:
-      default:
-        maxAttempts: 3
-        waitDuration: 1000
-

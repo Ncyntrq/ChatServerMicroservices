@@ -2,9 +2,6 @@ server:
   port: 8082
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: messaging-service
   rabbitmq:
@@ -39,4 +36,3 @@ management:
     metrics:
       export:
         enabled: true
-

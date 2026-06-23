@@ -2,9 +2,6 @@ server:
   port: 8092
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: friend-service
   datasource:
@@ -25,5 +22,3 @@ management:
   endpoint:
     health:
       show-details: always
-
-

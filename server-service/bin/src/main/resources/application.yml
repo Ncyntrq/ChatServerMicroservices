@@ -2,9 +2,6 @@ server:
   port: 8085
 
 spring:
-  mvc:
-    problemdetails:
-      enabled: true
   application:
     name: server-service
   datasource:
@@ -29,4 +26,3 @@ management:
     metrics:
       export:
         enabled: true
-
