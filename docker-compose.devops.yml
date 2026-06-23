@@ -209,7 +209,7 @@ networks:
     name: devops-net
   chat-net:
     external: true
-    name: chat-server-microservices_chat-net
+    name: chat-net
 
 volumes:
   jenkins-home:

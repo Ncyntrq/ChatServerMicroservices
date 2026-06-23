@@ -369,6 +369,7 @@ services:
 networks:
   chat-net:
     driver: bridge
+    name: chat-net
 
 volumes:
   mysql-data:
