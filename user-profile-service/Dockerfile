@@ -15,6 +15,8 @@ COPY notification-service/pom.xml notification-service/pom.xml
 COPY file-service/pom.xml file-service/pom.xml
 COPY user-profile-service/pom.xml user-profile-service/pom.xml
 COPY role-service/pom.xml role-service/pom.xml
+COPY friend-service/pom.xml friend-service/pom.xml
+COPY client-app/pom.xml client-app/pom.xml
 
 RUN mvn dependency:go-offline -pl user-profile-service -am -q || true
 
