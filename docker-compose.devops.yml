@@ -94,7 +94,7 @@ services:
       - chat-net
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy" ]
+      test: [ "CMD", "promtool", "check", "healthy" ]
       interval: 15s
       timeout: 5s
       retries: 5
