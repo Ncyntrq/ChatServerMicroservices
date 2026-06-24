@@ -55,3 +55,7 @@ reports/
 
 # Eclipse build output
 bin/
+
+# Log runtime/CI tạm trong tnguyen/update (không đẩy lên repo)
+tnguyen/update/*-logs.txt
+tnguyen/update/\#*.txt
