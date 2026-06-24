@@ -32,6 +32,18 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- OAuth2 Resource Server: verify Keycloak JWT (RS256) qua JWKS.
+		     Kéo theo spring-security-webflux cho SecurityWebFilterChain. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+
+		<!-- jjwt: GIỮ lại cho chế độ chuyển tiếp (token HMAC cũ từ auth-service) -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>

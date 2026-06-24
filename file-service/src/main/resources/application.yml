@@ -14,13 +14,13 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
   flyway:
-    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
     baseline-on-migrate: true
     baseline-version: 0
     locations: classpath:db/migration
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_DDL_AUTO:update}                 # Dev/Docker: update (tránh mất dữ liệu khi restart)
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}               # Chỉ validate, schema do Flyway quản lý
     show-sql: true                     # In câu SQL ra console để debug
   h2:
     console:

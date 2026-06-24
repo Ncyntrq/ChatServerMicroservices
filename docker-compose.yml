@@ -60,6 +60,46 @@ services:
     networks:
       - chat-net
 
+  # ---------------------------------------------------------------
+  # Keycloak: Identity Provider (P2.2) + MySQL backend
+  # ---------------------------------------------------------------
+  keycloak-db:
+    image: mysql:8.0
+    container_name: keycloak-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${KC_DB_PASSWORD:-keycloak_pass}
+      MYSQL_DATABASE: keycloak
+    volumes:
+      - keycloak-db-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - chat-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://keycloak-db:3306/keycloak
+      KC_DB_USERNAME: root
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak_pass}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./devops/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - chat-net
+
   gateway-service:
     build:
       context: .
@@ -77,6 +117,8 @@ services:
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
       - JWT_SECRET=${JWT_SECRET}
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/chatserver
+      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/chatserver/protocol/openid-connect/certs
       - AUTH_SERVICE_URL=http://auth-service:8081
       - SERVER_SERVICE_URL=http://server-service:8085
       - CHANNEL_SERVICE_URL=http://channel-service:8086
@@ -406,3 +448,4 @@ volumes:
   minio-data:
   rabbitmq-data:
   log-data:
+  keycloak-db-data:
