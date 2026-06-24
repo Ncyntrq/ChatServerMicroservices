@@ -1,7 +1,7 @@
-package com.chatsever.messaging.service;
+package com.chatsever.messaging.infrastructure.worker;
 
-import com.chatsever.messaging.entity.OutboxMessage;
-import com.chatsever.messaging.repository.OutboxMessageRepository;
+import com.chatsever.messaging.domain.model.OutboxMessage;
+import com.chatsever.messaging.infrastructure.persistence.OutboxMessageRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class OutboxRelayWorker {
                 String routingKey = msg.getRoutingKey() == null ? "" : msg.getRoutingKey();
                 rabbitTemplate.convertAndSend(msg.getExchange(), routingKey, rabbitMessage);
                 
-                msg.setStatus("PROCESSED");
+                msg.markProcessed();
                 logger.debug("Successfully relayed outbox message {}", msg.getId());
             } catch (Exception e) {
                 logger.error("Failed to relay outbox message {}: {}", msg.getId(), e.getMessage());

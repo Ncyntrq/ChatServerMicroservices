@@ -1,25 +1,24 @@
-package com.chatsever.messaging.controller;
+package com.chatsever.messaging.features.reaction;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.chatsever.messaging.service.MessageService;
 
 @RestController
 @RequestMapping("/api/messages")
 public class ReactionController {
 
-    private final MessageService messageService;
+    private final ReactionCommandHandler commandHandler;
 
-    public ReactionController(MessageService messageService) {
-        this.messageService = messageService;
+    public ReactionController(ReactionCommandHandler commandHandler) {
+        this.commandHandler = commandHandler;
     }
 
     @PostMapping("/{messageId}/reactions/{emoji}")
-    public ResponseEntity<Void> addReaction(
+    public ResponseEntity<Void> toggleReaction(
             @PathVariable Long messageId,
             @PathVariable String emoji,
             @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
-        messageService.addReaction(messageId, userId, emoji);
+        commandHandler.toggleReaction(messageId, userId, emoji);
         return ResponseEntity.ok().build();
     }
 
@@ -28,7 +27,7 @@ public class ReactionController {
             @PathVariable Long messageId,
             @PathVariable String emoji,
             @RequestHeader(value = "X-User-Id", defaultValue = "system") String userId) {
-        messageService.removeReaction(messageId, userId, emoji);
+        commandHandler.removeReaction(messageId, userId, emoji);
         return ResponseEntity.ok().build();
     }
 }

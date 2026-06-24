@@ -1,6 +1,6 @@
-package com.chatsever.messaging.repository;
+package com.chatsever.messaging.infrastructure.persistence;
 
-import com.chatsever.messaging.entity.OutboxMessage;
+import com.chatsever.messaging.domain.model.OutboxMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,6 +1,6 @@
 package com.chatsever.messaging.config;
 
-import com.chatsever.messaging.handler.ChatWebSocketHandler;
+import com.chatsever.messaging.infrastructure.websocket.ChatWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;

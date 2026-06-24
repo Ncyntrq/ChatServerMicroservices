@@ -1,6 +1,6 @@
-package com.chatsever.messaging.repository;
+package com.chatsever.messaging.infrastructure.persistence;
 
-import com.chatsever.messaging.entity.ChatMessage;
+import com.chatsever.messaging.domain.model.ChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -1,4 +1,4 @@
-package com.chatsever.messaging.entity;
+package com.chatsever.messaging.domain.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -24,7 +24,7 @@ public class OutboxMessage {
 
     private LocalDateTime createdAt;
 
-    public OutboxMessage() {
+    protected OutboxMessage() {
     }
 
     public OutboxMessage(String aggregateType, String aggregateId, String exchange, String routingKey, String payload) {
@@ -37,20 +37,20 @@ public class OutboxMessage {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void markProcessed() {
+        this.status = "PROCESSED";
+    }
+
+    public void markFailed() {
+        this.status = "FAILED";
+    }
+
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
     public String getAggregateType() { return aggregateType; }
-    public void setAggregateType(String aggregateType) { this.aggregateType = aggregateType; }
     public String getAggregateId() { return aggregateId; }
-    public void setAggregateId(String aggregateId) { this.aggregateId = aggregateId; }
     public String getExchange() { return exchange; }
-    public void setExchange(String exchange) { this.exchange = exchange; }
     public String getRoutingKey() { return routingKey; }
-    public void setRoutingKey(String routingKey) { this.routingKey = routingKey; }
     public String getPayload() { return payload; }
-    public void setPayload(String payload) { this.payload = payload; }
     public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

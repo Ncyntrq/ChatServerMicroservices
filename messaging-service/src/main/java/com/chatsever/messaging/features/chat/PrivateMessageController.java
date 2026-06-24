@@ -1,7 +1,6 @@
-package com.chatsever.messaging.controller;
+package com.chatsever.messaging.features.chat;
 
-import com.chatsever.messaging.entity.ChatMessage;
-import com.chatsever.messaging.repository.MessageRepository;
+import com.chatsever.messaging.domain.model.ChatMessage;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +12,10 @@ import java.util.List;
 @RequestMapping("/api/messages/private")
 public class PrivateMessageController {
 
-    private final MessageRepository messageRepository;
+    private final ChatQueryHandler queryHandler;
 
-    public PrivateMessageController(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
+    public PrivateMessageController(ChatQueryHandler queryHandler) {
+        this.queryHandler = queryHandler;
     }
 
     @GetMapping
@@ -27,14 +26,7 @@ public class PrivateMessageController {
             @RequestParam(defaultValue = "50") int limit) {
 
         Pageable pageable = PageRequest.of(0, limit);
-        List<ChatMessage> messages;
-
-        if (before != null) {
-            messages = messageRepository.findPrivateMessagesBefore(userId, targetUser, before, pageable);
-        } else {
-            messages = messageRepository.findPrivateMessages(userId, targetUser, pageable);
-        }
-
+        List<ChatMessage> messages = queryHandler.getPrivateMessages(userId, targetUser, before, pageable);
         return ResponseEntity.ok(messages);
     }
 }

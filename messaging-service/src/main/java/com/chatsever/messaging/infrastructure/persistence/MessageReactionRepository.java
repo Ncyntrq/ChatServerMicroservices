@@ -1,6 +1,6 @@
-package com.chatsever.messaging.repository;
+package com.chatsever.messaging.infrastructure.persistence;
 
-import com.chatsever.messaging.entity.MessageReaction;
+import com.chatsever.messaging.domain.model.MessageReaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
