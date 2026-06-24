@@ -23,7 +23,10 @@ spring:
     hibernate:
       ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}
     database-platform: org.hibernate.dialect.MySQL8Dialect
-    show-sql: true
+    show-sql: false                        # tắt log SQL (giảm overhead + đỡ spam khi nhiều query)
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100      # gom nạp collection LAZY → diệt N+1 (reactions...)
 
 services:
   auth-url: ${AUTH_SERVICE_URL:http://localhost:8081}
