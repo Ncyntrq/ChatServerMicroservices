@@ -44,6 +44,8 @@ management:
 # ===== gRPC clients (net.devh) — plaintext, trỏ container theo tên service =====
 grpc:
   client:
+    GLOBAL:
+      negotiation-type: plaintext   # mặc định an toàn cho mọi client gRPC
     role-service:
       address: 'static://role-service:9090'
       negotiation-type: plaintext
