@@ -118,7 +118,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     ports:
       - "8080:8080"
     environment:
@@ -160,7 +160,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -188,7 +188,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -219,7 +219,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -246,7 +246,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -281,7 +281,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -313,7 +313,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -341,7 +341,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
@@ -376,7 +376,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
@@ -410,7 +410,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -438,7 +438,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
@@ -465,7 +465,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 300s
     networks:
       - chat-net
     environment:
