@@ -52,3 +52,22 @@ management:
   otlp:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
+
+# ===== gRPC clients (net.devh) — plaintext, trỏ container theo tên service =====
+grpc:
+  client:
+    auth-service:
+      address: 'static://auth-service:9090'
+      negotiation-type: plaintext
+    channel-service:
+      address: 'static://channel-service:9090'
+      negotiation-type: plaintext
+    presence-service:
+      address: 'static://presence-service:9090'
+      negotiation-type: plaintext
+    role-service:
+      address: 'static://role-service:9090'
+      negotiation-type: plaintext
+    server-service:
+      address: 'static://server-service:9090'
+      negotiation-type: plaintext
