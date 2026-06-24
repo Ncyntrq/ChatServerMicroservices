@@ -45,3 +45,19 @@ grpc:
     role-service:
       address: 'static://role-service:9090'
       negotiation-type: plaintext
+
+# ===== Resilience4j — fail-fast cho gRPC call (giảm lag tạo server/channel) =====
+resilience4j:
+  retry:
+    instances:
+      default:
+        max-attempts: 2          # thay vì mặc định 3
+        wait-duration: 200ms     # thay vì mặc định 500ms
+  circuitbreaker:
+    instances:
+      default:
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
