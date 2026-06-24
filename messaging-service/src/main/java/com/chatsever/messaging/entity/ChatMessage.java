@@ -46,6 +46,9 @@ public class ChatMessage {
     @Transient
     private String replyToContent;
 
+    @Transient
+    private String status = "SENT";
+
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "message_id", referencedColumnName = "id", insertable = false, updatable = false)
     private java.util.List<MessageReaction> reactions;
@@ -80,4 +83,6 @@ public class ChatMessage {
     public void setReplyToContent(String replyToContent) { this.replyToContent = replyToContent; }
     public java.util.List<MessageReaction> getReactions() { return reactions; }
     public void setReactions(java.util.List<MessageReaction> reactions) { this.reactions = reactions; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

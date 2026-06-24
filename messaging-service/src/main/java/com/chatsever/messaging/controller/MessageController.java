@@ -38,6 +38,7 @@ public class MessageController {
         }
         
         populateReplyInfo(messages);
+        populateStatus(messages);
         
         return ResponseEntity.ok(messages);
     }
@@ -65,13 +66,29 @@ public class MessageController {
         }
     }
 
+    private void populateStatus(List<ChatMessage> messages) {
+        java.util.List<String> ids = messages.stream()
+                .map(m -> String.valueOf(m.getId()))
+                .collect(java.util.stream.Collectors.toList());
+        if (!ids.isEmpty()) {
+            java.util.Set<String> pendingIds = messageService.getPendingOutboxMessageIds(ids);
+            for (ChatMessage msg : messages) {
+                if (pendingIds.contains(String.valueOf(msg.getId()))) {
+                    msg.setStatus("PENDING");
+                }
+            }
+        }
+    }
+
     // Lấy nhiều tin nhắn theo IDs (dùng cho tính năng ghim tin nhắn)
     @GetMapping("/bulk")
     public ResponseEntity<List<ChatMessage>> getMessagesBulk(@RequestParam List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
-        return ResponseEntity.ok(messageRepository.findAllById(ids));
+        List<ChatMessage> results = messageRepository.findAllById(ids);
+        populateStatus(results);
+        return ResponseEntity.ok(results);
     }
 
     // Tìm kiếm tin nhắn theo từ khóa
@@ -92,6 +109,7 @@ public class MessageController {
         }
         
         populateReplyInfo(results);
+        populateStatus(results);
         
         return ResponseEntity.ok(results);
     }

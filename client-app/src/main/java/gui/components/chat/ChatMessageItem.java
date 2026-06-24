@@ -64,8 +64,7 @@ public class ChatMessageItem extends JPanel {
     private JPanel reactionWrap;
     private boolean editedBadgeShown = false;
     private JComponent attachmentComponent;
-
-    /** Layout gọn cho tin nhắn liên tiếp cùng người gửi (gộp nhóm). */
+    private boolean isPending = false;
     private final boolean isConsecutive;
 
     /** Constructor cũ — giữ tương thích (không có toolbar). */
@@ -91,6 +90,7 @@ public class ChatMessageItem extends JPanel {
         this.actions = actions;
         this.isHighlighted = isHighlighted;
         this.isConsecutive = isConsecutive;
+        this.isPending = "PENDING".equals(message.getStatus()) || (message.getMessageId() == null && message.getTempId() != null);
         this.isOwn = currentUser != null && currentUser.equals(message.getSender());
         this.isSystemMsg = message.getType() == MessageType.SYSTEM
                 || message.getType() == MessageType.JOIN
@@ -417,9 +417,13 @@ public class ChatMessageItem extends JPanel {
             String timeStr = message.getTimestamp() != null
                     ? message.getTimestamp().format(TIME_FMT)
                     : "Bây giờ";
+            if (isPending) {
+                timeStr += " (Đang gửi...)";
+            }
             JLabel timeLabel = new JLabel(timeStr);
             timeLabel.setFont(AppFonts.CAPTION);
             timeLabel.setForeground(new Color(0x80, 0x84, 0x8E, 0x99));
+            leftHeader.add(timeLabel);
             leftHeader.add(timeLabel);
 
             headerRow.add(leftHeader, isOwn ? BorderLayout.EAST : BorderLayout.WEST);

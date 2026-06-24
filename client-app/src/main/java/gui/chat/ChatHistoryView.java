@@ -12,8 +12,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Khung cuộn hiển thị danh sách tin nhắn của kênh/DM đang mở.
@@ -36,6 +40,7 @@ public class ChatHistoryView extends JScrollPane {
     private static final long BIG_GAP_MINUTES = 60;
     private static final int BIG_GAP_PX = 18;
     private boolean showingPlaceholder = false;
+    private final Set<Long> displayedMessageIds = new HashSet<>();
     private String placeholderText = "Chọn một kênh hoặc người bạn để bắt đầu trò chuyện";
 
     public ChatHistoryView(String sessionUsername, ChatMessageItem.MessageActions messageActions) {
@@ -74,6 +79,38 @@ public class ChatHistoryView extends JScrollPane {
 
     /** Thêm 1 tin nhắn vào cuối danh sách và cuộn xuống. */
     public void appendMessage(MessageDTO message) {
+        if (message.getMessageId() != null) {
+            if (displayedMessageIds.contains(message.getMessageId())) {
+                return; // deduplicate
+            }
+            if (message.getTempId() != null) {
+                // Find pending message and replace it
+                for (int i = 0; i < chatHistoryPanel.getComponentCount(); i++) {
+                    Component c = chatHistoryPanel.getComponent(i);
+                    if (c instanceof ChatMessageItem) {
+                        ChatMessageItem item = (ChatMessageItem) c;
+                        MessageDTO existing = item.getMessage();
+                        if (existing.getMessageId() == null && existing.getTempId() != null
+                                && existing.getTempId().equals(message.getTempId())) {
+                            
+                            boolean isHighlighted = message.getContent() != null &&
+                                    sessionUsername != null && message.getContent().contains("@" + sessionUsername);
+                            
+                            ChatMessageItem newItem = new ChatMessageItem(message, isHighlighted, sessionUsername, messageActions, false);
+                            chatHistoryPanel.remove(i);
+                            chatHistoryPanel.add(newItem, i);
+                            displayedMessageIds.add(message.getMessageId());
+                            messageItems.put(message.getMessageId(), newItem);
+                            chatHistoryPanel.revalidate();
+                            chatHistoryPanel.repaint();
+                            return; // Upgraded!
+                        }
+                    }
+                }
+            }
+            displayedMessageIds.add(message.getMessageId());
+        }
+
         // Tính TRƯỚC khi thêm: chỉ tự cuộn xuống nếu đang ở đáy hoặc là tin của chính mình
         // ⇒ không cướp vị trí khi user đang đọc lịch sử.
         boolean own = sessionUsername != null && sessionUsername.equals(message.getSender());
@@ -97,8 +134,10 @@ public class ChatHistoryView extends JScrollPane {
             if (lastTimestamp != null && ts != null) {
                 long gapMin = Math.abs(Duration.between(lastTimestamp, ts).toMinutes());
                 // Gộp nhóm khi: CÙNG người gửi VÀ cách tin trước ≤ 5 phút (chỉ tin đầu hiện giờ).
+                // KHÔNG gộp các tin nhắn pending (đang gửi).
+                boolean isMsgPending = "PENDING".equals(message.getStatus()) || (message.getMessageId() == null && message.getTempId() != null);
                 if (message.getSender() != null && message.getSender().equals(lastSender)
-                        && gapMin < GROUP_GAP_MINUTES) {
+                        && gapMin < GROUP_GAP_MINUTES && !isMsgPending) {
                     isConsecutive = true;
                 }
                 bigGap = gapMin >= BIG_GAP_MINUTES;
@@ -156,6 +195,7 @@ public class ChatHistoryView extends JScrollPane {
     /** Xóa toàn bộ lịch sử đang hiển thị + hiện empty-state (khi chuyển channel/DM). */
     public void clear() {
         chatHistoryPanel.removeAll();
+        displayedMessageIds.clear();
         lastSender = null;
         lastTimestamp = null;
         messageItems.clear();

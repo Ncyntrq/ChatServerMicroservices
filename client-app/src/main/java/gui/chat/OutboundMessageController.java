@@ -21,8 +21,7 @@ public class OutboundMessageController {
         this.sessionUsername = sessionUsername;
         this.feedback = feedback;
     }
-
-    public void sendChat(String text, long activeChannelId, long activeServerId, String activePrivateUser, Long replyToMessageId) {
+    public void sendChat(String text, long activeChannelId, long activeServerId, String activePrivateUser, Long replyToMessageId, String tempId) {
         MessageDTO out;
         if (activeChannelId == -1 && activePrivateUser != null) {
             out = new MessageDTO(MessageType.PRIVATE, sessionUsername, null, text, LocalDateTime.now());
@@ -34,6 +33,9 @@ public class OutboundMessageController {
         }
         if (replyToMessageId != null) {
             out.setReplyToMessageId(replyToMessageId);
+        }
+        if (tempId != null) {
+            out.setTempId(tempId);
         }
         sendWithError(out, "Gửi thất bại: ");
     }

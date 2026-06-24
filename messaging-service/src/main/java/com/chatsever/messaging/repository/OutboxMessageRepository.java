@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, Long> {
     List<OutboxMessage> findTop50ByStatusOrderByCreatedAtAsc(String status);
+    List<OutboxMessage> findByAggregateTypeAndAggregateIdIn(String type, List<String> ids);
 }

@@ -362,4 +362,10 @@ public class MessageService {
             broadcastToChannel(event);
         });
     }
+
+    public java.util.Set<String> getPendingOutboxMessageIds(java.util.List<String> ids) {
+        if (ids == null || ids.isEmpty()) return java.util.Set.of();
+        java.util.List<OutboxMessage> pending = outboxMessageRepository.findByAggregateTypeAndAggregateIdIn("MESSAGE_EVENT", ids);
+        return pending.stream().map(OutboxMessage::getAggregateId).collect(Collectors.toSet());
+    }
 }

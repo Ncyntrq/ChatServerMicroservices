@@ -674,7 +674,24 @@ public class ChatClientGUI extends JFrame {
             Toast.warn(this, "WebSocket not ready, message not sent");
             return;
         }
-        outbound.sendChat(text, activeChannelId, activeServerId, activePrivateUser, chatInput.getReplyToMessageId());
+
+        String tempId = java.util.UUID.randomUUID().toString();
+
+        MessageDTO pendingMsg = new MessageDTO(
+            activePrivateUser != null ? MessageType.PRIVATE : MessageType.CHAT,
+            sessionUsername,
+            activePrivateUser,
+            text,
+            java.time.LocalDateTime.now()
+        );
+        pendingMsg.setTempId(tempId);
+        if (activeServerId > 0) pendingMsg.setServerId(activeServerId);
+        if (activeChannelId > 0) pendingMsg.setChannelId(activeChannelId);
+        if (chatInput.getReplyToMessageId() != null) pendingMsg.setReplyToMessageId(chatInput.getReplyToMessageId());
+        
+        chatHistoryView.appendMessage(pendingMsg);
+
+        outbound.sendChat(text, activeChannelId, activeServerId, activePrivateUser, chatInput.getReplyToMessageId(), tempId);
         chatInput.clearInput();
     }
 

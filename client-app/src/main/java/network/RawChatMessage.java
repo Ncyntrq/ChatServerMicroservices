@@ -27,6 +27,7 @@ public class RawChatMessage {
     public Long replyToMessageId;
     public String replyToSender;
     public String replyToContent;
+    public String status;
     public List<RawReaction> reactions;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -61,6 +62,8 @@ public class RawChatMessage {
                     .toList();
             dto.setReactions(mapped);
         }
+        
+        dto.setStatus(status != null ? status : "SENT");
 
         return dto;
     }

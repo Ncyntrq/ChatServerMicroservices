@@ -29,6 +29,8 @@ public class MessageDTO {
     private Long replyToMessageId;  // ID của tin nhắn đang trả lời
     private String replyToSender;   // Tên người gửi tin nhắn gốc
     private String replyToContent;  // Nội dung tin nhắn gốc được trích dẫn
+    private String tempId;          // ID tạm để client deduplicate tin nhắn pending
+    private String status = "SENT"; // Trạng thái tin nhắn (PENDING, SENT)
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
@@ -84,6 +86,12 @@ public class MessageDTO {
 
     public String getReplyToContent() { return replyToContent; }
     public void setReplyToContent(String replyToContent) { this.replyToContent = replyToContent; }
+
+    public String getTempId() { return tempId; }
+    public void setTempId(String tempId) { this.tempId = tempId; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     private java.util.List<ReactionDTO> reactions;
     public java.util.List<ReactionDTO> getReactions() { return reactions; }
