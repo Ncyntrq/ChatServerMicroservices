@@ -47,10 +47,10 @@ grpc:
     GLOBAL:
       negotiation-type: plaintext   # mặc định an toàn cho mọi client gRPC
     channel-service:
-      address: 'static://channel-service:9090'
+      address: 'dns:///channel-service:9090'
       negotiation-type: plaintext
     role-service:
-      address: 'static://role-service:9090'
+      address: 'dns:///role-service:9090'
       negotiation-type: plaintext
 
 # ===== Resilience4j — fail-fast cho gRPC call (giảm lag tạo server/channel) =====

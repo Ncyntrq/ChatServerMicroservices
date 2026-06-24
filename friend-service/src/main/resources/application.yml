@@ -47,7 +47,7 @@ grpc:
     GLOBAL:
       negotiation-type: plaintext   # mặc định an toàn cho mọi client gRPC
     user-profile-service:
-      address: 'static://user-profile-service:9090'
+      address: 'dns:///user-profile-service:9090'
       negotiation-type: plaintext
 
 # ===== Resilience4j — fail-fast cho gRPC call (giảm lag tạo server/channel) =====
