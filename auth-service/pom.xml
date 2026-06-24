@@ -95,6 +95,7 @@
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
         <!-- gRPC Server -->
         <dependency>
             <groupId>net.devh</groupId>
