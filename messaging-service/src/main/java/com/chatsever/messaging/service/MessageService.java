@@ -9,8 +9,11 @@ import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.entity.MessageReaction;
 import com.chatsever.messaging.repository.MessageRepository;
 import com.chatsever.messaging.repository.MessageReactionRepository;
+import com.chatsever.messaging.entity.OutboxMessage;
+import com.chatsever.messaging.repository.OutboxMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -40,10 +43,11 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final MessageReactionRepository reactionRepository;
     private final RoleClient roleClient;
+    private final OutboxMessageRepository outboxMessageRepository;
     private final String presenceUrl;
     private final String channelUrl;
 
-    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, MessageReactionRepository reactionRepository, RoleClient roleClient, @Value("${services.presence-url}") String presenceUrl, @Value("${services.channel-url}") String channelUrl) {
+    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, MessageReactionRepository reactionRepository, RoleClient roleClient, OutboxMessageRepository outboxMessageRepository, @Value("${services.presence-url}") String presenceUrl, @Value("${services.channel-url}") String channelUrl) {
         this.restTemplate = restTemplate;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
@@ -51,6 +55,7 @@ public class MessageService {
         this.messageRepository = messageRepository;
         this.reactionRepository = reactionRepository;
         this.roleClient = roleClient;
+        this.outboxMessageRepository = outboxMessageRepository;
         this.presenceUrl = presenceUrl;
         this.channelUrl = channelUrl;
     }
@@ -107,9 +112,9 @@ public class MessageService {
         return false;
     }
 
-    // Bắn tin nhắn vào RabbitMQ Fanout để phân phối cho tất cả các node WebSocket
+    // Lưu sự kiện vào Outbox thay vì bắn trực tiếp
     public void broadcastToChannel(MessageDTO msg) {
-        rabbitTemplate.convertAndSend("chat.fanout", "", msg);
+        saveOutboxEvent("chat.fanout", "", msg);
     }
 
     // Node cục bộ nhận từ RabbitMQ và đẩy xuống các WebSocket sessions nó đang quản lý
@@ -173,17 +178,33 @@ public class MessageService {
         }
     }
 
-    // Bắn Log sang RabbitMQ
+    // Bắn Log sang RabbitMQ (Qua Outbox)
     public void publishLogEvent(MessageDTO msg) {
         LogEntry log = new LogEntry(msg.getTimestamp(), msg.getType().name(),
                 msg.getSender(), msg.getReceiver(), msg.getContent(),
                 msg.getChannelId(), msg.getServerId());
-        rabbitTemplate.convertAndSend("chat.exchange", "log." + msg.getType().name().toLowerCase(), log);
+        saveOutboxEvent("chat.exchange", "log." + msg.getType().name().toLowerCase(), log);
     }
 
-    // Publish Notification Event sang RabbitMQ (cho notification-service)
+    // Publish Notification Event sang RabbitMQ (cho notification-service) (Qua Outbox)
     public void publishNotificationEvent(MessageDTO msg) {
-        rabbitTemplate.convertAndSend("chat.exchange", "notify.message", msg);
+        saveOutboxEvent("chat.exchange", "notify.message", msg);
+    }
+
+    private void saveOutboxEvent(String exchange, String routingKey, Object payload) {
+        try {
+            String jsonPayload = objectMapper.writeValueAsString(payload);
+            OutboxMessage outbox = new OutboxMessage(
+                "MESSAGE_EVENT", 
+                null, 
+                exchange, 
+                routingKey, 
+                jsonPayload
+            );
+            outboxMessageRepository.save(outbox);
+        } catch (Exception e) {
+            logger.error("Error saving outbox event: {}", e.getMessage());
+        }
     }
 
     public void sendError(WebSocketSession session, String errorMsg) throws Exception {
@@ -191,6 +212,41 @@ public class MessageService {
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
     }
 
+    @Transactional
+    public void processChatMessage(MessageDTO msg) {
+        ChatMessage saved = saveMessage(msg);
+        msg.setMessageId(saved.getId());
+        broadcastToChannel(msg);
+        publishNotificationEvent(msg);
+        publishLogEvent(msg);
+    }
+
+    @Transactional
+    public void processEditMessage(MessageDTO msg) {
+        updateMessage(msg.getMessageId(), msg.getContent());
+        msg.setIsEdited(true);
+        broadcastToChannel(msg);
+        publishLogEvent(msg);
+    }
+
+    @Transactional
+    public void processDeleteMessage(MessageDTO msg) {
+        deleteMessage(msg.getMessageId());
+        msg.setContent("");
+        msg.setIsDeleted(true);
+        broadcastToChannel(msg);
+        publishLogEvent(msg);
+    }
+
+    @Transactional
+    public void processPrivateMessage(MessageDTO msg) {
+        ChatMessage saved = saveMessage(msg);
+        msg.setMessageId(saved.getId());
+        publishNotificationEvent(msg);
+        publishLogEvent(msg);
+    }
+
+    @Transactional
     public ChatMessage saveMessage(MessageDTO msg) {
         ChatMessage entity = new ChatMessage();
         entity.setSender(msg.getSender());
@@ -216,6 +272,7 @@ public class MessageService {
         return saved;
     }
 
+    @Transactional
     public ChatMessage updateMessage(Long messageId, String newContent) {
         ChatMessage entity = messageRepository.findById(messageId).orElse(null);
         if (entity != null) {
@@ -226,6 +283,7 @@ public class MessageService {
         return null;
     }
 
+    @Transactional
     public ChatMessage deleteMessage(Long messageId) {
         ChatMessage entity = messageRepository.findById(messageId).orElse(null);
         if (entity != null) {
