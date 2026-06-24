@@ -96,57 +96,34 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
 
         switch (msg.getType()) {
-            case CHAT -> {
-                ChatMessage saved = messageService.saveMessage(msg);
-                msg.setMessageId(saved.getId());
-                messageService.broadcastToChannel(msg);
-                // Publish notification event cho notification-service (N1, N2, N5)
-                messageService.publishNotificationEvent(msg);
-            }
+            case CHAT -> messageService.processChatMessage(msg);
             case EDIT -> {
                 if (msg.getMessageId() != null) {
-                    // M6: Kiểm tra người sửa có phải người gửi gốc không
                     if (!messageService.isMessageOwner(msg.getMessageId(), sender)) {
                         messageService.sendError(session, "Chỉ người gửi mới có thể sửa tin nhắn");
                         return;
                     }
-                    messageService.updateMessage(msg.getMessageId(), msg.getContent());
-                    msg.setIsEdited(true);
-                    messageService.broadcastToChannel(msg);
+                    messageService.processEditMessage(msg);
                 }
             }
             case DELETE -> {
                 if (msg.getMessageId() != null) {
-                    // M7: Người gửi hoặc Admin có thể xóa
                     if (!messageService.canDeleteMessage(msg.getMessageId(), sender, msg.getServerId())) {
                         messageService.sendError(session, "Không có quyền xóa tin nhắn này");
                         return;
                     }
-                    messageService.deleteMessage(msg.getMessageId());
-                    // Soft Delete: broadcast DELETE để client cập nhật UI
-                    msg.setContent("");
-                    msg.setIsDeleted(true);
-                    messageService.broadcastToChannel(msg);
+                    messageService.processDeleteMessage(msg);
                 }
             }
             case TYPING -> messageService.broadcastToChannel(msg);
             case STATUS -> {} // STATUS được publish từ presence-service qua RabbitMQ, không xử lý tại đây
             case PRIVATE -> {
-                ChatMessage saved = messageService.saveMessage(msg);
-                msg.setMessageId(saved.getId());
+                messageService.processPrivateMessage(msg);
+                // Send over WS immediately (outside transaction guarantee for WS, but within the flow)
                 messageService.sendPrivate(msg, session, sessions);
-                // Publish DM notification
-                messageService.publishNotificationEvent(msg);
             }
             case PING -> session.sendMessage(new TextMessage("{\"type\":\"PONG\"}"));
             default -> {}
-        }
-        
-        // Log event (bỏ qua TYPING, PING, STATUS để không spam log)
-        if (msg.getType() != MessageType.TYPING
-                && msg.getType() != MessageType.PING
-                && msg.getType() != MessageType.STATUS) {
-            messageService.publishLogEvent(msg);
         }
     }
 
