@@ -1,0 +1,648 @@
+nguyen1007k6@chat-server:~$ docker logs messaging-service
+23:21:48,366 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@22175d4f - URL [jar:nested:/app/app.jar/!BOOT-INF/classes/!/logback-spring.xml] is not of type file
+23:21:50,716 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CONSOLE_JSON]
+23:21:50,717 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:21:51,246 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [net.logstash.logback.fieldnames.LogstashFieldNames] for [fieldNames] property
+23:21:57,069 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [CONSOLE_PLAIN] not referenced. Skipping further processing.
+23:21:57,070 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:21:57,070 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@9fecdf1 - Propagating INFO level on Logger[ROOT] onto the JUL framework
+23:21:57,072 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CONSOLE_JSON] to Logger[ROOT]
+23:21:57,082 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [org.hibernate.SQL] to WARN
+23:21:57,085 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@9fecdf1 - Propagating WARN level on Logger[org.hibernate.SQL] onto the JUL framework
+23:21:57,086 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [org.springframework.amqp] to INFO
+23:21:57,086 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@9fecdf1 - Propagating INFO level on Logger[org.springframework.amqp] onto the JUL framework
+23:21:57,091 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [org.springframework.web] to INFO
+23:21:57,091 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@9fecdf1 - Propagating INFO level on Logger[org.springframework.web] onto the JUL framework
+23:21:57,091 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [com.chatsever] to DEBUG
+23:21:57,091 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@9fecdf1 - Propagating DEBUG level on Logger[com.chatsever] onto the JUL framework
+23:21:57,095 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@3b809711 - End of configuration.
+23:21:57,096 |-INFO in org.springframework.boot.logging.logback.SpringBootJoranConfigurator@3b0f7d9d - Registering current configuration as safe fallback point
+
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.4)
+
+{"@timestamp":"2026-06-24T16:22:00.766Z","message":"Starting MessagingApplication using Java 17.0.19 with PID 1 (/app/app.jar started by appuser in /app)","logger_name":"com.chatsever.messaging.MessagingApplication","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:22:01.052Z","message":"Running with Spring Boot v3.2.4, Spring v6.1.5","logger_name":"com.chatsever.messaging.MessagingApplication","thread_name":"main","level":"DEBUG","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:22:01.074Z","message":"The following 1 profile is active: \"docker\"","logger_name":"com.chatsever.messaging.MessagingApplication","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:22:36.616Z","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:22:37.886Z","message":"Finished Spring Data repository scanning in 976 ms. Found 3 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:22:47.407Z","message":"BeanFactory id=88b66613-c121-3364-8fa2-6d6bf250c30f","logger_name":"org.springframework.cloud.context.scope.GenericScope","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:09.710Z","message":"Tomcat initialized with port 8082 (http)","logger_name":"org.springframework.boot.web.embedded.tomcat.TomcatWebServer","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:09.988Z","message":"Initializing ProtocolHandler [\"http-nio-8082\"]","logger_name":"org.apache.coyote.http11.Http11NioProtocol","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:10.066Z","message":"Starting service [Tomcat]","logger_name":"org.apache.catalina.core.StandardService","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:10.080Z","message":"Starting Servlet engine: [Apache Tomcat/10.1.19]","logger_name":"org.apache.catalina.core.StandardEngine","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:11.049Z","message":"Initializing Spring embedded WebApplicationContext","logger_name":"org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:11.083Z","message":"Root WebApplicationContext: initialization completed in 69106 ms","logger_name":"org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:32.768Z","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:43.658Z","message":"HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2ec23ec3","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:43.785Z","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:51.880Z","message":"Flyway Community Edition 9.22.3 by Redgate","logger_name":"org.flywaydb.core.internal.license.VersionPrinter","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:51.880Z","message":"See release notes here: https://rd.gt/416ObMi","logger_name":"org.flywaydb.core.internal.license.VersionPrinter","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:51.881Z","message":"","logger_name":"org.flywaydb.core.internal.license.VersionPrinter","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:52.472Z","message":"Database: jdbc:mysql://mysql-db:3306/chat_messaging_db (MySQL 8.0)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:53.468Z","message":"Successfully validated 2 migrations (execution time 00:00.603s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:53.737Z","message":"Current version of schema `chat_messaging_db`: 1","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:53.832Z","message":"Schema `chat_messaging_db` is up to date. No migration necessary.","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:57.222Z","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:58.820Z","message":"HHH000412: Hibernate ORM core version 6.4.4.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:23:59.691Z","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:07.252Z","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:08.256Z","message":"HHH90000025: MySQL8Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:08.306Z","message":"HHH90000026: MySQL8Dialect has been deprecated; use org.hibernate.dialect.MySQLDialect instead","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:30.579Z","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:31.151Z","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:24:45.048Z","message":"Hibernate is in classpath; If applicable, HQL parser will be used.","logger_name":"org.springframework.data.jpa.repository.query.QueryEnhancerFactory","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:01.110Z","message":"Detected grpc-netty-shaded: Creating ShadedNettyChannelFactory + InProcessChannelFactory","logger_name":"net.devh.boot.grpc.client.autoconfigure.GrpcClientAutoConfiguration","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:12.572Z","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:18.352Z","message":"Detected grpc-netty-shaded: Creating ShadedNettyGrpcServerFactory","logger_name":"net.devh.boot.grpc.server.autoconfigure.GrpcServerFactoryAutoConfiguration","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:21.548Z","message":"Exposing 4 endpoint(s) beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.177Z","message":"Starting ProtocolHandler [\"http-nio-8082\"]","logger_name":"org.apache.coyote.http11.Http11NioProtocol","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.258Z","message":"Tomcat started on port 8082 (http) with context path ''","logger_name":"org.springframework.boot.web.embedded.tomcat.TomcatWebServer","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.287Z","message":"Registered gRPC service: grpc.health.v1.Health, bean: grpcHealthService, class: io.grpc.protobuf.services.HealthServiceImpl","logger_name":"net.devh.boot.grpc.server.serverfactory.AbstractGrpcServerFactory","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.288Z","message":"Registered gRPC service: grpc.reflection.v1alpha.ServerReflection, bean: protoReflectionService, class: io.grpc.protobuf.services.ProtoReflectionService","logger_name":"net.devh.boot.grpc.server.serverfactory.AbstractGrpcServerFactory","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.723Z","message":"gRPC Server started, listening on address: *, port: 9090","logger_name":"net.devh.boot.grpc.server.serverfactory.GrpcServerLifecycle","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:22.766Z","message":"Attempting to connect to: [rabbitmq:5672]","logger_name":"org.springframework.amqp.rabbit.connection.CachingConnectionFactory","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.049Z","message":"Initializing Spring DispatcherServlet 'dispatcherServlet'","logger_name":"org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]","thread_name":"http-nio-8082-exec-1","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.053Z","message":"Initializing Servlet 'dispatcherServlet'","logger_name":"org.springframework.web.servlet.DispatcherServlet","thread_name":"http-nio-8082-exec-1","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.065Z","message":"Created new connection: rabbitConnectionFactory#3c320c8b:0/SimpleConnection@150a615c [delegate=amqp://rabbitmq_chat_boss@172.21.0.5:5672/, localPort=51920]","logger_name":"org.springframework.amqp.rabbit.connection.CachingConnectionFactory","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.072Z","message":"Completed initialization in 11 ms","logger_name":"org.springframework.web.servlet.DispatcherServlet","thread_name":"http-nio-8082-exec-1","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.105Z","message":"Auto-declaring a non-durable, auto-delete, or exclusive Queue (spring.gen-zx1kQZjgQ6ic-uF3INg8qg) durable:false, auto-delete:true, exclusive:true. It will be redeclared if the broker stops and is restarted while the connection factory is alive, but all messages will be lost.","logger_name":"org.springframework.amqp.rabbit.core.RabbitAdmin","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.105Z","message":"Auto-declaring a non-durable, auto-delete, or exclusive Queue (spring.gen-mZxIT7h0TMytaHd9Hn0ROw) durable:false, auto-delete:true, exclusive:true. It will be redeclared if the broker stops and is restarted while the connection factory is alive, but all messages will be lost.","logger_name":"org.springframework.amqp.rabbit.core.RabbitAdmin","thread_name":"main","level":"INFO","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:25:23.629Z","message":"Started MessagingApplication in 227.264 seconds (process running for 239.682)","logger_name":"com.chatsever.messaging.MessagingApplication","thread_name":"main","level":"INFO","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:02.531Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:02.538Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:03.689Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:03.693Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-worker-ELG-1-2","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:05.558Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:05.559Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:08.138Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:08.141Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:12.158Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:12.158Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:17.461Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:17.461Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: insert into outbox_messages (aggregate_id,aggregate_type,created_at,exchange,payload,routing_key,status) values (?,?,?,?,?,?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:20.346Z","message":"Found 1 pending outbox messages","logger_name":"com.chatsever.messaging.service.OutboxRelayWorker","thread_name":"scheduling-1","level":"DEBUG","traceId":"375e5b34c44012c9f36fb8d972c3fd7b","spanId":"53298832f2928d23","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:20.357Z","message":"Successfully relayed outbox message 1","logger_name":"com.chatsever.messaging.service.OutboxRelayWorker","thread_name":"scheduling-1","level":"DEBUG","traceId":"375e5b34c44012c9f36fb8d972c3fd7b","spanId":"53298832f2928d23","service":"messaging-service"}
+Hibernate: update outbox_messages set aggregate_id=?,aggregate_type=?,created_at=?,exchange=?,payload=?,routing_key=?,status=? where id=?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:27.718Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:27.719Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:27:41.615Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:27:41.615Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:28:10.287Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:28:10.288Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:28:51.976Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-0","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:28:51.977Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:30:12.604Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-2","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:30:12.605Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-2","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.channel_id=? order by cm1_0.id desc limit ?,?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select r1_0.message_id,r1_0.id,r1_0.reaction_count,r1_0.emoji,r1_0.user_id from message_reactions r1_0 where r1_0.message_id=?
+Hibernate: select cm1_0.id,cm1_0.channel_id,cm1_0.content,cm1_0.is_deleted,cm1_0.is_edited,cm1_0.receiver,cm1_0.reply_to_message_id,cm1_0.sender,cm1_0.server_id,cm1_0.timestamp,cm1_0.type from chat_messages cm1_0 where cm1_0.id in (?,?)
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:31:48.164Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-3","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:31:48.164Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-3","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+{"@timestamp":"2026-06-24T16:34:04.392Z","message":"No servers found for auth-service","logger_name":"net.devh.boot.grpc.client.nameresolver.DiscoveryClientNameResolver","thread_name":"grpc-default-executor-4","level":"ERROR","service":"messaging-service"}
+{"@timestamp":"2026-06-24T16:34:04.393Z","message":"[Channel<9>: (auth-service)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=No servers found for auth-service, cause=null}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-4","level":"WARN","service":"messaging-service"}
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
+Hibernate: select om1_0.id,om1_0.aggregate_id,om1_0.aggregate_type,om1_0.created_at,om1_0.exchange,om1_0.payload,om1_0.routing_key,om1_0.status from outbox_messages om1_0 where om1_0.status=? order by om1_0.created_at limit ?
