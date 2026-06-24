@@ -5,6 +5,8 @@ server:
   port: 8084    # Port API
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: log-service
   rabbitmq:
@@ -35,7 +37,7 @@ management:
   # ===== DISTRIBUTED TRACING =====
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.1
   otlp:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces

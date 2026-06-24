@@ -46,7 +46,9 @@ public class ChatMessage {
     @Transient
     private String replyToContent;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    // LAZY + default_batch_fetch_size (application.yml) → batch-load reactions cho cả trang
+    // tin nhắn trong 1-2 query IN(...) thay vì N+1. OSIV bật nên serialize vẫn nạp được.
+    @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "message_id", referencedColumnName = "id", insertable = false, updatable = false)
     private java.util.List<MessageReaction> reactions;
 

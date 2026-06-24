@@ -2,6 +2,8 @@ server:
   port: 8086
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: channel-service
   datasource:
@@ -34,7 +36,7 @@ management:
   # ===== DISTRIBUTED TRACING =====
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.1
   otlp:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
@@ -42,6 +44,24 @@ management:
 # ===== gRPC clients (net.devh) — plaintext, trỏ container theo tên service =====
 grpc:
   client:
+    GLOBAL:
+      negotiation-type: plaintext   # mặc định an toàn cho mọi client gRPC
     role-service:
       address: 'static://role-service:9090'
       negotiation-type: plaintext
+
+# ===== Resilience4j — fail-fast cho gRPC call (giảm lag tạo server/channel) =====
+resilience4j:
+  retry:
+    instances:
+      default:
+        max-attempts: 2          # thay vì mặc định 3
+        wait-duration: 200ms     # thay vì mặc định 500ms
+  circuitbreaker:
+    instances:
+      default:
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
