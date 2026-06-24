@@ -4,7 +4,7 @@ import gui.components.channels.ChannelSidebar;
 import gui.components.friends.FriendSidebar;
 import gui.components.navigation.ServerSidebar;
 import network.NotificationApiClient;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.SwingWorker;

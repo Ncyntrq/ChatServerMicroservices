@@ -1,6 +1,6 @@
 package network;
 
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;

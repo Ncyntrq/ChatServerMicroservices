@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package role;
+
+option java_multiple_files = true;
+option java_package = "com.chatsever.grpc.role";
+option java_outer_classname = "RoleProto";
+
+service RoleService {
+    rpc InitDefaultRoles (InitDefaultRolesRequest) returns (EmptyResponse);
+    rpc CheckBanned (CheckBannedRequest) returns (CheckBannedResponse);
+    rpc GetPermissions (GetPermissionsRequest) returns (GetPermissionsResponse);
+}
+
+message EmptyResponse {}
+
+message InitDefaultRolesRequest {
+    int64 serverId = 1;
+}
+
+message CheckBannedRequest {
+    int64 serverId = 1;
+    string userId = 2;
+}
+
+message CheckBannedResponse {
+    bool isBanned = 1;
+    string reason = 2;
+}
+
+message GetPermissionsRequest {
+    int64 serverId = 1;
+    string userId = 2;
+}
+
+message GetPermissionsResponse {
+    repeated string permissions = 1;
+    string roleName = 2;
+    int32 permissionBitmask = 3;
+}

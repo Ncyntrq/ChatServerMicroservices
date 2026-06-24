@@ -1,7 +1,7 @@
 package com.chatsever.messaging.handler;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.messaging.dto.MessageDTO;
 
 import com.chatsever.common.enums.MessageType;
 import com.chatsever.messaging.service.MessageService;
@@ -11,12 +11,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import com.chatsever.common.dto.AuthResponse;
+import com.chatsever.messaging.adapter.AuthGrpcAdapter;
+import com.chatsever.grpc.auth.ValidateTokenResponse;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -25,16 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageService messageService;
-    private final RestTemplate restTemplate;
+    private final AuthGrpcAdapter authServiceClient;
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
-    private final String authUrl;
+
     private final ObjectMapper objectMapper;
 
 
-    public ChatWebSocketHandler(MessageService messageService, RestTemplate restTemplate, @Value("${services.auth-url}") String authUrl) {
+    public ChatWebSocketHandler(MessageService messageService, AuthGrpcAdapter authServiceClient) {
         this.messageService = messageService;
-        this.restTemplate = restTemplate;
-        this.authUrl = authUrl;
+        this.authServiceClient = authServiceClient;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -44,9 +44,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
        String token = extractToken(session);
        try {
-           Map<String, String> request = Map.of("token", token);
-           AuthResponse response = restTemplate.postForObject(authUrl + "/api/auth/validate", request, AuthResponse.class);
-           if(response != null && response.getUsername() != null) {
+           ValidateTokenResponse response = authServiceClient.validateToken(token);
+           if(response != null && response.getValid() && !response.getUsername().isEmpty()) {
                String username = response.getUsername();
                sessions.put(username, session);
                session.getAttributes().put("username", username);
@@ -97,57 +96,34 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
 
         switch (msg.getType()) {
-            case CHAT -> {
-                ChatMessage saved = messageService.saveMessage(msg);
-                msg.setMessageId(saved.getId());
-                messageService.broadcastToChannel(msg);
-                // Publish notification event cho notification-service (N1, N2, N5)
-                messageService.publishNotificationEvent(msg);
-            }
+            case CHAT -> messageService.processChatMessage(msg);
             case EDIT -> {
                 if (msg.getMessageId() != null) {
-                    // M6: Kiểm tra người sửa có phải người gửi gốc không
                     if (!messageService.isMessageOwner(msg.getMessageId(), sender)) {
                         messageService.sendError(session, "Chỉ người gửi mới có thể sửa tin nhắn");
                         return;
                     }
-                    messageService.updateMessage(msg.getMessageId(), msg.getContent());
-                    msg.setIsEdited(true);
-                    messageService.broadcastToChannel(msg);
+                    messageService.processEditMessage(msg);
                 }
             }
             case DELETE -> {
                 if (msg.getMessageId() != null) {
-                    // M7: Người gửi hoặc Admin có thể xóa
                     if (!messageService.canDeleteMessage(msg.getMessageId(), sender, msg.getServerId())) {
                         messageService.sendError(session, "Không có quyền xóa tin nhắn này");
                         return;
                     }
-                    messageService.deleteMessage(msg.getMessageId());
-                    // Soft Delete: broadcast DELETE để client cập nhật UI
-                    msg.setContent("");
-                    msg.setIsDeleted(true);
-                    messageService.broadcastToChannel(msg);
+                    messageService.processDeleteMessage(msg);
                 }
             }
             case TYPING -> messageService.broadcastToChannel(msg);
             case STATUS -> {} // STATUS được publish từ presence-service qua RabbitMQ, không xử lý tại đây
             case PRIVATE -> {
-                ChatMessage saved = messageService.saveMessage(msg);
-                msg.setMessageId(saved.getId());
+                messageService.processPrivateMessage(msg);
+                // Send over WS immediately (outside transaction guarantee for WS, but within the flow)
                 messageService.sendPrivate(msg, session, sessions);
-                // Publish DM notification
-                messageService.publishNotificationEvent(msg);
             }
             case PING -> session.sendMessage(new TextMessage("{\"type\":\"PONG\"}"));
             default -> {}
-        }
-        
-        // Log event (bỏ qua TYPING, PING, STATUS để không spam log)
-        if (msg.getType() != MessageType.TYPING
-                && msg.getType() != MessageType.PING
-                && msg.getType() != MessageType.STATUS) {
-            messageService.publishLogEvent(msg);
         }
     }
 
@@ -167,3 +143,5 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return (query != null && query.startsWith("token=")) ? query.substring(6) : "";
     }
 }
+
+

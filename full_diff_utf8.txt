@@ -1,0 +1,4281 @@
+﻿diff --git a/.dockerignore b/.dockerignore
+index 81c83bf..b701706 100644
+--- a/.dockerignore
++++ b/.dockerignore
+@@ -3,4 +3,7 @@
+ .idea/
+ *.iml
+ .vscode/
+-.env
+\ No newline at end of file
++.env
++.gemini/
++*/target/
++target/
+\ No newline at end of file
+diff --git a/Jenkinsfile b/Jenkinsfile
+index 5071ac9..654df28 100644
+--- a/Jenkinsfile
++++ b/Jenkinsfile
+@@ -35,9 +35,9 @@ pipeline {
+             }
+         }
+ 
+-        stage('Build') {
++        stage('Build & Test') {
+             steps {
+-                sh 'mvn clean package -DskipTests -q --batch-mode'
++                sh 'mvn clean verify --batch-mode'
+             }
+             post {
+                 success {
+diff --git a/auth-service/Dockerfile b/auth-service/Dockerfile
+index 5817013..8c2e29b 100644
+--- a/auth-service/Dockerfile
++++ b/auth-service/Dockerfile
+@@ -5,6 +5,7 @@ WORKDIR /build
+ # Copy POM files tr╞░ß╗¢c ─æß╗â cache dependencies
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -33,4 +34,4 @@ COPY --from=build /build/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar app
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8081
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/auth-service/pom.xml b/auth-service/pom.xml
+index 6829d0d..1e97fb6 100644
+--- a/auth-service/pom.xml
++++ b/auth-service/pom.xml
+@@ -79,6 +79,16 @@
+             <artifactId>common-lib</artifactId>
+             <version>1.0.0-SNAPSHOT</version>
+         </dependency>
++        <dependency>
++            <groupId>net.devh</groupId>
++            <artifactId>grpc-spring-boot-starter</artifactId>
++            <version>3.1.0.RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
+     </dependencies>
+     <build>
+         <plugins>
+diff --git a/auth-service/src/main/java/com/chatsever/auth/exception/GlobalExceptionHandler.java b/auth-service/src/main/java/com/chatsever/auth/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index 4a31b26..0000000
+--- a/auth-service/src/main/java/com/chatsever/auth/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.auth.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho auth-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Auth error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/auth-service/src/main/java/com/chatsever/auth/service/AuthGrpcServiceImpl.java b/auth-service/src/main/java/com/chatsever/auth/service/AuthGrpcServiceImpl.java
+new file mode 100644
+index 0000000..f5c6fab
+--- /dev/null
++++ b/auth-service/src/main/java/com/chatsever/auth/service/AuthGrpcServiceImpl.java
+@@ -0,0 +1,45 @@
++package com.chatsever.auth.service;
++
++import com.chatsever.grpc.auth.AuthServiceGrpc;
++import com.chatsever.grpc.auth.ValidateTokenRequest;
++import com.chatsever.grpc.auth.ValidateTokenResponse;
++import com.chatsever.common.dto.AuthResponse;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class AuthGrpcServiceImpl extends AuthServiceGrpc.AuthServiceImplBase {
++
++    private final AuthService authService;
++
++    @Override
++    public void validateToken(ValidateTokenRequest request, StreamObserver<ValidateTokenResponse> responseObserver) {
++        try {
++            AuthResponse response = authService.validateToken(request.getToken());
++            if (response != null && response.getUsername() != null) {
++                responseObserver.onNext(ValidateTokenResponse.newBuilder()
++                        .setValid(true)
++                        .setUsername(response.getUsername())
++                        .build());
++            } else {
++                responseObserver.onNext(ValidateTokenResponse.newBuilder()
++                        .setValid(false)
++                        .setError("Invalid token")
++                        .build());
++            }
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            log.error("Token validation error: ", e);
++            responseObserver.onNext(ValidateTokenResponse.newBuilder()
++                    .setValid(false)
++                    .setError(e.getMessage() != null ? e.getMessage() : "Unknown error")
++                    .build());
++            responseObserver.onCompleted();
++        }
++    }
++}
++
+diff --git a/auth-service/src/main/java/com/chatsever/auth/service/AuthService.java b/auth-service/src/main/java/com/chatsever/auth/service/AuthService.java
+index 0387706..65a5f36 100644
+--- a/auth-service/src/main/java/com/chatsever/auth/service/AuthService.java
++++ b/auth-service/src/main/java/com/chatsever/auth/service/AuthService.java
+@@ -143,4 +143,6 @@ public class AuthService {
+         refreshTokenRepository.save(refreshToken);
+         return token;
+     }
+-}
+\ No newline at end of file
++}
++
++
+diff --git a/auth-service/src/main/resources/application.yml b/auth-service/src/main/resources/application.yml
+index e18f400..bc390b3 100644
+--- a/auth-service/src/main/resources/application.yml
++++ b/auth-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8081
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: auth-service
+   datasource:
+@@ -31,4 +34,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/channel-service/Dockerfile b/channel-service/Dockerfile
+index b465dac..0f205e4 100644
+--- a/channel-service/Dockerfile
++++ b/channel-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -28,3 +29,4 @@ COPY --from=build /build/channel-service/target/channel-service-1.0.0-SNAPSHOT.j
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8086
+ ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
++
+diff --git a/channel-service/pom.xml b/channel-service/pom.xml
+index 101fb5e..8ca9c7c 100644
+--- a/channel-service/pom.xml
++++ b/channel-service/pom.xml
+@@ -24,10 +24,6 @@
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-data-jpa</artifactId>
+         </dependency>
+-        <dependency>
+-            <groupId>org.springframework.cloud</groupId>
+-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+-        </dependency>
+         <dependency>
+             <groupId>com.mysql</groupId>
+             <artifactId>mysql-connector-j</artifactId>
+@@ -49,11 +45,25 @@
+             <artifactId>common-lib</artifactId>
+             <version>1.0.0-SNAPSHOT</version>
+         </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
+         <dependency>
+             <groupId>io.micrometer</groupId>
+             <artifactId>micrometer-registry-prometheus</artifactId>
+             <scope>runtime</scope>
+         </dependency>
++        <!-- Resilience4j -->
++        <dependency>
++            <groupId>org.springframework.cloud</groupId>
++            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
+     </dependencies>
+     <build>
+         <plugins>
+diff --git a/channel-service/src/main/java/com/chatsever/channel/ChannelServiceApplication.java b/channel-service/src/main/java/com/chatsever/channel/ChannelServiceApplication.java
+index 51219ef..5e32d95 100644
+--- a/channel-service/src/main/java/com/chatsever/channel/ChannelServiceApplication.java
++++ b/channel-service/src/main/java/com/chatsever/channel/ChannelServiceApplication.java
+@@ -2,10 +2,7 @@ package com.chatsever.channel;
+ 
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
+-import org.springframework.cloud.openfeign.EnableFeignClients;
+-
+ @SpringBootApplication
+-@EnableFeignClients
+ public class ChannelServiceApplication {
+     public static void main(String[] args) {
+         SpringApplication.run(ChannelServiceApplication.class, args);
+diff --git a/channel-service/src/main/java/com/chatsever/channel/adapter/RoleGrpcAdapter.java b/channel-service/src/main/java/com/chatsever/channel/adapter/RoleGrpcAdapter.java
+new file mode 100644
+index 0000000..47e0a76
+--- /dev/null
++++ b/channel-service/src/main/java/com/chatsever/channel/adapter/RoleGrpcAdapter.java
+@@ -0,0 +1,22 @@
++package com.chatsever.channel.adapter;
++
++import com.chatsever.grpc.role.GetPermissionsRequest;
++import com.chatsever.grpc.role.GetPermissionsResponse;
++import com.chatsever.grpc.role.RoleServiceGrpc;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class RoleGrpcAdapter {
++
++    @GrpcClient("role-service")
++    private RoleServiceGrpc.RoleServiceBlockingStub roleServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetPermissionsResponse getPermissions(GetPermissionsRequest request) {
++        return roleServiceClient.getPermissions(request);
++    }
++}
+diff --git a/channel-service/src/main/java/com/chatsever/channel/client/RoleClient.java b/channel-service/src/main/java/com/chatsever/channel/client/RoleClient.java
+deleted file mode 100644
+index 29138c1..0000000
+--- a/channel-service/src/main/java/com/chatsever/channel/client/RoleClient.java
++++ /dev/null
+@@ -1,14 +0,0 @@
+-package com.chatsever.channel.client;
+-
+-import org.springframework.cloud.openfeign.FeignClient;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-
+-import java.util.Map;
+-
+-@FeignClient(name = "role-service", url = "${ROLE_SERVICE_URL:http://localhost:8091}")
+-public interface RoleClient {
+-
+-    @GetMapping("/api/servers/{serverId}/permissions/{userId}")
+-    Map<String, Object> getPermissions(@PathVariable("serverId") Long serverId, @PathVariable("userId") String userId);
+-}
+diff --git a/channel-service/src/main/java/com/chatsever/channel/exception/GlobalExceptionHandler.java b/channel-service/src/main/java/com/chatsever/channel/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index d73ddb0..0000000
+--- a/channel-service/src/main/java/com/chatsever/channel/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.channel.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho channel-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Channel error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/channel-service/src/main/java/com/chatsever/channel/service/ChannelGrpcServiceImpl.java b/channel-service/src/main/java/com/chatsever/channel/service/ChannelGrpcServiceImpl.java
+new file mode 100644
+index 0000000..ca6c76a
+--- /dev/null
++++ b/channel-service/src/main/java/com/chatsever/channel/service/ChannelGrpcServiceImpl.java
+@@ -0,0 +1,97 @@
++package com.chatsever.channel.service;
++
++import com.chatsever.common.dto.ChannelDto;
++import com.chatsever.grpc.channel.*;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++import java.util.List;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class ChannelGrpcServiceImpl extends ChannelServiceGrpc.ChannelServiceImplBase {
++
++    private final ChannelService channelService;
++
++    @Override
++    public void getChannelsByServerId(GetChannelsRequest request, StreamObserver<GetChannelsResponse> responseObserver) {
++        try {
++            List<ChannelDto> channels = channelService.getChannelsByServerId(request.getServerId());
++            GetChannelsResponse.Builder builder = GetChannelsResponse.newBuilder();
++
++            for (ChannelDto c : channels) {
++                builder.addChannels(ChannelResponse.newBuilder()
++                        .setId(c.getId() != null ? c.getId() : 0)
++                        .setServerId(c.getServerId() != null ? c.getServerId() : 0)
++                        .setName(c.getName() != null ? c.getName() : "")
++                        .setType(c.getType() != null ? c.getType() : "")
++                        .build());
++            }
++
++            responseObserver.onNext(builder.build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void createChannel(CreateChannelRequest request, StreamObserver<ChannelResponse> responseObserver) {
++        try {
++            com.chatsever.channel.dto.ChannelRequest req = new com.chatsever.channel.dto.ChannelRequest();
++            req.setServerId(request.getServerId());
++            req.setName(request.getName());
++            req.setType(request.getType());
++
++            ChannelDto created = channelService.createChannel(req, request.getUserId());
++
++            responseObserver.onNext(ChannelResponse.newBuilder()
++                    .setId(created.getId() != null ? created.getId() : 0)
++                    .setServerId(created.getServerId() != null ? created.getServerId() : 0)
++                    .setName(created.getName() != null ? created.getName() : "")
++                    .setType(created.getType() != null ? created.getType() : "")
++                    .build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void deleteChannelsByServerId(DeleteChannelsRequest request, StreamObserver<EmptyChannelResponse> responseObserver) {
++        try {
++            channelService.deleteChannelsByServerId(request.getServerId());
++            responseObserver.onNext(EmptyChannelResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void removePinnedMessage(RemovePinnedMessageRequest request, StreamObserver<EmptyChannelResponse> responseObserver) {
++        try {
++            channelService.unpinMessage(request.getChannelId(), request.getMessageId(), request.getUserId());
++            responseObserver.onNext(EmptyChannelResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++}
++
+diff --git a/channel-service/src/main/java/com/chatsever/channel/service/ChannelService.java b/channel-service/src/main/java/com/chatsever/channel/service/ChannelService.java
+index 6c524a5..7e0fae8 100644
+--- a/channel-service/src/main/java/com/chatsever/channel/service/ChannelService.java
++++ b/channel-service/src/main/java/com/chatsever/channel/service/ChannelService.java
+@@ -21,3 +21,5 @@ public interface ChannelService {
+     // CH8 ΓÇö Pin channels
+     ChannelDto togglePinChannel(Long channelId, String userId);
+ }
++
++
+diff --git a/channel-service/src/main/java/com/chatsever/channel/service/impl/ChannelServiceImpl.java b/channel-service/src/main/java/com/chatsever/channel/service/impl/ChannelServiceImpl.java
+index 2c31487..d52b031 100644
+--- a/channel-service/src/main/java/com/chatsever/channel/service/impl/ChannelServiceImpl.java
++++ b/channel-service/src/main/java/com/chatsever/channel/service/impl/ChannelServiceImpl.java
+@@ -8,7 +8,9 @@ import com.chatsever.channel.repository.PinnedMessageRepository;
+ import com.chatsever.channel.service.ChannelService;
+ import com.chatsever.common.dto.ChannelDto;
+ import com.chatsever.channel.dto.ChannelRequest;
+-import com.chatsever.channel.client.RoleClient;
++import com.chatsever.grpc.role.*;
++import com.chatsever.channel.adapter.RoleGrpcAdapter;
++import org.springframework.beans.factory.annotation.Autowired;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+@@ -22,7 +24,8 @@ public class ChannelServiceImpl implements ChannelService {
+ 
+     private final ChannelRepository channelRepository;
+     private final PinnedMessageRepository pinnedMessageRepository;
+-    private final RoleClient roleClient;
++    @Autowired
++    private RoleGrpcAdapter roleServiceClient;
+ 
+     @Override
+     @Transactional
+@@ -149,9 +152,10 @@ public class ChannelServiceImpl implements ChannelService {
+ 
+     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
+         try {
+-            java.util.Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
+-            if (perms != null && perms.containsKey("permissionBitmask")) {
+-                int bitmask = (int) perms.get("permissionBitmask");
++            GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(userId).build();
++            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
++            if (true) {
++                int bitmask = resp.getPermissionBitmask();
+                 // Check nß║┐u c├│ quyß╗ün t╞░╞íng ß╗⌐ng, HOß║╢C c├│ quyß╗ün ADMIN (128), HOß║╢C OWNER (255)
+                 if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                     return; // C├│ quyß╗ün
+diff --git a/channel-service/src/main/resources/application.yml b/channel-service/src/main/resources/application.yml
+index ebd5027..638998a 100644
+--- a/channel-service/src/main/resources/application.yml
++++ b/channel-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8086
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: channel-service
+   datasource:
+@@ -25,4 +28,23 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
++resilience4j:
++  circuitbreaker:
++    instances:
++      default:
++        registerHealthIndicator: true
++        slidingWindowSize: 10
++        permittedNumberOfCallsInHalfOpenState: 3
++        slidingWindowType: COUNT_BASED
++        minimumNumberOfCalls: 5
++        waitDurationInOpenState: 5000
++        failureRateThreshold: 50
++        eventConsumerBufferSize: 10
++  retry:
++    instances:
++      default:
++        maxAttempts: 3
++        waitDuration: 1000
++
+diff --git a/common-lib/pom.xml b/common-lib/pom.xml
+index eea3bef..d2999d6 100644
+--- a/common-lib/pom.xml
++++ b/common-lib/pom.xml
+@@ -41,6 +41,10 @@
+             <groupId>org.springframework</groupId>
+             <artifactId>spring-jcl</artifactId>
+         </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-web</artifactId>
++        </dependency>
+ 
+         <dependency>
+             <groupId>org.projectlombok</groupId>
+diff --git a/common-lib/src/main/java/com/chatsever/common/config/CommonExceptionAutoConfiguration.java b/common-lib/src/main/java/com/chatsever/common/config/CommonExceptionAutoConfiguration.java
+new file mode 100644
+index 0000000..507f216
+--- /dev/null
++++ b/common-lib/src/main/java/com/chatsever/common/config/CommonExceptionAutoConfiguration.java
+@@ -0,0 +1,10 @@
++package com.chatsever.common.config;
++
++import com.chatsever.common.exception.GlobalExceptionHandler;
++import org.springframework.boot.autoconfigure.AutoConfiguration;
++import org.springframework.context.annotation.Import;
++
++@AutoConfiguration
++@Import(GlobalExceptionHandler.class)
++public class CommonExceptionAutoConfiguration {
++}
+diff --git a/common-lib/src/main/java/com/chatsever/common/exception/GlobalExceptionHandler.java b/common-lib/src/main/java/com/chatsever/common/exception/GlobalExceptionHandler.java
+new file mode 100644
+index 0000000..bdc06cf
+--- /dev/null
++++ b/common-lib/src/main/java/com/chatsever/common/exception/GlobalExceptionHandler.java
+@@ -0,0 +1,52 @@
++package com.chatsever.common.exception;
++
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ProblemDetail;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++import org.springframework.web.bind.annotation.RestControllerAdvice;
++import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
++
++import java.net.URI;
++import java.time.Instant;
++
++/**
++ * Global exception handler tß║¡p trung cho to├án bß╗Ö c├íc microservices.
++ * Tu├ón thß╗º chuß║⌐n RFC 7807 (Problem Details for HTTP APIs).
++ */
++@RestControllerAdvice
++public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
++
++    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
++
++    @ExceptionHandler(IllegalArgumentException.class)
++    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
++        log.warn("Illegal argument: {}", ex.getMessage());
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
++        problemDetail.setTitle("Bad Request");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/bad-request"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
++    }
++
++    @ExceptionHandler(RuntimeException.class)
++    public ProblemDetail handleRuntime(RuntimeException ex) {
++        log.warn("Runtime exception: {}", ex.getMessage());
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
++        problemDetail.setTitle("Runtime Error");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/runtime-error"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
++    }
++
++    @ExceptionHandler(Exception.class)
++    public ProblemDetail handleGeneral(Exception ex) {
++        log.error("Unexpected error: ", ex);
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
++        problemDetail.setTitle("Internal Server Error");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/internal-server-error"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
++    }
++}
+diff --git a/common-lib/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports b/common-lib/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+new file mode 100644
+index 0000000..3a39a20
+--- /dev/null
++++ b/common-lib/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+@@ -0,0 +1 @@
++com.chatsever.common.config.CommonExceptionAutoConfiguration
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 23448d8..d8f0652 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -72,7 +72,7 @@ services:
+     container_name: gateway-service
+     restart: always
+     ports:
+-      - "8080:8080"
++      - "9090:8080"
+     environment:
+       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+       - JWT_SECRET=${JWT_SECRET}
+diff --git a/file-service/Dockerfile b/file-service/Dockerfile
+index 1b52eae..a45d886 100644
+--- a/file-service/Dockerfile
++++ b/file-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/file-service/target/file-service-1.0.0-SNAPSHOT.jar app
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8089
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/file-service/src/main/java/com/chatsever/file/exception/GlobalExceptionHandler.java b/file-service/src/main/java/com/chatsever/file/exception/GlobalExceptionHandler.java
+index 7c2975f..9631d87 100644
+--- a/file-service/src/main/java/com/chatsever/file/exception/GlobalExceptionHandler.java
++++ b/file-service/src/main/java/com/chatsever/file/exception/GlobalExceptionHandler.java
+@@ -3,74 +3,49 @@ package com.chatsever.file.exception;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
++import org.springframework.http.ProblemDetail;
+ import org.springframework.web.bind.annotation.ExceptionHandler;
+ import org.springframework.web.bind.annotation.RestControllerAdvice;
+ import org.springframework.web.multipart.MaxUploadSizeExceededException;
+ 
+-import java.time.LocalDateTime;
+-import java.util.Map;
++import java.net.URI;
++import java.time.Instant;
+ 
+ /**
+- * Global exception handler cho file-service.
++ * Custom exception handler cho file-service, kß║┐ thß╗½a handler chung.
+  */
+ @RestControllerAdvice
+-public class GlobalExceptionHandler {
++public class GlobalExceptionHandler extends com.chatsever.common.exception.GlobalExceptionHandler {
+ 
+     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+ 
+-    // Xß╗¡ l├╜ lß╗ùi: kh├┤ng t├¼m thß║Ñy file ΓåÆ trß║ú 404
+     @ExceptionHandler(FileNotFoundException.class)
+-    public ResponseEntity<Map<String, Object>> handleFileNotFound(FileNotFoundException ex) {
++    public ProblemDetail handleFileNotFound(FileNotFoundException ex) {
+         log.warn("File not found: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+-                "error", "File not found",
+-                "message", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
++        problemDetail.setTitle("File Not Found");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/not-found"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
+     }
+ 
+-    // Xß╗¡ l├╜ lß╗ùi: file qu├í lß╗¢n (>10MB) ΓåÆ trß║ú 413
+     @ExceptionHandler(FileTooLargeException.class)
+-    public ResponseEntity<Map<String, Object>> handleFileTooLarge(FileTooLargeException ex) {
++    public ProblemDetail handleFileTooLarge(FileTooLargeException ex) {
+         log.warn("File too large: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+-                "error", "File too large",
+-                "message", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage());
++        problemDetail.setTitle("File Too Large");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/payload-too-large"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
+     }
+ 
+-    // Xß╗¡ l├╜ lß╗ùi: Spring tß╗▒ bß║»t khi request v╞░ß╗út max-request-size ΓåÆ trß║ú 413
+     @ExceptionHandler(MaxUploadSizeExceededException.class)
+-    public ResponseEntity<Map<String, Object>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
++    public ProblemDetail handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+         log.warn("Max upload size exceeded: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+-                "error", "File too large",
+-                "message", "K├¡ch th╞░ß╗¢c file v╞░ß╗út qu├í giß╗¢i hß║ín cho ph├⌐p (10MB)",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    // Xß╗¡ l├╜ lß╗ùi: tham sß╗æ kh├┤ng hß╗úp lß╗ç (file rß╗ùng, loß║íi file kh├┤ng ─æ╞░ß╗úc hß╗ù trß╗ú, ΓÇª) ΓåÆ trß║ú 400
+-    @ExceptionHandler(IllegalArgumentException.class)
+-    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
+-        log.warn("Bad request: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", "Bad request",
+-                "message", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    // Xß╗¡ l├╜ lß╗ùi: mß╗ìi exception kh├┤ng mong ─æß╗úi kh├íc ΓåÆ trß║ú 500
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "K├¡ch th╞░ß╗¢c file v╞░ß╗út qu├í giß╗¢i hß║ín cho ph├⌐p (10MB)");
++        problemDetail.setTitle("Max Upload Size Exceeded");
++        problemDetail.setType(URI.create("https://api.chatserver.com/errors/payload-too-large"));
++        problemDetail.setProperty("timestamp", Instant.now());
++        return problemDetail;
+     }
+ }
+diff --git a/file-service/src/main/resources/application-docker.yml b/file-service/src/main/resources/application-docker.yml
+index 9b8a9e5..3e6b480 100644
+--- a/file-service/src/main/resources/application-docker.yml
++++ b/file-service/src/main/resources/application-docker.yml
+@@ -1,5 +1,8 @@
+ # Override cho m├┤i tr╞░ß╗¥ng Docker ΓÇö file-service
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   datasource:
+     url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/${MYSQL_DATABASE:chatserver_files}
+     username: ${MYSQL_USER:chatapp}
+@@ -12,3 +15,5 @@ spring:
+   h2:
+     console:
+       enabled: false
++
++
+diff --git a/file-service/src/main/resources/application.yml b/file-service/src/main/resources/application.yml
+index 9cc1b58..c9438c0 100644
+--- a/file-service/src/main/resources/application.yml
++++ b/file-service/src/main/resources/application.yml
+@@ -5,6 +5,9 @@ server:
+   port: 8089                          # Port chß║íy file-service
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: file-service
+   # --- Cß║Ñu h├¼nh Database (H2 in-memory cho dev, MySQL cho Docker/production) ---
+@@ -50,4 +53,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/friend-service/Dockerfile b/friend-service/Dockerfile
+index 8338b0a..ff103b4 100644
+--- a/friend-service/Dockerfile
++++ b/friend-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -16,7 +17,6 @@ COPY file-service/pom.xml file-service/pom.xml
+ COPY user-profile-service/pom.xml user-profile-service/pom.xml
+ COPY role-service/pom.xml role-service/pom.xml
+ COPY friend-service/pom.xml friend-service/pom.xml
+-COPY client-app/pom.xml client-app/pom.xml
+ 
+ RUN mvn dependency:go-offline -pl friend-service -am -q || true
+ 
+diff --git a/friend-service/bin/Dockerfile b/friend-service/bin/Dockerfile
+index 8338b0a..ff103b4 100644
+--- a/friend-service/bin/Dockerfile
++++ b/friend-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -16,7 +17,6 @@ COPY file-service/pom.xml file-service/pom.xml
+ COPY user-profile-service/pom.xml user-profile-service/pom.xml
+ COPY role-service/pom.xml role-service/pom.xml
+ COPY friend-service/pom.xml friend-service/pom.xml
+-COPY client-app/pom.xml client-app/pom.xml
+ 
+ RUN mvn dependency:go-offline -pl friend-service -am -q || true
+ 
+diff --git a/friend-service/bin/src/main/resources/application.yml b/friend-service/bin/src/main/resources/application.yml
+index 725c0b9..389928a 100644
+--- a/friend-service/bin/src/main/resources/application.yml
++++ b/friend-service/bin/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8092
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: friend-service
+   datasource:
+@@ -22,3 +25,5 @@ management:
+   endpoint:
+     health:
+       show-details: always
++
++
+diff --git a/friend-service/pom.xml b/friend-service/pom.xml
+index e2d1377..d7aeb70 100644
+--- a/friend-service/pom.xml
++++ b/friend-service/pom.xml
+@@ -40,6 +40,30 @@
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-actuator</artifactId>
+         </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>common-lib</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
++        <dependency>
++            <groupId>net.devh</groupId>
++            <artifactId>grpc-spring-boot-starter</artifactId>
++            <version>3.1.0.RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>io.github.resilience4j</groupId>
++            <artifactId>resilience4j-spring-boot3</artifactId>
++            <version>2.2.0</version>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/friend-service/src/main/java/com/chatsever/friend/adapter/UserGrpcAdapter.java b/friend-service/src/main/java/com/chatsever/friend/adapter/UserGrpcAdapter.java
+new file mode 100644
+index 0000000..3aecf50
+--- /dev/null
++++ b/friend-service/src/main/java/com/chatsever/friend/adapter/UserGrpcAdapter.java
+@@ -0,0 +1,26 @@
++package com.chatsever.friend.adapter;
++
++import com.chatsever.grpc.user.UserServiceGrpc;
++import com.chatsever.grpc.user.CheckUserExistsRequest;
++import com.chatsever.grpc.user.CheckUserExistsResponse;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class UserGrpcAdapter {
++
++    @GrpcClient("user-profile-service")
++    private UserServiceGrpc.UserServiceBlockingStub userServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public boolean checkUserExists(String username) {
++        CheckUserExistsRequest request = CheckUserExistsRequest.newBuilder()
++                .setUsername(username)
++                .build();
++        CheckUserExistsResponse response = userServiceClient.checkUserExists(request);
++        return response.getExists();
++    }
++}
+diff --git a/friend-service/src/main/java/com/chatsever/friend/controller/FriendController.java b/friend-service/src/main/java/com/chatsever/friend/controller/FriendController.java
+index 1ea1e67..fab9d8f 100644
+--- a/friend-service/src/main/java/com/chatsever/friend/controller/FriendController.java
++++ b/friend-service/src/main/java/com/chatsever/friend/controller/FriendController.java
+@@ -6,8 +6,6 @@ import com.chatsever.friend.repository.FriendshipRepository;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.web.bind.annotation.*;
+-import org.springframework.web.client.RestTemplate;
+-import org.springframework.web.client.HttpClientErrorException;
+ 
+ import java.util.List;
+ import java.util.Map;
+@@ -19,9 +17,11 @@ import java.util.stream.Collectors;
+ public class FriendController {
+ 
+     private final FriendshipRepository repository;
++    private final com.chatsever.friend.adapter.UserGrpcAdapter userGrpcAdapter;
+ 
+-    public FriendController(FriendshipRepository repository) {
++    public FriendController(FriendshipRepository repository, com.chatsever.friend.adapter.UserGrpcAdapter userGrpcAdapter) {
+         this.repository = repository;
++        this.userGrpcAdapter = userGrpcAdapter;
+     }
+ 
+     // 1. Get accepted friends
+@@ -52,14 +52,12 @@ public class FriendController {
+             return ResponseEntity.badRequest().body(Map.of("message", "Username kh├┤ng hß╗úp lß╗ç"));
+         }
+ 
+-        // Check if user exists via user-profile-service
+-        RestTemplate restTemplate = new RestTemplate();
+-        String userProfileUrl = System.getenv("USER_PROFILE_URL");
+-        if (userProfileUrl == null) userProfileUrl = "http://user-profile-service:8090";
++        // Check if user exists via user-profile-service (gRPC)
+         try {
+-            restTemplate.getForEntity(userProfileUrl + "/api/users/" + targetUser + "/profile", Object.class);
+-        } catch (HttpClientErrorException.NotFound e) {
+-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Kh├┤ng t├¼m thß║Ñy username n├áy trong hß╗ç thß╗æng."));
++            boolean exists = userGrpcAdapter.checkUserExists(targetUser);
++            if (!exists) {
++                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Kh├┤ng t├¼m thß║Ñy username n├áy trong hß╗ç thß╗æng."));
++            }
+         } catch (Exception e) {
+             // Log error, assume user exists or fallback
+         }
+diff --git a/friend-service/src/main/resources/application.yml b/friend-service/src/main/resources/application.yml
+index 725c0b9..389928a 100644
+--- a/friend-service/src/main/resources/application.yml
++++ b/friend-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8092
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: friend-service
+   datasource:
+@@ -22,3 +25,5 @@ management:
+   endpoint:
+     health:
+       show-details: always
++
++
+diff --git a/gateway-service/Dockerfile b/gateway-service/Dockerfile
+index 1103dd3..cdaa2e5 100644
+--- a/gateway-service/Dockerfile
++++ b/gateway-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/gateway-service/target/gateway-service-1.0.0-SNAPSHOT.j
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8080
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/gateway-service/bin/Dockerfile b/gateway-service/bin/Dockerfile
+index 1103dd3..cdaa2e5 100644
+--- a/gateway-service/bin/Dockerfile
++++ b/gateway-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/gateway-service/target/gateway-service-1.0.0-SNAPSHOT.j
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8080
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/gateway-service/bin/src/main/resources/application.yml b/gateway-service/bin/src/main/resources/application.yml
+index 85bf6ab..c7a48cc 100644
+--- a/gateway-service/bin/src/main/resources/application.yml
++++ b/gateway-service/bin/src/main/resources/application.yml
+@@ -4,6 +4,9 @@ server:
+   port: 8080
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: gateway-service
+   cloud:
+@@ -124,4 +127,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/gateway-service/src/main/resources/application.yml b/gateway-service/src/main/resources/application.yml
+index 73c7760..cd050e4 100644
+--- a/gateway-service/src/main/resources/application.yml
++++ b/gateway-service/src/main/resources/application.yml
+@@ -4,6 +4,9 @@ server:
+   port: 8080
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: gateway-service
+   cloud:
+@@ -124,4 +127,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/grpc-contracts/pom.xml b/grpc-contracts/pom.xml
+new file mode 100644
+index 0000000..1a94ee5
+--- /dev/null
++++ b/grpc-contracts/pom.xml
+@@ -0,0 +1,63 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++    <parent>
++        <groupId>com.chatsever</groupId>
++        <artifactId>chat-server</artifactId>
++        <version>1.0.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>grpc-contracts</artifactId>
++
++    <properties>
++        <grpc.version>1.62.2</grpc.version>
++        <protobuf.version>3.25.3</protobuf.version>
++        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
++        <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
++    </properties>
++
++    <dependencies>
++        <dependency>
++            <groupId>net.devh</groupId>
++            <artifactId>grpc-spring-boot-starter</artifactId>
++            <version>3.1.0.RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>javax.annotation</groupId>
++            <artifactId>javax.annotation-api</artifactId>
++            <version>1.3.2</version>
++        </dependency>
++    </dependencies>
++
++    <build>
++        <extensions>
++            <extension>
++                <groupId>kr.motd.maven</groupId>
++                <artifactId>os-maven-plugin</artifactId>
++                <version>${os-maven-plugin.version}</version>
++            </extension>
++        </extensions>
++        <plugins>
++            <plugin>
++                <groupId>org.xolstice.maven.plugins</groupId>
++                <artifactId>protobuf-maven-plugin</artifactId>
++                <version>${protobuf-maven-plugin.version}</version>
++                <configuration>
++                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
++                    <pluginId>grpc-java</pluginId>
++                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
++                </configuration>
++                <executions>
++                    <execution>
++                        <goals>
++                            <goal>compile</goal>
++                            <goal>compile-custom</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
++        </plugins>
++    </build>
++</project>
+diff --git a/grpc-contracts/src/main/proto/auth.proto b/grpc-contracts/src/main/proto/auth.proto
+new file mode 100644
+index 0000000..8f6b268
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/auth.proto
+@@ -0,0 +1,21 @@
++syntax = "proto3";
++
++package auth;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.auth";
++option java_outer_classname = "AuthProto";
++
++service AuthService {
++    rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
++}
++
++message ValidateTokenRequest {
++    string token = 1;
++}
++
++message ValidateTokenResponse {
++    bool valid = 1;
++    string username = 2;
++    string error = 3;
++}
+diff --git a/grpc-contracts/src/main/proto/channel.proto b/grpc-contracts/src/main/proto/channel.proto
+new file mode 100644
+index 0000000..515f813
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/channel.proto
+@@ -0,0 +1,48 @@
++syntax = "proto3";
++
++package channel;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.channel";
++option java_outer_classname = "ChannelProto";
++
++service ChannelService {
++    rpc GetChannelsByServerId (GetChannelsRequest) returns (GetChannelsResponse);
++    rpc CreateChannel (CreateChannelRequest) returns (ChannelResponse);
++    rpc DeleteChannelsByServerId (DeleteChannelsRequest) returns (EmptyChannelResponse);
++    rpc RemovePinnedMessage (RemovePinnedMessageRequest) returns (EmptyChannelResponse);
++}
++
++message RemovePinnedMessageRequest {
++    int64 channelId = 1;
++    int64 messageId = 2;
++    string userId = 3;
++}
++
++message EmptyChannelResponse {}
++
++message ChannelResponse {
++    int64 id = 1;
++    int64 serverId = 2;
++    string name = 3;
++    string type = 4;
++}
++
++message GetChannelsRequest {
++    int64 serverId = 1;
++}
++
++message GetChannelsResponse {
++    repeated ChannelResponse channels = 1;
++}
++
++message CreateChannelRequest {
++    int64 serverId = 1;
++    string name = 2;
++    string type = 3;
++    string userId = 4;
++}
++
++message DeleteChannelsRequest {
++    int64 serverId = 1;
++}
+diff --git a/grpc-contracts/src/main/proto/presence.proto b/grpc-contracts/src/main/proto/presence.proto
+new file mode 100644
+index 0000000..3c5d888
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/presence.proto
+@@ -0,0 +1,18 @@
++syntax = "proto3";
++
++package presence;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.presence";
++option java_outer_classname = "PresenceProto";
++
++service PresenceService {
++    rpc NotifyPresence (NotifyPresenceRequest) returns (EmptyPresenceResponse);
++}
++
++message NotifyPresenceRequest {
++    string username = 1;
++    string action = 2; // "connect" or "disconnect"
++}
++
++message EmptyPresenceResponse {}
+diff --git a/grpc-contracts/src/main/proto/role.proto b/grpc-contracts/src/main/proto/role.proto
+new file mode 100644
+index 0000000..fc43e6d
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/role.proto
+@@ -0,0 +1,40 @@
++syntax = "proto3";
++
++package role;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.role";
++option java_outer_classname = "RoleProto";
++
++service RoleService {
++    rpc InitDefaultRoles (InitDefaultRolesRequest) returns (EmptyResponse);
++    rpc CheckBanned (CheckBannedRequest) returns (CheckBannedResponse);
++    rpc GetPermissions (GetPermissionsRequest) returns (GetPermissionsResponse);
++}
++
++message EmptyResponse {}
++
++message InitDefaultRolesRequest {
++    int64 serverId = 1;
++}
++
++message CheckBannedRequest {
++    int64 serverId = 1;
++    string userId = 2;
++}
++
++message CheckBannedResponse {
++    bool isBanned = 1;
++    string reason = 2;
++}
++
++message GetPermissionsRequest {
++    int64 serverId = 1;
++    string userId = 2;
++}
++
++message GetPermissionsResponse {
++    repeated string permissions = 1;
++    string roleName = 2;
++    int32 permissionBitmask = 3;
++}
+diff --git a/grpc-contracts/src/main/proto/server.proto b/grpc-contracts/src/main/proto/server.proto
+new file mode 100644
+index 0000000..ec2a454
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/server.proto
+@@ -0,0 +1,61 @@
++syntax = "proto3";
++
++package server;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.server";
++option java_outer_classname = "ServerProto";
++
++service ServerInfoService {
++    rpc GetServerDetails (GetServerDetailsRequest) returns (GetServerDetailsResponse);
++    rpc EnsureMember (EnsureMemberRequest) returns (EnsureMemberResponse);
++    rpc UpdateMemberRoles (UpdateMemberRolesRequest) returns (EmptyServerResponse);
++    rpc LeaveServer (LeaveServerRequest) returns (EmptyServerResponse);
++}
++
++message EmptyServerResponse {}
++
++message GetServerDetailsRequest {
++    int64 serverId = 1;
++}
++
++message ServerDetails {
++    int64 id = 1;
++    string name = 2;
++    string ownerId = 3;
++    string description = 4;
++    string icon = 5;
++    string inviteCode = 6;
++}
++
++message MemberDetails {
++    string userId = 1;
++    repeated string roleIds = 2;
++    int64 joinedAt = 3; // timestamp in millis
++}
++
++message GetServerDetailsResponse {
++    ServerDetails server = 1;
++    repeated MemberDetails members = 2;
++}
++
++message EnsureMemberRequest {
++    int64 serverId = 1;
++    string userId = 2;
++}
++
++message EnsureMemberResponse {
++    string status = 1;
++    string message = 2;
++}
++
++message UpdateMemberRolesRequest {
++    int64 serverId = 1;
++    string userId = 2;
++    repeated string roleIds = 3;
++}
++
++message LeaveServerRequest {
++    int64 serverId = 1;
++    string userId = 2;
++}
+diff --git a/grpc-contracts/src/main/proto/user.proto b/grpc-contracts/src/main/proto/user.proto
+new file mode 100644
+index 0000000..70a5d99
+--- /dev/null
++++ b/grpc-contracts/src/main/proto/user.proto
+@@ -0,0 +1,19 @@
++syntax = "proto3";
++
++package user;
++
++option java_multiple_files = true;
++option java_package = "com.chatsever.grpc.user";
++option java_outer_classname = "UserProto";
++
++service UserService {
++    rpc CheckUserExists (CheckUserExistsRequest) returns (CheckUserExistsResponse);
++}
++
++message CheckUserExistsRequest {
++    string username = 1;
++}
++
++message CheckUserExistsResponse {
++    bool exists = 1;
++}
+diff --git a/implementation_plan.md b/implementation_plan.md
+new file mode 100644
+index 0000000..8965fd1
+--- /dev/null
++++ b/implementation_plan.md
+@@ -0,0 +1,87 @@
++# Master Plan: Refactor Hß╗ç thß╗æng Microservices To├án Diß╗çn
++
++Bß║ún kß║┐ hoß║ích to├án diß╗çn (Master Plan) n├áy nhß║▒m hoß║ích ─æß╗ïnh lß╗Ö tr├¼nh chuyß╗ân ─æß╗òi dß╗▒ ├ín `chat-server-microservices` tß╗½ trß║íng th├íi "Distributed Monolith" (Khß╗æi nguy├¬n khß╗æi ph├ón t├ín) trß╗ƒ th├ánh mß╗Öt hß╗ç thß╗æng Microservices ─æß║ít chuß║⌐n c├┤ng nghiß╗çp, tu├ón thß╗º nghi├¬m ngß║╖t c├íc nguy├¬n l├╜ cß╗ºa Domain-Driven Design (DDD) v├á Cloud-Native.
++
++## User Review Required
++
++> [!WARNING]
++> Kß║┐ hoß║ích n├áy ph├íc thß║úo lß╗Ö tr├¼nh ─æ╞░ß╗¥ng d├ái cho to├án bß╗Ö dß╗▒ ├ín. Vui l├▓ng xem x├⌐t sß╗▒ ─æ├ính ─æß╗òi (trade-offs) vß╗ü mß║╖t thß╗¥i gian v├á nguß╗ôn lß╗▒c cho tß╗½ng Phase. ─Éß╗â thß╗▒c hiß╗çn th├ánh c├┤ng, ─æß╗Öi ng┼⌐ cß║ºn ki├¬n nhß║½n tu├ón thß╗º thß╗⌐ tß╗▒ c├íc Phase thay v├¼ nhß║úy c├│c.
++
++## Open Questions
++
++> [!IMPORTANT]
++> 1. Thß╗¥i gian dß╗▒ kiß║┐n (Deadline) cho tß╗½ng Phase l├á bao l├óu? (Gß╗úi ├╜: Phase 1: 3-4 tuß║ºn, Phase 2: 4-6 tuß║ºn, Phase 3: 2-3 tuß║ºn).
++> 2. ─Éß╗Öi ng┼⌐ c├│ sß║╡n s├áng ├íp dß╗Ñng Kubernetes ß╗ƒ Phase 3 hay vß║½n muß╗æn giß╗» ß╗ƒ mß╗⌐c Docker Compose / Docker Swarm ─æß╗â tiß║┐t kiß╗çm chi ph├¡/t├ái nguy├¬n?
++
++---
++
++## ≡ƒÄ» PHASE 1: Macro-Architecture & Nß╗ün Tß║úng Hß║í Tß║ºng (Infrastructure Stabilization)
++**Mß╗Ñc ti├¬u:** X├óy dß╗▒ng hß╗ç thß╗æng l╞░ß╗¢i bß║úo vß╗ç (safety net), ─æß║úm bß║úo t├¡nh to├án vß║╣n dß╗» liß╗çu, khß║ú n─âng chß╗ïu lß╗ùi mß║íng v├á gi├ím s├ít to├án diß╗çn tr╞░ß╗¢c khi ─æß╗Ñng v├áo logic nghiß╗çp vß╗Ñ b├¬n trong.
++
++### 1.1 Quß║ún trß╗ï Dß╗» liß╗çu & Identity (Data & Identity Management)
++- **T├¡ch hß╗úp Flyway/Liquibase:** X├│a bß╗Å ho├án to├án `SPRING_JPA_DDL_AUTO=update`. Quß║ún l├╜ cß║Ñu tr├║c schema database qua versioning (V1, V2...) tß╗▒ ─æß╗Öng chß║íy khi khß╗ƒi ─æß╗Öng service.
++- **T├íi cß║Ñu tr├║c Identity Provider:** Loß║íi bß╗Å `auth-service` tß╗▒ x├óy dß╗▒ng cß╗Ñc bß╗Ö. T├¡ch hß╗úp giß║úi ph├íp chuy├¬n dß╗Ñng (Keycloak/Auth0) l├ám Centralized IdP. API Gateway chß╗ïu tr├ích nhiß╗çm x├íc thß╗▒c token (Authentication).
++
++### 1.2 Gi├ím S├ít Ph├ón T├ín (Observability Triad)
++- **Distributed Tracing:** T├¡ch hß╗úp `micrometer-tracing-bridge-otel`. Gß║»n `TraceId` v├á `SpanId` cho mß╗ìi request HTTP, gRPC v├á RabbitMQ message lan truyß╗ün qua c├íc service.
++- **Centralized Logging:** Triß╗ân khai hß║í tß║ºng gom log tß║¡p trung ELK Stack (Elasticsearch, Logstash, Kibana) hoß║╖c Grafana Loki.
++- **Structured Logging:** ─Éß╗ïnh dß║íng output log cß╗ºa to├án bß╗Ö service sang ─æß╗ïnh dß║íng JSON ─æß╗â dß╗à d├áng index v├á t├¼m kiß║┐m.
++
++### 1.3 T├¡ch Hß╗úp & Chß╗ïu Lß╗ùi (Integration & Resilience)
++- **Pattern Kh├íng Lß╗ùi:** T├¡ch hß╗úp th╞░ viß╗çn `resilience4j`. ├üp dß╗Ñng Circuit Breaker, Retry, Timeout cho mß╗ìi cuß╗Öc gß╗ìi mß║íng ─æß╗ông bß╗Ö.
++- **Chuß║⌐n H├│a Lß╗ùi (Problem Details):** Tß║ío `GlobalExceptionHandler` chung ─æß╗â bß║»t lß╗ùi v├á trß║ú vß╗ü chuß║⌐n RFC 7807, che giß║Ñu ho├án to├án Stack Trace.
++- **Khß╗ƒi tß║ío gRPC:** X├óy dß╗▒ng module `grpc-contracts`, bß║»t ─æß║ºu chuyß╗ân ─æß╗òi c├íc REST API nß╗Öi bß╗Ö c├│ traffic cao sang gRPC.
++- **Strict Decoupling (Dß╗ìn dß║╣p Common-lib):** Gß╗í bß╗Å to├án bß╗Ö Business DTOs ra khß╗Åi `common-lib`. `common-lib` chß╗ë giß╗» c├íc file cß║Ñu h├¼nh kß╗╣ thuß║¡t (Exceptions, JWT parser, Utils). C├íc service giao tiß║┐p qua Anti-Corruption Layer hoß║╖c chung file `.proto`.
++
++### 1.4 H╞░ß╗¢ng Sß╗▒ Kiß╗çn & Nhß║Ñt Qu├ín Dß╗» Liß╗çu (Event-Driven & Consistency)
++- **Transactional Outbox Pattern:** Giß║úi quyß║┐t triß╗çt ─æß╗â b├ái to├ín Dual-Write. Thiß║┐t kß║┐ bß║úng Outbox, l╞░u sß╗▒ kiß╗çn v├áo DB c├╣ng transaction vß╗¢i logic nghiß╗çp vß╗Ñ.
++- **Background Message Relay:** X├óy dß╗▒ng Background Worker (Scheduler) ─æß╗ïnh kß╗│ qu├⌐t bß║úng Outbox ─æß╗â publish tin nhß║»n l├¬n RabbitMQ an to├án (chuß║⌐n At-least-once delivery).
++
++---
++
++## ≡ƒÄ» PHASE 2: Micro-Architecture & Domain-Driven Design (Internal Restructuring)
++**Mß╗Ñc ti├¬u:** Mß╗ƒ tß╗½ng service ra, ─æß║¡p bß╗Å v├á t├íi cß║Ñu tr├║c s├óu b├¬n trong m├ú nguß╗ôn ─æß╗â ─æß║úm bß║úo khß║ú n─âng bß║úo tr├¼, khß║ú n─âng mß╗ƒ rß╗Öng (Maintainability & Scalability).
++
++### 2.1 T├íi cß║Ñu tr├║c m├ú nguß╗ôn (Codebase Architecture)
++- **Clean/Vertical Slice Architecture:** Ph├í bß╗Å m├┤ h├¼nh Layered N-Tier (Controller-Service-Repository) kiß╗âu c┼⌐. Thiß║┐t kß║┐ lß║íi m├ú nguß╗ôn chia theo cß╗Ñm t├¡nh n─âng (Feature-based) ─æß╗â khi sß╗¡a ─æß╗òi mß╗Öt t├¡nh n─âng kh├┤ng ß║únh h╞░ß╗ƒng ─æß║┐n t├¡nh n─âng kh├íc.
++- **T├ích biß╗çt Core Domain:** ─Éß║úm bß║úo tß║ºng nghiß╗çp vß╗Ñ l├╡i (Domain Layer) ho├án to├án "sß║ích", kh├┤ng phß╗Ñ thuß╗Öc v├áo bß║Ñt kß╗│ framework kß╗╣ thuß║¡t n├áo (Spring, Hibernate, RabbitMQ). Mß╗ìi giao tiß║┐p vß╗¢i Data Access phß║úi th├┤ng qua Dependency Inversion (Interface).
++
++### 2.2 L├ám gi├áu Domain Model (Rich Domain Modeling)
++- **Loß║íi bß╗Å Anemic Domain Model:** Chuyß╗ân ─æß╗òi c├íc Entity tß╗½ trß║íng th├íi "t├║i chß╗⌐a dß╗» liß╗çu rß╗ùng" (chß╗ë c├│ c├íc property v├á getter/setter) sang c├íc thß╗▒c thß╗â th├┤ng minh chß╗⌐a trß╗ìn logic nghiß╗çp vß╗Ñ b├¬n trong n├│.
++- **─É├│ng g├│i trß║íng th├íi (State Encapsulation):** Mß╗ìi sß╗▒ thay ─æß╗òi trß║íng th├íi (state) cß╗ºa Entity bß║»t buß╗Öc phß║úi th├┤ng qua c├íc method c├│ ├╜ ngh─⌐a nghiß╗çp vß╗Ñ thay v├¼ update property trß╗▒c tiß║┐p (v├¡ dß╗Ñ: `order.confirmPayment()` thay v├¼ `order.setStatus("PAID")`).
++- **Sß╗¡ dß╗Ñng Value Objects:** ─É├│ng g├│i c├íc kiß╗âu dß╗» liß╗çu nguy├¬n thß╗ºy v├áo Value Objects c├│ khß║ú n─âng tß╗▒ validate (v├¡ dß╗Ñ: class `Email`, `Address`, `Money`) thay v├¼ d├╣ng `String`, `int` rß║úi r├íc.
++
++### 2.3 Ph├ón quyß╗ün phi tß║¡p trung & Ho├án thiß╗çn giao tiß║┐p (Decentralized Auth & Comm)
++- **Decentralized Authorization (RBAC/CBAC):** C├íc service nß╗Öi bß╗Ö tß╗▒ ph├ón t├¡ch JWT Claims (─æ├ú ─æ╞░ß╗úc verify tß╗½ Gateway) ─æß╗â thß╗▒c thi kiß╗âm tra ph├ón quyß╗ün tß║íi chß╗ù thay v├¼ phß║úi gß╗ìi mß║íng ng╞░ß╗úc lß║íi IdP.
++- **100% gRPC nß╗Öi bß╗Ö:** X├│a sß╗ò triß╗çt ─æß╗â mß╗ìi ─æoß║ín code d├╣ng REST client (Feign/WebClient/RestTemplate) d├╣ng cho giao tiß║┐p Service-to-Service.
++
++---
++
++## ≡ƒÄ» PHASE 3: Production Readiness & Cloud-Native (Khß║ú N─âng Chß╗ïu Tß║úi & Vß║¡n H├ánh)
++**Mß╗Ñc ti├¬u:** ─É╞░a hß╗ç thß╗æng l├¬n m├┤i tr╞░ß╗¥ng thß╗▒c tß║┐ (Production), tß╗æi ╞░u h├│a ─æß╗â chß╗ïu tß║úi khß╗òng lß╗ô v├á tß╗▒ ─æß╗Öng h├│a quy tr├¼nh vß║¡n h├ánh.
++
++### 3.1 Vß║¡n h├ánh Container & ─Éiß╗üu phß╗æi (Container Orchestration)
++- **Kubernetes (K8s) Migration:** Rß╗¥i bß╗Å `docker-compose`. ─É╞░a hß╗ç thß╗æng l├¬n Kubernetes th├┤ng qua viß╗çc viß║┐t Helm Charts hoß║╖c manifest YAML (Deployments, Services, Ingress).
++- **Cß║Ñu h├¼nh tß║¡p trung (Externalized Configuration):** L╞░u trß╗» tß║¡p trung c├íc th├┤ng tin nhß║íy cß║úm v├á biß║┐n m├┤i tr╞░ß╗¥ng v├áo ConfigMap v├á Kubernetes Secrets (hoß║╖c HashiCorp Vault).
++- **Auto-scaling:** Cß║Ñu h├¼nh Horizontal Pod Autoscaler (HPA), tß╗▒ ─æß╗Öng nh├ón bß║ún (scale out) c├íc service khi mß╗⌐c ti├¬u thß╗Ñ CPU/RAM v╞░ß╗út ng╞░ß╗íng an to├án.
++
++### 3.2 Tß╗æi ╞░u Hiß╗çu n─âng & Bß║úo mß║¡t (Performance & Security Hardening)
++- **Multi-stage Docker Builds:** Chuyß╗ân sang sß╗¡ dß╗Ñng c├íc base image tß╗æi giß║ún nhß║Ñt (Alpine hoß║╖c Distroless). Thiß║┐t lß║¡p ─æß╗â ß╗⌐ng dß╗Ñng chß║íy d╞░ß╗¢i quyß╗ün `non-root user` ─æß╗â ng─ân chß║╖n rß╗ºi ro leo thang ─æß║╖c quyß╗ün.
++- **Distributed Caching:** T├¡ch hß╗úp Redis cho c├íc h├ánh ─æß╗Öng ─æß╗ìc nhiß╗üu (Read-heavy operations) nh╞░ Load User Profile, Session State, nhß║▒m giß║úm tß║úi cho Database.
++
++### 3.3 Tß╗▒ ─æß╗Öng h├│a CI/CD (Continuous Integration / Continuous Deployment)
++- **Automated Testing Pipeline:** CI pipeline bß║»t buß╗Öc chß║íy Unit Test v├á Integration Test vß╗¢i tß╗╖ lß╗ç Code Coverage (Jacoco) tß╗æi thiß╗âu ─æß║ít 80%.
++- **Zero-Downtime Deployment:** Cß║Ñu h├¼nh chiß║┐n l╞░ß╗úc triß╗ân khai cß║¡p nhß║¡t phi├¬n bß║ún mß╗¢i (Rolling Update, Blue/Green hoß║╖c Canary Deployment) ─æß╗â bß║úo ─æß║úm user kh├┤ng gß║╖p lß╗ùi HTTP 502 trong l├║c deploy code.
++- **Automated DB Migrations:** ─É╞░a lß╗çnh chß║íy Flyway/Liquibase v├áo CI/CD pipeline ─æß╗â cß║¡p nhß║¡t DB mß╗Öt c├ích an to├án tr╞░ß╗¢c khi container code mß╗¢i ─æ╞░ß╗úc khß╗ƒi ─æß╗Öng.
++
++---
++
++## Verification Plan (Kß║┐ hoß║ích Kiß╗âm Thß╗¡ Tß╗òng Thß╗â)
++
++### Automated Tests
++- **Unit/Integration Tests:** Kiß╗âm thß╗¡ ─æß╗Öc lß║¡p phß║ºn Domain Logic (Phase 2) kh├┤ng cß║ºn Spring Context.
++- **Chaos Testing:** Tß║»t ngß║½u nhi├¬n c├íc Pod/Container (d├╣ng c├┤ng cß╗Ñ Chaos Monkey) ─æß╗â chß╗⌐ng minh khß║ú n─âng phß╗Ñc hß╗ôi tß╗▒ ─æß╗Öng cß╗ºa Kubernetes v├á sß╗⌐c chß╗ïu ─æß╗▒ng cß╗ºa Circuit Breaker.
++- **Load Testing:** D├╣ng c├┤ng cß╗Ñ JMeter/k6 tß║ío ra 10.000 concurrent requests (truy cß║¡p ─æß╗ông thß╗¥i) ─æß╗â kiß╗âm tra HPA (Autoscaling) v├á xem log c├│ bß╗ï nghß║╜n kh├┤ng.
++
++### Manual Verification
++- Thß╗▒c hiß╗çn cß║¡p nhß║¡t t├¡nh n─âng mß╗¢i: G├╡ lß╗çnh Push code v├á quan s├ít Pipeline CI/CD tß╗▒ ─æß╗Öng test, tß╗▒ ─æß╗Öng build image, v├á triß╗ân khai version mß╗¢i l├¬n Kubernetes m├á tr├¼nh duyß╗çt ng╞░ß╗¥i d├╣ng kh├┤ng hß╗ü bß╗ï ─æß╗⌐t ─æoß║ín hay cß║ºn tß║úi lß║íi trang.
+diff --git a/log-service/Dockerfile b/log-service/Dockerfile
+index 8db9209..36fa64f 100644
+--- a/log-service/Dockerfile
++++ b/log-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/log-service/target/log-service-1.0.0-SNAPSHOT.jar app.j
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8084
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/log-service/bin/Dockerfile b/log-service/bin/Dockerfile
+index 8db9209..36fa64f 100644
+--- a/log-service/bin/Dockerfile
++++ b/log-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/log-service/target/log-service-1.0.0-SNAPSHOT.jar app.j
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8084
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/log-service/bin/src/main/resources/application.yml b/log-service/bin/src/main/resources/application.yml
+index 4e60168..4311a92 100644
+--- a/log-service/bin/src/main/resources/application.yml
++++ b/log-service/bin/src/main/resources/application.yml
+@@ -5,6 +5,9 @@ server:
+   port: 8084    # Port API
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: log-service
+   rabbitmq:
+@@ -32,3 +35,5 @@ management:
+     metrics:
+       export:
+         enabled: true
++
++
+diff --git a/log-service/src/main/java/com/chatsever/log/exception/GlobalExceptionHandler.java b/log-service/src/main/java/com/chatsever/log/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index 4f13640..0000000
+--- a/log-service/src/main/java/com/chatsever/log/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.log.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho log-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Log service error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/log-service/src/main/java/com/chatsever/log/listener/LogEventListener.java b/log-service/src/main/java/com/chatsever/log/listener/LogEventListener.java
+index 9de12c4..b455905 100644
+--- a/log-service/src/main/java/com/chatsever/log/listener/LogEventListener.java
++++ b/log-service/src/main/java/com/chatsever/log/listener/LogEventListener.java
+@@ -30,3 +30,5 @@ public class LogEventListener {
+         logService.log(entry);
+     }
+ }
++
++
+diff --git a/log-service/src/main/java/com/chatsever/log/service/LogService.java b/log-service/src/main/java/com/chatsever/log/service/LogService.java
+index 400fee0..e40442d 100644
+--- a/log-service/src/main/java/com/chatsever/log/service/LogService.java
++++ b/log-service/src/main/java/com/chatsever/log/service/LogService.java
+@@ -134,3 +134,5 @@ public class LogService {
+         return result;
+     }
+ }
++
++
+diff --git a/log-service/src/main/resources/application.yml b/log-service/src/main/resources/application.yml
+index 4e60168..4311a92 100644
+--- a/log-service/src/main/resources/application.yml
++++ b/log-service/src/main/resources/application.yml
+@@ -5,6 +5,9 @@ server:
+   port: 8084    # Port API
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: log-service
+   rabbitmq:
+@@ -32,3 +35,5 @@ management:
+     metrics:
+       export:
+         enabled: true
++
++
+diff --git a/log-service/src/test/java/com/chatsever/log/service/LogServiceTest.java b/log-service/src/test/java/com/chatsever/log/service/LogServiceTest.java
+index 9383872..8df0f21 100644
+--- a/log-service/src/test/java/com/chatsever/log/service/LogServiceTest.java
++++ b/log-service/src/test/java/com/chatsever/log/service/LogServiceTest.java
+@@ -79,3 +79,5 @@ class LogServiceTest {
+         assertTrue(page.content().isEmpty());
+     }
+ }
++
++
+diff --git a/messaging-service/Dockerfile b/messaging-service/Dockerfile
+index d01671b..60b557c 100644
+--- a/messaging-service/Dockerfile
++++ b/messaging-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/messaging-service/target/messaging-service-1.0.0-SNAPSH
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8082
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/messaging-service/bin/Dockerfile b/messaging-service/bin/Dockerfile
+index d01671b..60b557c 100644
+--- a/messaging-service/bin/Dockerfile
++++ b/messaging-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/messaging-service/target/messaging-service-1.0.0-SNAPSH
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8082
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/messaging-service/bin/src/main/resources/application.yml b/messaging-service/bin/src/main/resources/application.yml
+index e39a5d6..469c91a 100644
+--- a/messaging-service/bin/src/main/resources/application.yml
++++ b/messaging-service/bin/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8082
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: messaging-service
+   rabbitmq:
+@@ -35,4 +38,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/messaging-service/pom.xml b/messaging-service/pom.xml
+index 12e1adf..7e586fc 100644
+--- a/messaging-service/pom.xml
++++ b/messaging-service/pom.xml
+@@ -40,6 +40,11 @@
+             <version>1.0.0-SNAPSHOT</version>
+             <scope>compile</scope>
+         </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-web</artifactId>
+@@ -53,10 +58,6 @@
+             <artifactId>mysql-connector-j</artifactId>
+             <scope>runtime</scope>
+         </dependency>
+-        <dependency>
+-            <groupId>org.springframework.cloud</groupId>
+-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+-        </dependency>
+         <!-- Health check (NF9) -->
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -67,6 +68,15 @@
+             <artifactId>lombok</artifactId>
+             <optional>true</optional>
+         </dependency>
++        <!-- Resilience4j -->
++        <dependency>
++            <groupId>org.springframework.cloud</groupId>
++            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+@@ -77,4 +87,4 @@
+             </plugin>
+         </plugins>
+     </build>
+-</project>
+\ No newline at end of file
++</project>
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/MessagingApplication.java b/messaging-service/src/main/java/com/chatsever/messaging/MessagingApplication.java
+index f773d2c..c15e0d7 100644
+--- a/messaging-service/src/main/java/com/chatsever/messaging/MessagingApplication.java
++++ b/messaging-service/src/main/java/com/chatsever/messaging/MessagingApplication.java
+@@ -3,18 +3,12 @@ package com.chatsever.messaging;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
+ import org.springframework.context.annotation.Bean;
+-import org.springframework.web.client.RestTemplate;
+ 
+-import org.springframework.cloud.openfeign.EnableFeignClients;
+ 
+ @SpringBootApplication
+-@EnableFeignClients
+ public class MessagingApplication {
+     public static void main(String[] args) {
+         SpringApplication.run(MessagingApplication.class, args);
+     }
+-    @Bean
+-    public RestTemplate restTemplate() {
+-        return new RestTemplate();
+-    }
++
+ }
+\ No newline at end of file
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/adapter/AuthGrpcAdapter.java b/messaging-service/src/main/java/com/chatsever/messaging/adapter/AuthGrpcAdapter.java
+new file mode 100644
+index 0000000..70872ed
+--- /dev/null
++++ b/messaging-service/src/main/java/com/chatsever/messaging/adapter/AuthGrpcAdapter.java
+@@ -0,0 +1,25 @@
++package com.chatsever.messaging.adapter;
++
++import com.chatsever.grpc.auth.AuthServiceGrpc;
++import com.chatsever.grpc.auth.ValidateTokenRequest;
++import com.chatsever.grpc.auth.ValidateTokenResponse;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class AuthGrpcAdapter {
++
++    @GrpcClient("auth-service")
++    private AuthServiceGrpc.AuthServiceBlockingStub authServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public ValidateTokenResponse validateToken(String token) {
++        ValidateTokenRequest request = ValidateTokenRequest.newBuilder()
++                .setToken(token)
++                .build();
++        return authServiceClient.validateToken(request);
++    }
++}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/adapter/ChannelGrpcAdapter.java b/messaging-service/src/main/java/com/chatsever/messaging/adapter/ChannelGrpcAdapter.java
+new file mode 100644
+index 0000000..3212a60
+--- /dev/null
++++ b/messaging-service/src/main/java/com/chatsever/messaging/adapter/ChannelGrpcAdapter.java
+@@ -0,0 +1,20 @@
++package com.chatsever.messaging.adapter;
++
++import com.chatsever.grpc.channel.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class ChannelGrpcAdapter {
++
++    @GrpcClient("channel-service")
++    private ChannelServiceGrpc.ChannelServiceBlockingStub channelServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EmptyChannelResponse removePinnedMessage(RemovePinnedMessageRequest request) {
++        return channelServiceClient.removePinnedMessage(request);
++    }
++}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/adapter/PresenceGrpcAdapter.java b/messaging-service/src/main/java/com/chatsever/messaging/adapter/PresenceGrpcAdapter.java
+new file mode 100644
+index 0000000..8a33e7b
+--- /dev/null
++++ b/messaging-service/src/main/java/com/chatsever/messaging/adapter/PresenceGrpcAdapter.java
+@@ -0,0 +1,20 @@
++package com.chatsever.messaging.adapter;
++
++import com.chatsever.grpc.presence.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class PresenceGrpcAdapter {
++
++    @GrpcClient("presence-service")
++    private PresenceServiceGrpc.PresenceServiceBlockingStub presenceServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EmptyPresenceResponse notifyPresence(NotifyPresenceRequest request) {
++        return presenceServiceClient.notifyPresence(request);
++    }
++}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/adapter/RoleGrpcAdapter.java b/messaging-service/src/main/java/com/chatsever/messaging/adapter/RoleGrpcAdapter.java
+new file mode 100644
+index 0000000..3155631
+--- /dev/null
++++ b/messaging-service/src/main/java/com/chatsever/messaging/adapter/RoleGrpcAdapter.java
+@@ -0,0 +1,26 @@
++package com.chatsever.messaging.adapter;
++
++import com.chatsever.grpc.role.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class RoleGrpcAdapter {
++
++    @GrpcClient("role-service")
++    private RoleServiceGrpc.RoleServiceBlockingStub roleServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public CheckBannedResponse checkBanned(CheckBannedRequest request) {
++        return roleServiceClient.checkBanned(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetPermissionsResponse getPermissions(GetPermissionsRequest request) {
++        return roleServiceClient.getPermissions(request);
++    }
++}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/adapter/ServerInfoGrpcAdapter.java b/messaging-service/src/main/java/com/chatsever/messaging/adapter/ServerInfoGrpcAdapter.java
+new file mode 100644
+index 0000000..42fea08
+--- /dev/null
++++ b/messaging-service/src/main/java/com/chatsever/messaging/adapter/ServerInfoGrpcAdapter.java
+@@ -0,0 +1,26 @@
++package com.chatsever.messaging.adapter;
++
++import com.chatsever.grpc.server.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class ServerInfoGrpcAdapter {
++
++    @GrpcClient("server-service")
++    private ServerInfoServiceGrpc.ServerInfoServiceBlockingStub serverInfoServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetServerDetailsResponse getServerDetails(GetServerDetailsRequest request) {
++        return serverInfoServiceClient.getServerDetails(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EnsureMemberResponse ensureMember(EnsureMemberRequest request) {
++        return serverInfoServiceClient.ensureMember(request);
++    }
++}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/client/RoleClient.java b/messaging-service/src/main/java/com/chatsever/messaging/client/RoleClient.java
+deleted file mode 100644
+index 1b8ca2f..0000000
+--- a/messaging-service/src/main/java/com/chatsever/messaging/client/RoleClient.java
++++ /dev/null
+@@ -1,14 +0,0 @@
+-package com.chatsever.messaging.client;
+-
+-import org.springframework.cloud.openfeign.FeignClient;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-
+-import java.util.Map;
+-
+-@FeignClient(name = "role-service", url = "${ROLE_SERVICE_URL:http://localhost:8091}")
+-public interface RoleClient {
+-
+-    @GetMapping("/api/servers/{serverId}/permissions/{userId}")
+-    Map<String, Object> getPermissions(@PathVariable("serverId") Long serverId, @PathVariable("userId") String userId);
+-}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/client/ServerServiceClient.java b/messaging-service/src/main/java/com/chatsever/messaging/client/ServerServiceClient.java
+deleted file mode 100644
+index 5dac49c..0000000
+--- a/messaging-service/src/main/java/com/chatsever/messaging/client/ServerServiceClient.java
++++ /dev/null
+@@ -1,18 +0,0 @@
+-package com.chatsever.messaging.client;
+-
+-import org.springframework.cloud.openfeign.FeignClient;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-import org.springframework.web.bind.annotation.PostMapping;
+-import org.springframework.web.bind.annotation.RequestParam;
+-
+-import java.util.Map;
+-
+-@FeignClient(name = "server-service", url = "${services.server-url}")
+-public interface ServerServiceClient {
+-    @GetMapping("/api/servers/{id}")
+-    Map<String, Object> getServerDetails(@PathVariable("id") Long id);
+-
+-    @PostMapping("/api/servers/{id}/ensure-member")
+-    Map<String, String> ensureMember(@PathVariable("id") Long id, @RequestParam("userId") String userId);
+-}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/exception/GlobalExceptionHandler.java b/messaging-service/src/main/java/com/chatsever/messaging/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index c7bb04c..0000000
+--- a/messaging-service/src/main/java/com/chatsever/messaging/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.messaging.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho messaging-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Messaging error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/handler/ChatWebSocketHandler.java b/messaging-service/src/main/java/com/chatsever/messaging/handler/ChatWebSocketHandler.java
+index b3e6376..66f2a70 100644
+--- a/messaging-service/src/main/java/com/chatsever/messaging/handler/ChatWebSocketHandler.java
++++ b/messaging-service/src/main/java/com/chatsever/messaging/handler/ChatWebSocketHandler.java
+@@ -11,12 +11,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
+ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
+-import org.springframework.web.client.RestTemplate;
++
+ import org.springframework.web.socket.CloseStatus;
+ import org.springframework.web.socket.TextMessage;
+ import org.springframework.web.socket.WebSocketSession;
+ import org.springframework.web.socket.handler.TextWebSocketHandler;
+-import com.chatsever.common.dto.AuthResponse;
++import com.chatsever.messaging.adapter.AuthGrpcAdapter;
++import com.chatsever.grpc.auth.ValidateTokenResponse;
+ 
+ import java.time.LocalDateTime;
+ import java.util.Map;
+@@ -25,16 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
+ @Component
+ public class ChatWebSocketHandler extends TextWebSocketHandler {
+     private final MessageService messageService;
+-    private final RestTemplate restTemplate;
++    private final AuthGrpcAdapter authServiceClient;
+     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+-    private final String authUrl;
++
+     private final ObjectMapper objectMapper;
+ 
+ 
+-    public ChatWebSocketHandler(MessageService messageService, RestTemplate restTemplate, @Value("${services.auth-url}") String authUrl) {
++    public ChatWebSocketHandler(MessageService messageService, AuthGrpcAdapter authServiceClient) {
+         this.messageService = messageService;
+-        this.restTemplate = restTemplate;
+-        this.authUrl = authUrl;
++        this.authServiceClient = authServiceClient;
+         this.objectMapper = new ObjectMapper();
+         this.objectMapper.registerModule(new JavaTimeModule());
+         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+@@ -44,9 +44,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
+     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        String token = extractToken(session);
+        try {
+-           Map<String, String> request = Map.of("token", token);
+-           AuthResponse response = restTemplate.postForObject(authUrl + "/api/auth/validate", request, AuthResponse.class);
+-           if(response != null && response.getUsername() != null) {
++           ValidateTokenResponse response = authServiceClient.validateToken(token);
++           if(response != null && response.getValid() && !response.getUsername().isEmpty()) {
+                String username = response.getUsername();
+                sessions.put(username, session);
+                session.getAttributes().put("username", username);
+@@ -166,4 +165,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
+         String query = session.getUri().getQuery();
+         return (query != null && query.startsWith("token=")) ? query.substring(6) : "";
+     }
+-}
+\ No newline at end of file
++}
++
++
+diff --git a/messaging-service/src/main/java/com/chatsever/messaging/service/MessageService.java b/messaging-service/src/main/java/com/chatsever/messaging/service/MessageService.java
+index 4b1540f..3e701f6 100644
+--- a/messaging-service/src/main/java/com/chatsever/messaging/service/MessageService.java
++++ b/messaging-service/src/main/java/com/chatsever/messaging/service/MessageService.java
+@@ -3,8 +3,15 @@ package com.chatsever.messaging.service;
+ import com.chatsever.common.dto.LogEntry;
+ import com.chatsever.common.dto.MessageDTO;
+ import com.chatsever.common.enums.MessageType;
+-import com.chatsever.messaging.client.RoleClient;
+-import com.chatsever.messaging.client.ServerServiceClient;
++import com.chatsever.grpc.role.*;
++import com.chatsever.messaging.adapter.RoleGrpcAdapter;
++import com.chatsever.grpc.server.*;
++import com.chatsever.messaging.adapter.ServerInfoGrpcAdapter;
++import com.chatsever.grpc.channel.*;
++import com.chatsever.messaging.adapter.ChannelGrpcAdapter;
++import com.chatsever.grpc.presence.*;
++import com.chatsever.messaging.adapter.PresenceGrpcAdapter;
++import org.springframework.beans.factory.annotation.Autowired;
+ import com.chatsever.messaging.entity.ChatMessage;
+ import com.chatsever.messaging.entity.MessageReaction;
+ import com.chatsever.messaging.repository.MessageRepository;
+@@ -17,7 +24,7 @@ import org.springframework.http.HttpHeaders;
+ import org.springframework.http.HttpMethod;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Service;
+-import org.springframework.web.client.RestTemplate;
++import org.springframework.stereotype.Service;
+ import org.springframework.web.socket.TextMessage;
+ import org.springframework.web.socket.WebSocketSession;
+ 
+@@ -33,44 +40,45 @@ import java.util.stream.Collectors;
+ @Service
+ public class MessageService {
+     private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
+-    private final RestTemplate restTemplate;
+     private final RabbitTemplate rabbitTemplate;
+     private final ObjectMapper objectMapper;
+-    private final ServerServiceClient serverServiceClient;
+     private final MessageRepository messageRepository;
+     private final MessageReactionRepository reactionRepository;
+-    private final RoleClient roleClient;
+-    private final String presenceUrl;
+-    private final String channelUrl;
+ 
+-    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, MessageReactionRepository reactionRepository, RoleClient roleClient, @Value("${services.presence-url}") String presenceUrl, @Value("${services.channel-url}") String channelUrl) {
+-        this.restTemplate = restTemplate;
++    @Autowired
++    private RoleGrpcAdapter roleServiceClient;
++
++    @Autowired
++    private ServerInfoGrpcAdapter serverServiceClient;
++
++    @Autowired
++    private ChannelGrpcAdapter channelServiceClient;
++
++    @Autowired
++    private PresenceGrpcAdapter presenceServiceClient;
++
++    public MessageService(RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, MessageRepository messageRepository, MessageReactionRepository reactionRepository) {
+         this.rabbitTemplate = rabbitTemplate;
+         this.objectMapper = objectMapper;
+-        this.serverServiceClient = serverServiceClient;
+         this.messageRepository = messageRepository;
+         this.reactionRepository = reactionRepository;
+-        this.roleClient = roleClient;
+-        this.presenceUrl = presenceUrl;
+-        this.channelUrl = channelUrl;
+     }
+ 
+     // Kiß╗âm tra quyß╗ün cß╗ºa User ΓÇö nß║┐u ch╞░a l├á member, tß╗▒ ─æß╗Öng th├¬m v├áo server
+     @SuppressWarnings("unchecked")
+     public boolean hasPermission(Long serverId, String username) {
+         try {
+-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
+-            if (details != null && details.containsKey("members")) {
+-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
+-                for (Map<String, Object> member : members) {
+-                    if (username.equals(member.get("userId"))) {
+-                        return true;
+-                    }
++            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
++            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
++            for (MemberDetails member : resp.getMembersList()) {
++                if (username.equals(member.getUserId())) {
++                    return true;
+                 }
+             }
+             // User ch╞░a l├á member ΓåÆ tß╗▒ ─æß╗Öng th├¬m v├áo server
+             logger.info("User {} ch╞░a l├á member cß╗ºa server {} ΓåÆ tß╗▒ ─æß╗Öng th├¬m", username, serverId);
+-            serverServiceClient.ensureMember(serverId, username);
++            EnsureMemberRequest ensureReq = EnsureMemberRequest.newBuilder().setServerId(serverId).setUserId(username).build();
++            serverServiceClient.ensureMember(ensureReq);
+             return true;
+         } catch (Exception e) {
+             logger.error("Error checking permission: {}", e.getMessage(), e);
+@@ -96,11 +104,9 @@ public class MessageService {
+     private boolean isServerMember(Long serverId, String username) {
+         if (serverId == null) return true;
+         try {
+-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
+-            if (details != null && details.containsKey("members")) {
+-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
+-                return members.stream().anyMatch(m -> username.equals(m.get("userId")));
+-            }
++            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
++            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
++            return resp.getMembersList().stream().anyMatch(m -> username.equals(m.getUserId()));
+         } catch (Exception e) {
+             logger.error("Error checking server membership: {}", e.getMessage());
+         }
+@@ -135,13 +141,9 @@ public class MessageService {
+     private Set<String> getServerMembers(Long serverId) {
+         try {
+             if (serverId == null) return Set.of();
+-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
+-            if (details != null && details.containsKey("members")) {
+-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
+-                return members.stream()
+-                        .map(m -> (String) m.get("userId"))
+-                        .collect(Collectors.toSet());
+-            }
++            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
++            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
++            return resp.getMembersList().stream().map(MemberDetails::getUserId).collect(Collectors.toSet());
+         } catch (Exception e) {
+             logger.error("Error fetching server members: {}", e.getMessage(), e);
+         }
+@@ -166,8 +168,8 @@ public class MessageService {
+     // Gß╗ìi Presence Service b├ío trß║íng th├íi
+     public void notifyPresence(String username, String action) {
+         try {
+-            String url = presenceUrl + "/api/presence/" + action + "?username=" + username;
+-            restTemplate.postForObject(url, null, Void.class);
++            NotifyPresenceRequest req = NotifyPresenceRequest.newBuilder().setUsername(username).setAction(action).build();
++            presenceServiceClient.notifyPresence(req);
+         } catch (Exception e) {
+             logger.error("Error notifying presence: {}", e.getMessage(), e);
+         }
+@@ -236,10 +238,8 @@ public class MessageService {
+             // Bß╗Å ghim nß║┐u tin nhß║»n n├áy ─æang ─æ╞░ß╗úc ghim
+             if (entity.getChannelId() != null) {
+                 try {
+-                    String url = channelUrl + "/api/channels/" + entity.getChannelId() + "/pins/" + messageId;
+-                    HttpHeaders headers = new HttpHeaders();
+-                    headers.set("X-User-Id", "system"); // Bypass quyß╗ün
+-                    restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
++                    RemovePinnedMessageRequest req = RemovePinnedMessageRequest.newBuilder().setChannelId(entity.getChannelId()).setMessageId(messageId).setUserId("system").build();
++                    channelServiceClient.removePinnedMessage(req);
+                 } catch (Exception e) {
+                     logger.error("Lß╗ùi khi x├│a ghim tin nhß║»n bß╗ï x├│a: {}", e.getMessage());
+                 }
+@@ -262,9 +262,10 @@ public class MessageService {
+         }
+         if (serverId != null) {
+             try {
+-                Map<String, Object> perms = roleClient.getPermissions(serverId, username);
+-                if (perms != null && perms.containsKey("permissionBitmask")) {
+-                    int bitmask = (int) perms.get("permissionBitmask");
++                GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(username).build();
++                GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
++                if (true) {
++                    int bitmask = resp.getPermissionBitmask();
+                     // MANAGE_MESSAGES (4), ADMIN (128), OWNER (255)
+                     return (bitmask & 4) != 0 || (bitmask & 128) != 0 || bitmask == 255;
+                 }
+diff --git a/messaging-service/src/main/resources/application.yml b/messaging-service/src/main/resources/application.yml
+index e39a5d6..2509f38 100644
+--- a/messaging-service/src/main/resources/application.yml
++++ b/messaging-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8082
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: messaging-service
+   rabbitmq:
+@@ -35,4 +38,23 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
++resilience4j:
++  circuitbreaker:
++    instances:
++      default:
++        registerHealthIndicator: true
++        slidingWindowSize: 10
++        permittedNumberOfCallsInHalfOpenState: 3
++        slidingWindowType: COUNT_BASED
++        minimumNumberOfCalls: 5
++        waitDurationInOpenState: 5000
++        failureRateThreshold: 50
++        eventConsumerBufferSize: 10
++  retry:
++    instances:
++      default:
++        maxAttempts: 3
++        waitDuration: 1000
++
+diff --git a/notification-service/Dockerfile b/notification-service/Dockerfile
+index 0a071b1..040b243 100644
+--- a/notification-service/Dockerfile
++++ b/notification-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/notification-service/target/notification-service-1.0.0-
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8088
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/notification-service/bin/Dockerfile b/notification-service/bin/Dockerfile
+index 0a071b1..040b243 100644
+--- a/notification-service/bin/Dockerfile
++++ b/notification-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/notification-service/target/notification-service-1.0.0-
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8088
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/notification-service/bin/src/main/resources/application-docker.yml b/notification-service/bin/src/main/resources/application-docker.yml
+index 769c311..60a85a1 100644
+--- a/notification-service/bin/src/main/resources/application-docker.yml
++++ b/notification-service/bin/src/main/resources/application-docker.yml
+@@ -1,5 +1,8 @@
+ # Override cho m├┤i tr╞░ß╗¥ng Docker ΓÇö notification-service
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   datasource:
+     url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/${MYSQL_DATABASE:chatserver_notifications}
+     username: ${MYSQL_USER:chatapp}
+@@ -12,3 +15,5 @@ spring:
+   h2:
+     console:
+       enabled: false
++
++
+diff --git a/notification-service/bin/src/main/resources/application.yml b/notification-service/bin/src/main/resources/application.yml
+index ff4ceb7..cc10e21 100644
+--- a/notification-service/bin/src/main/resources/application.yml
++++ b/notification-service/bin/src/main/resources/application.yml
+@@ -5,6 +5,9 @@ server:
+   port: 8088
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: notification-service
+   # Dev: H2 in-memory | Docker: MySQL (override bß║▒ng env vars)
+@@ -41,3 +44,5 @@ management:
+     metrics:
+       export:
+         enabled: true
++
++
+diff --git a/notification-service/pom.xml b/notification-service/pom.xml
+index 07ba373..a950abf 100644
+--- a/notification-service/pom.xml
++++ b/notification-service/pom.xml
+@@ -75,6 +75,25 @@
+             <artifactId>spring-boot-starter-test</artifactId>
+             <scope>test</scope>
+         </dependency>
++        <dependency>
++            <groupId>net.devh</groupId>
++            <artifactId>grpc-spring-boot-starter</artifactId>
++            <version>3.1.0.RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>io.github.resilience4j</groupId>
++            <artifactId>resilience4j-spring-boot3</artifactId>
++            <version>2.2.0</version>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/notification-service/src/main/java/com/chatsever/notification/adapter/ServerInfoGrpcAdapter.java b/notification-service/src/main/java/com/chatsever/notification/adapter/ServerInfoGrpcAdapter.java
+new file mode 100644
+index 0000000..b38dd9c
+--- /dev/null
++++ b/notification-service/src/main/java/com/chatsever/notification/adapter/ServerInfoGrpcAdapter.java
+@@ -0,0 +1,31 @@
++package com.chatsever.notification.adapter;
++
++import com.chatsever.grpc.server.GetServerDetailsRequest;
++import com.chatsever.grpc.server.GetServerDetailsResponse;
++import com.chatsever.grpc.server.ServerInfoServiceGrpc;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++import java.util.List;
++import java.util.stream.Collectors;
++
++@Component
++public class ServerInfoGrpcAdapter {
++
++    @GrpcClient("server-service")
++    private ServerInfoServiceGrpc.ServerInfoServiceBlockingStub serverServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public List<String> getServerMembers(Long serverId) {
++        GetServerDetailsRequest request = GetServerDetailsRequest.newBuilder()
++                .setServerId(serverId)
++                .build();
++        GetServerDetailsResponse response = serverServiceClient.getServerDetails(request);
++        return response.getMembersList().stream()
++                .map(com.chatsever.grpc.server.MemberDetails::getUserId)
++                .collect(Collectors.toList());
++    }
++}
+diff --git a/notification-service/src/main/java/com/chatsever/notification/exception/GlobalExceptionHandler.java b/notification-service/src/main/java/com/chatsever/notification/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index 6b8441b..0000000
+--- a/notification-service/src/main/java/com/chatsever/notification/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.notification.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho notification-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Notification error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/notification-service/src/main/java/com/chatsever/notification/listener/MessageEventListener.java b/notification-service/src/main/java/com/chatsever/notification/listener/MessageEventListener.java
+index f159259..0f8247e 100644
+--- a/notification-service/src/main/java/com/chatsever/notification/listener/MessageEventListener.java
++++ b/notification-service/src/main/java/com/chatsever/notification/listener/MessageEventListener.java
+@@ -127,3 +127,5 @@ public class MessageEventListener {
+         return mentions;
+     }
+ }
++
++
+diff --git a/notification-service/src/main/java/com/chatsever/notification/service/NotificationService.java b/notification-service/src/main/java/com/chatsever/notification/service/NotificationService.java
+index 04d3e88..b959e1e 100644
+--- a/notification-service/src/main/java/com/chatsever/notification/service/NotificationService.java
++++ b/notification-service/src/main/java/com/chatsever/notification/service/NotificationService.java
+@@ -10,7 +10,7 @@ import com.chatsever.notification.repository.NotificationRepository;
+ import com.chatsever.notification.repository.ReadStatusRepository;
+ import com.chatsever.notification.repository.UnreadCounterRepository;
+ import com.chatsever.notification.model.UnreadCounter;
+-import org.springframework.web.client.RestTemplate;
++import com.chatsever.notification.adapter.ServerInfoGrpcAdapter;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.data.domain.Page;
+@@ -38,14 +38,16 @@ public class NotificationService {
+     private final NotificationRepository notificationRepository;
+     private final ReadStatusRepository readStatusRepository;
+     private final UnreadCounterRepository unreadCounterRepository;
+-    private final RestTemplate restTemplate = new RestTemplate();
++    private final ServerInfoGrpcAdapter serverServiceClient;
+ 
+     public NotificationService(NotificationRepository notificationRepository,
+                                ReadStatusRepository readStatusRepository,
+-                               UnreadCounterRepository unreadCounterRepository) {
++                               UnreadCounterRepository unreadCounterRepository,
++                               ServerInfoGrpcAdapter serverServiceClient) {
+         this.notificationRepository = notificationRepository;
+         this.readStatusRepository = readStatusRepository;
+         this.unreadCounterRepository = unreadCounterRepository;
++        this.serverServiceClient = serverServiceClient;
+     }
+ 
+     /**
+@@ -202,14 +204,7 @@ public class NotificationService {
+     public List<String> getServerMembers(Long serverId) {
+         try {
+             // Sß╗¡ dß╗Ñng URL th├┤ng qua Docker network
+-            String url = "http://server-service:8085/api/servers/" + serverId;
+-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+-            if (response != null && response.containsKey("members")) {
+-                List<Map<String, Object>> members = (List<Map<String, Object>>) response.get("members");
+-                return members.stream()
+-                        .map(m -> (String) m.get("userId"))
+-                        .collect(Collectors.toList());
+-            }
++            return serverServiceClient.getServerMembers(serverId);
+         } catch (Exception e) {
+             log.error("Failed to fetch server members for serverId={}", serverId, e);
+         }
+diff --git a/notification-service/src/main/resources/application-docker.yml b/notification-service/src/main/resources/application-docker.yml
+index 769c311..60a85a1 100644
+--- a/notification-service/src/main/resources/application-docker.yml
++++ b/notification-service/src/main/resources/application-docker.yml
+@@ -1,5 +1,8 @@
+ # Override cho m├┤i tr╞░ß╗¥ng Docker ΓÇö notification-service
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   datasource:
+     url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/${MYSQL_DATABASE:chatserver_notifications}
+     username: ${MYSQL_USER:chatapp}
+@@ -12,3 +15,5 @@ spring:
+   h2:
+     console:
+       enabled: false
++
++
+diff --git a/notification-service/src/main/resources/application.yml b/notification-service/src/main/resources/application.yml
+index ff4ceb7..cc10e21 100644
+--- a/notification-service/src/main/resources/application.yml
++++ b/notification-service/src/main/resources/application.yml
+@@ -5,6 +5,9 @@ server:
+   port: 8088
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: notification-service
+   # Dev: H2 in-memory | Docker: MySQL (override bß║▒ng env vars)
+@@ -41,3 +44,5 @@ management:
+     metrics:
+       export:
+         enabled: true
++
++
+diff --git a/notification-service/src/test/java/com/chatsever/notification/listener/MessageEventListenerTest.java b/notification-service/src/test/java/com/chatsever/notification/listener/MessageEventListenerTest.java
+index ed20a33..1c7d4ff 100644
+--- a/notification-service/src/test/java/com/chatsever/notification/listener/MessageEventListenerTest.java
++++ b/notification-service/src/test/java/com/chatsever/notification/listener/MessageEventListenerTest.java
+@@ -145,3 +145,5 @@ class MessageEventListenerTest {
+         verifyNoInteractions(notificationService);
+     }
+ }
++
++
+diff --git a/pom.xml b/pom.xml
+index 18022bc..f89b3f8 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -10,6 +10,7 @@
+ 
+     <modules>
+         <module>common-lib</module>
++        <module>grpc-contracts</module>
+         <module>log-service</module>
+         <module>auth-service</module>
+         <module>presence-service</module>
+diff --git a/presence-service/Dockerfile b/presence-service/Dockerfile
+index 56a6988..614f029 100644
+--- a/presence-service/Dockerfile
++++ b/presence-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/presence-service/target/presence-service-1.0.0-SNAPSHOT
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8083
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/presence-service/bin/Dockerfile b/presence-service/bin/Dockerfile
+index 56a6988..614f029 100644
+--- a/presence-service/bin/Dockerfile
++++ b/presence-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/presence-service/target/presence-service-1.0.0-SNAPSHOT
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8083
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/presence-service/bin/src/main/resources/application.yml b/presence-service/bin/src/main/resources/application.yml
+index a393772..41d1958 100644
+--- a/presence-service/bin/src/main/resources/application.yml
++++ b/presence-service/bin/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8083
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: presence-service
+   datasource:
+@@ -25,4 +28,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/presence-service/pom.xml b/presence-service/pom.xml
+index b89822b..bb78d16 100644
+--- a/presence-service/pom.xml
++++ b/presence-service/pom.xml
+@@ -54,6 +54,16 @@
+ 			<groupId>org.springframework.boot</groupId>
+ 			<artifactId>spring-boot-starter-amqp</artifactId>
+ 		</dependency>
++		<dependency>
++			<groupId>net.devh</groupId>
++			<artifactId>grpc-spring-boot-starter</artifactId>
++			<version>3.1.0.RELEASE</version>
++		</dependency>
++		<dependency>
++			<groupId>com.chatsever</groupId>
++			<artifactId>grpc-contracts</artifactId>
++			<version>1.0.0-SNAPSHOT</version>
++		</dependency>
+ 	</dependencies>
+ 
+ 	<build>
+diff --git a/presence-service/src/main/java/com/chatsever/presence/exception/GlobalExceptionHandler.java b/presence-service/src/main/java/com/chatsever/presence/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index 166622f..0000000
+--- a/presence-service/src/main/java/com/chatsever/presence/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.presence.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho presence-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Presence error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/presence-service/src/main/java/com/chatsever/presence/service/PresenceGrpcServiceImpl.java b/presence-service/src/main/java/com/chatsever/presence/service/PresenceGrpcServiceImpl.java
+new file mode 100644
+index 0000000..1d6bcd9
+--- /dev/null
++++ b/presence-service/src/main/java/com/chatsever/presence/service/PresenceGrpcServiceImpl.java
+@@ -0,0 +1,37 @@
++package com.chatsever.presence.service;
++
++import com.chatsever.grpc.presence.PresenceServiceGrpc;
++import com.chatsever.grpc.presence.NotifyPresenceRequest;
++import com.chatsever.grpc.presence.EmptyPresenceResponse;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class PresenceGrpcServiceImpl extends PresenceServiceGrpc.PresenceServiceImplBase {
++
++    private final PresenceService presenceService;
++
++    @Override
++    public void notifyPresence(NotifyPresenceRequest request, StreamObserver<EmptyPresenceResponse> responseObserver) {
++        try {
++            if ("connect".equalsIgnoreCase(request.getAction())) {
++                presenceService.connect(request.getUsername());
++            } else if ("disconnect".equalsIgnoreCase(request.getAction())) {
++                presenceService.disconnect(request.getUsername());
++            } else {
++                throw new IllegalArgumentException("Unknown action: " + request.getAction());
++            }
++            responseObserver.onNext(EmptyPresenceResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++}
+diff --git a/presence-service/src/main/java/com/chatsever/presence/service/PresenceService.java b/presence-service/src/main/java/com/chatsever/presence/service/PresenceService.java
+index 1f26012..e212523 100644
+--- a/presence-service/src/main/java/com/chatsever/presence/service/PresenceService.java
++++ b/presence-service/src/main/java/com/chatsever/presence/service/PresenceService.java
+@@ -98,4 +98,5 @@ public class PresenceService {
+             logger.error("[Presence] Failed to publish status event: {}", e.getMessage());
+         }
+     }
+-}
+\ No newline at end of file
++}
++
+diff --git a/presence-service/src/main/resources/application.yml b/presence-service/src/main/resources/application.yml
+index a393772..41d1958 100644
+--- a/presence-service/src/main/resources/application.yml
++++ b/presence-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8083
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: presence-service
+   datasource:
+@@ -25,4 +28,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/role-service/Dockerfile b/role-service/Dockerfile
+index b963578..f82e3ac 100644
+--- a/role-service/Dockerfile
++++ b/role-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -28,3 +29,4 @@ COPY --from=build /build/role-service/target/role-service-1.0.0-SNAPSHOT.jar app
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8091
+ ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
++
+diff --git a/role-service/bin/Dockerfile b/role-service/bin/Dockerfile
+index b963578..f82e3ac 100644
+--- a/role-service/bin/Dockerfile
++++ b/role-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -28,3 +29,4 @@ COPY --from=build /build/role-service/target/role-service-1.0.0-SNAPSHOT.jar app
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8091
+ ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
++
+diff --git a/role-service/bin/src/main/resources/application.yml b/role-service/bin/src/main/resources/application.yml
+index a524f42..6d3592a 100644
+--- a/role-service/bin/src/main/resources/application.yml
++++ b/role-service/bin/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8091
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: role-service
+   datasource:
+@@ -29,4 +32,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/role-service/pom.xml b/role-service/pom.xml
+index 8129a25..94f3098 100644
+--- a/role-service/pom.xml
++++ b/role-service/pom.xml
+@@ -46,6 +46,21 @@
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-actuator</artifactId>
+         </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
++        
++        <!-- Resilience4j -->
++        <dependency>
++            <groupId>org.springframework.cloud</groupId>
++            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/role-service/src/main/java/com/chatsever/role/adapter/ServerInfoGrpcAdapter.java b/role-service/src/main/java/com/chatsever/role/adapter/ServerInfoGrpcAdapter.java
+new file mode 100644
+index 0000000..a3d479a
+--- /dev/null
++++ b/role-service/src/main/java/com/chatsever/role/adapter/ServerInfoGrpcAdapter.java
+@@ -0,0 +1,34 @@
++package com.chatsever.role.adapter;
++
++import com.chatsever.grpc.server.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class ServerInfoGrpcAdapter {
++
++    @GrpcClient("server-service")
++    private ServerInfoServiceGrpc.ServerInfoServiceBlockingStub serverInfoServiceClient;
++
++
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EmptyServerResponse updateMemberRoles(UpdateMemberRolesRequest request) {
++        return serverInfoServiceClient.updateMemberRoles(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetServerDetailsResponse getServerDetails(GetServerDetailsRequest request) {
++        return serverInfoServiceClient.getServerDetails(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EmptyServerResponse leaveServer(LeaveServerRequest request) {
++        return serverInfoServiceClient.leaveServer(request);
++    }
++}
+diff --git a/role-service/src/main/java/com/chatsever/role/config/AppConfig.java b/role-service/src/main/java/com/chatsever/role/config/AppConfig.java
+index 2f722f9..a6080d1 100644
+--- a/role-service/src/main/java/com/chatsever/role/config/AppConfig.java
++++ b/role-service/src/main/java/com/chatsever/role/config/AppConfig.java
+@@ -2,7 +2,7 @@ package com.chatsever.role.config;
+ 
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+-import org.springframework.web.client.RestTemplate;
++
+ 
+ /**
+  * Cß║Ñu h├¼nh RestTemplate cho giao tiß║┐p inter-service.
+@@ -10,8 +10,5 @@ import org.springframework.web.client.RestTemplate;
+ @Configuration
+ public class AppConfig {
+ 
+-    @Bean
+-    public RestTemplate restTemplate() {
+-        return new RestTemplate();
+-    }
++
+ }
+diff --git a/role-service/src/main/java/com/chatsever/role/exception/GlobalExceptionHandler.java b/role-service/src/main/java/com/chatsever/role/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index cce5c44..0000000
+--- a/role-service/src/main/java/com/chatsever/role/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,48 +0,0 @@
+-package com.chatsever.role.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho role-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Role service error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(IllegalArgumentException.class)
+-    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+-        log.warn("Validation error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/role-service/src/main/java/com/chatsever/role/service/RoleGrpcServiceImpl.java b/role-service/src/main/java/com/chatsever/role/service/RoleGrpcServiceImpl.java
+new file mode 100644
+index 0000000..c3a5b25
+--- /dev/null
++++ b/role-service/src/main/java/com/chatsever/role/service/RoleGrpcServiceImpl.java
+@@ -0,0 +1,79 @@
++package com.chatsever.role.service;
++
++import com.chatsever.grpc.role.*;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++import java.util.List;
++import java.util.Map;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class RoleGrpcServiceImpl extends RoleServiceGrpc.RoleServiceImplBase {
++
++    private final RoleService roleService;
++
++    @Override
++    public void initDefaultRoles(InitDefaultRolesRequest request, StreamObserver<EmptyResponse> responseObserver) {
++        try {
++            roleService.createDefaultRoles(String.valueOf(request.getServerId()));
++            responseObserver.onNext(EmptyResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void checkBanned(CheckBannedRequest request, StreamObserver<CheckBannedResponse> responseObserver) {
++        try {
++            boolean isBanned = roleService.isBanned(String.valueOf(request.getServerId()), request.getUserId());
++            responseObserver.onNext(CheckBannedResponse.newBuilder()
++                    .setIsBanned(isBanned)
++                    .setReason("Checked by gRPC")
++                    .build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public void getPermissions(GetPermissionsRequest request, StreamObserver<GetPermissionsResponse> responseObserver) {
++        try {
++            Map<String, Object> perms = roleService.getEffectivePermissions(String.valueOf(request.getServerId()), request.getUserId());
++            List<String> permissions = (List<String>) perms.get("permissions");
++            String roleName = (String) perms.get("role");
++            Integer bitmask = (Integer) perms.get("permissionBitmask");
++
++            GetPermissionsResponse.Builder builder = GetPermissionsResponse.newBuilder();
++            if (permissions != null) {
++                builder.addAllPermissions(permissions);
++            }
++            if (roleName != null) {
++                builder.setRoleName(roleName);
++            }
++            if (bitmask != null) {
++                builder.setPermissionBitmask(bitmask);
++            }
++
++            responseObserver.onNext(builder.build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++}
+diff --git a/role-service/src/main/java/com/chatsever/role/service/RoleService.java b/role-service/src/main/java/com/chatsever/role/service/RoleService.java
+index ac8f4c1..ea581a9 100644
+--- a/role-service/src/main/java/com/chatsever/role/service/RoleService.java
++++ b/role-service/src/main/java/com/chatsever/role/service/RoleService.java
+@@ -1,5 +1,8 @@
+ package com.chatsever.role.service;
+ 
++import com.chatsever.grpc.server.*;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++
+ import com.chatsever.role.model.BannedMember;
+ import com.chatsever.role.model.Permission;
+ import com.chatsever.role.model.Role;
+@@ -8,20 +11,17 @@ import com.chatsever.role.repository.RoleRepository;
+ import lombok.RequiredArgsConstructor;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+-import org.springframework.beans.factory.annotation.Value;
+-import org.springframework.http.HttpEntity;
+-import org.springframework.http.HttpHeaders;
+-import org.springframework.http.HttpMethod;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+-import org.springframework.web.client.RestTemplate;
++import org.springframework.beans.factory.annotation.Autowired;
++import com.chatsever.role.adapter.ServerInfoGrpcAdapter;
+ 
+ import java.util.List;
+ import java.util.Map;
+ 
+ /**
+  * Service xß╗¡ l├╜ vai tr├▓ & ph├ón quyß╗ün (R1-R6).
+- * Giao tiß║┐p vß╗¢i server-service qua REST API ─æß╗â quß║ún l├╜ members.
++ * Giao tiß║┐p vß╗¢i server-service qua gRPC ─æß╗â quß║ún l├╜ members.
+  */
+ @Service
+ @RequiredArgsConstructor
+@@ -31,17 +31,15 @@ public class RoleService {
+ 
+     private final RoleRepository roleRepository;
+     private final BannedMemberRepository bannedMemberRepository;
+-    private final RestTemplate restTemplate;
+ 
+-    @Value("${services.server-url}")
+-    private String serverServiceUrl;
++    @Autowired
++    private ServerInfoGrpcAdapter serverServiceClient;
+ 
+     // ========================================================================
+     // R1 ΓÇö Tß║ío role
+     // ========================================================================
+     @Transactional
+     public Role createRole(String serverId, String roleName, String color, String permissions) {
+-        // Kiß╗âm tra t├¬n role kh├┤ng tr├╣ng trong server
+         if (roleRepository.findByServerIdAndRoleName(serverId, roleName).isPresent()) {
+             throw new RuntimeException("Role '" + roleName + "' ─æ├ú tß╗ôn tß║íi trong server n├áy");
+         }
+@@ -113,7 +111,6 @@ public class RoleService {
+     // ========================================================================
+     @Transactional
+     public Map<String, Object> assignRoles(String serverId, String userId, List<String> roleIds) {
+-        // Validate tß║Ñt cß║ú roleIds thuß╗Öc server n├áy
+         List<Role> roles = roleRepository.findByIdIn(roleIds);
+         for (Role r : roles) {
+             if (!r.getServerId().equals(serverId)) {
+@@ -121,13 +118,13 @@ public class RoleService {
+             }
+         }
+ 
+-        // Gß╗ìi server-service ─æß╗â cß║¡p nhß║¡t roleIds cho member
+         try {
+-            String url = serverServiceUrl + "/api/servers/" + serverId + "/members/" + userId + "/roles";
+-            HttpHeaders headers = new HttpHeaders();
+-            headers.set("Content-Type", "application/json");
+-            Map<String, Object> body = Map.of("roleIds", roleIds);
+-            restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
++            UpdateMemberRolesRequest request = UpdateMemberRolesRequest.newBuilder()
++                    .setServerId(Long.parseLong(serverId))
++                    .setUserId(userId)
++                    .addAllRoleIds(roleIds)
++                    .build();
++            serverServiceClient.updateMemberRoles(request);
+         } catch (Exception e) {
+             log.error("Lß╗ùi g├ín role cho member: {}", e.getMessage());
+             throw new RuntimeException("Kh├┤ng thß╗â g├ín role: " + e.getMessage());
+@@ -146,68 +143,56 @@ public class RoleService {
+     // R4 ΓÇö Kiß╗âm tra effective permissions
+     // GET /api/servers/{serverId}/permissions/{userId}
+     // ========================================================================
+-    @SuppressWarnings("unchecked")
+     public Map<String, Object> getEffectivePermissions(String serverId, String userId) {
+-        // 1. Kiß╗âm tra user c├│ phß║úi Owner kh├┤ng (bß║▒ng c├ích gß╗ìi server-service)
+         try {
+-            Map<String, Object> details = restTemplate.getForObject(
+-                    serverServiceUrl + "/api/servers/" + serverId, Map.class);
+-
+-            if (details != null) {
+-                // Check nß║┐u l├á server owner ΓåÆ ALL permissions
+-                Object serverObj = details.get("server");
+-                if (serverObj instanceof Map) {
+-                    String ownerId = (String) ((Map<String, Object>) serverObj).get("ownerId");
+-                    if (userId.equals(ownerId)) {
+-                        return Map.of(
+-                                "userId", userId,
+-                                "serverId", serverId,
+-                                "role", "Owner",
+-                                "permissionBitmask", Permission.ALL,
+-                                "permissions", Permission.toNames(Permission.ALL)
+-                        );
+-                    }
++            GetServerDetailsRequest request = GetServerDetailsRequest.newBuilder()
++                    .setServerId(Long.parseLong(serverId))
++                    .build();
++            GetServerDetailsResponse response = serverServiceClient.getServerDetails(request);
++
++            if (response.hasServer()) {
++                if (userId.equals(response.getServer().getOwnerId())) {
++                    return Map.of(
++                            "userId", userId,
++                            "serverId", serverId,
++                            "role", "Owner",
++                            "permissionBitmask", Permission.ALL,
++                            "permissions", Permission.toNames(Permission.ALL)
++                    );
+                 }
+ 
+-                // 2. Lß║Ñy member info ΓåÆ roleIds
+-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
+-                if (members != null) {
+-                    for (Map<String, Object> member : members) {
+-                        if (userId.equals(member.get("userId"))) {
+-                            List<String> roleIdStrings = (List<String>) member.get("roleIds");
+-                            if (roleIdStrings == null || roleIdStrings.isEmpty()) {
+-                                // Kh├┤ng c├│ role ΓåÆ d├╣ng Member default
+-                                return Map.of(
+-                                        "userId", userId,
+-                                        "serverId", serverId,
+-                                        "role", "Member",
+-                                        "permissionBitmask", Permission.MEMBER_DEFAULT,
+-                                        "permissions", Permission.toNames(Permission.MEMBER_DEFAULT)
+-                                );
+-                            }
+-
+-                            // 3. T├¡nh effective permissions = OR tß║Ñt cß║ú role permissions
+-                            List<String> roleIds = roleIdStrings;
+-                            List<Role> roles = roleRepository.findByIdIn(roleIds);
+-                            int effectiveMask = 0;
+-                            String highestRole = "Member";
+-                            int highestPriority = -1;
+-                            for (Role r : roles) {
+-                                effectiveMask |= r.getPermissionBitmask();
+-                                if (r.getPriority() > highestPriority) {
+-                                    highestPriority = r.getPriority();
+-                                    highestRole = r.getRoleName();
+-                                }
+-                            }
+-
++                for (MemberDetails member : response.getMembersList()) {
++                    if (userId.equals(member.getUserId())) {
++                        List<String> roleIds = member.getRoleIdsList();
++                        if (roleIds == null || roleIds.isEmpty()) {
+                             return Map.of(
+                                     "userId", userId,
+                                     "serverId", serverId,
+-                                    "role", highestRole,
+-                                    "permissionBitmask", effectiveMask,
+-                                    "permissions", Permission.toNames(effectiveMask)
++                                    "role", "Member",
++                                    "permissionBitmask", Permission.MEMBER_DEFAULT,
++                                    "permissions", Permission.toNames(Permission.MEMBER_DEFAULT)
+                             );
+                         }
++
++                        List<Role> roles = roleRepository.findByIdIn(roleIds);
++                        int effectiveMask = 0;
++                        String highestRole = "Member";
++                        int highestPriority = -1;
++                        for (Role r : roles) {
++                            effectiveMask |= r.getPermissionBitmask();
++                            if (r.getPriority() > highestPriority) {
++                                highestPriority = r.getPriority();
++                                highestRole = r.getRoleName();
++                            }
++                        }
++
++                        return Map.of(
++                                "userId", userId,
++                                "serverId", serverId,
++                                "role", highestRole,
++                                "permissionBitmask", effectiveMask,
++                                "permissions", Permission.toNames(effectiveMask)
++                        );
+                     }
+                 }
+             }
+@@ -221,28 +206,23 @@ public class RoleService {
+ 
+     // ========================================================================
+     // R5 ΓÇö Kick member
+-    // POST /api/servers/{serverId}/kick/{userId}
+     // ========================================================================
+     @Transactional
+     public Map<String, String> kickMember(String serverId, String userId, String requesterId) {
+-        // 1. Kiß╗âm tra quyß╗ün KICK_MEMBER
+         checkPermission(serverId, requesterId, Permission.KICK_MEMBER);
+ 
+-        // 2. Kh├┤ng cho kick ch├¡nh m├¼nh
+         if (userId.equals(requesterId)) {
+             throw new RuntimeException("Kh├┤ng thß╗â kick ch├¡nh m├¼nh");
+         }
+ 
+-        // 3. Kh├┤ng cho kick Owner
+         checkNotOwner(serverId, userId);
+ 
+-        // 4. Gß╗ìi server-service ─æß╗â x├│a member (leave)
+         try {
+-            HttpHeaders headers = new HttpHeaders();
+-            headers.set("X-User-Id", userId);
+-            restTemplate.exchange(
+-                    serverServiceUrl + "/api/servers/" + serverId + "/leave",
+-                    HttpMethod.POST, new HttpEntity<>(headers), String.class);
++            LeaveServerRequest request = LeaveServerRequest.newBuilder()
++                    .setServerId(Long.parseLong(serverId))
++                    .setUserId(userId)
++                    .build();
++            serverServiceClient.leaveServer(request);
+         } catch (Exception e) {
+             log.error("Lß╗ùi kick member: {}", e.getMessage());
+             throw new RuntimeException("Kh├┤ng thß╗â kick member: " + e.getMessage());
+@@ -254,27 +234,21 @@ public class RoleService {
+ 
+     // ========================================================================
+     // R6 ΓÇö Ban member (v─⌐nh viß╗àn + kh├┤ng cho join lß║íi)
+-    // POST /api/servers/{serverId}/ban/{userId}
+     // ========================================================================
+     @Transactional
+     public Map<String, String> banMember(String serverId, String userId, String requesterId, String reason) {
+-        // 1. Kiß╗âm tra quyß╗ün BAN_MEMBER
+         checkPermission(serverId, requesterId, Permission.BAN_MEMBER);
+ 
+-        // 2. Kh├┤ng cho ban ch├¡nh m├¼nh
+         if (userId.equals(requesterId)) {
+             throw new RuntimeException("Kh├┤ng thß╗â ban ch├¡nh m├¼nh");
+         }
+ 
+-        // 3. Kh├┤ng cho ban Owner
+         checkNotOwner(serverId, userId);
+ 
+-        // 4. Kiß╗âm tra xem ─æ├ú ban ch╞░a
+         if (bannedMemberRepository.existsByServerIdAndUserId(serverId, userId)) {
+             throw new RuntimeException("User " + userId + " ─æ├ú bß╗ï ban trong server n├áy");
+         }
+ 
+-        // 5. L╞░u bß║ún ghi ban
+         BannedMember banned = BannedMember.builder()
+                 .serverId(serverId)
+                 .userId(userId)
+@@ -283,15 +257,13 @@ public class RoleService {
+                 .build();
+         bannedMemberRepository.save(banned);
+ 
+-        // 6. Kick member khß╗Åi server (gß╗ìi server-service leave)
+         try {
+-            HttpHeaders headers = new HttpHeaders();
+-            headers.set("X-User-Id", userId);
+-            restTemplate.exchange(
+-                    serverServiceUrl + "/api/servers/" + serverId + "/leave",
+-                    HttpMethod.POST, new HttpEntity<>(headers), String.class);
++            LeaveServerRequest request = LeaveServerRequest.newBuilder()
++                    .setServerId(Long.parseLong(serverId))
++                    .setUserId(userId)
++                    .build();
++            serverServiceClient.leaveServer(request);
+         } catch (Exception e) {
+-            // Nß║┐u user ─æ├ú rß╗¥i rß╗ôi th├¼ bß╗Å qua
+             log.warn("User {} c├│ thß╗â ─æ├ú rß╗¥i server {}: {}", userId, serverId, e.getMessage());
+         }
+ 
+@@ -311,25 +283,21 @@ public class RoleService {
+     // ========================================================================
+     @Transactional
+     public void createDefaultRoles(String serverId) {
+-        // Owner role ΓÇö to├án quyß╗ün (ALL = 1023 vß╗¢i 10 bit mß╗¢i)
+         roleRepository.save(Role.builder()
+                 .serverId(serverId).roleName("Owner")
+                 .color("#FFD700").permissionBitmask(Permission.ALL)
+                 .isDefault(true).priority(100).build());
+ 
+-        // Admin ΓÇö gß║ºn to├án quyß╗ün, trß╗½ ADMIN bit (ADMIN_DEFAULT = 191)
+         roleRepository.save(Role.builder()
+                 .serverId(serverId).roleName("Admin")
+                 .color("#FF4500").permissionBitmask(Permission.ADMIN_DEFAULT)
+                 .isDefault(true).priority(80).build());
+ 
+-        // Moderator ΓÇö ─æß╗ìc + quß║ún l├╜ tin nhß║»n + kick (MODERATOR_DEFAULT = 11)
+         roleRepository.save(Role.builder()
+                 .serverId(serverId).roleName("Moderator")
+                 .color("#2ECC71").permissionBitmask(Permission.MODERATOR_DEFAULT)
+                 .isDefault(true).priority(50).build());
+ 
+-        // Member ΓÇö chß╗ë ─æß╗ìc k├¬nh (MEMBER_DEFAULT = 1)
+         roleRepository.save(Role.builder()
+                 .serverId(serverId).roleName("Member")
+                 .color("#95A5A6").permissionBitmask(Permission.MEMBER_DEFAULT)
+@@ -342,33 +310,25 @@ public class RoleService {
+     // Private helpers
+     // ========================================================================
+ 
+-    /** Kiß╗âm tra requester c├│ permission cß╗Ñ thß╗â */
+     private void checkPermission(String serverId, String requesterId, Permission requiredPermission) {
+         Map<String, Object> perms = getEffectivePermissions(serverId, requesterId);
+         int bitmask = (int) perms.get("permissionBitmask");
+         if (!Permission.hasPermission(bitmask, requiredPermission)) {
+-            throw new RuntimeException("Bß║ín kh├┤ng c├│ quyß╗ün " + requiredPermission.name()
+-                    + " trong server n├áy");
++            throw new RuntimeException("Bß║ín kh├┤ng c├│ quyß╗ün " + requiredPermission.name() + " trong server n├áy");
+         }
+     }
+ 
+-    /** Kiß╗âm tra userId c├│ phß║úi Owner kh├┤ng ΓÇö nß║┐u ─æ├║ng th├¼ throw */
+-    @SuppressWarnings("unchecked")
+     private void checkNotOwner(String serverId, String userId) {
+         try {
+-            Map<String, Object> details = restTemplate.getForObject(
+-                    serverServiceUrl + "/api/servers/" + serverId, Map.class);
+-            if (details != null) {
+-                Object serverObj = details.get("server");
+-                if (serverObj instanceof Map) {
+-                    String ownerId = (String) ((Map<String, Object>) serverObj).get("ownerId");
+-                    if (userId.equals(ownerId)) {
+-                        throw new RuntimeException("Kh├┤ng thß╗â kick/ban Owner cß╗ºa server");
+-                    }
+-                }
++            GetServerDetailsRequest request = GetServerDetailsRequest.newBuilder()
++                    .setServerId(Long.parseLong(serverId))
++                    .build();
++            GetServerDetailsResponse response = serverServiceClient.getServerDetails(request);
++            if (response.hasServer() && userId.equals(response.getServer().getOwnerId())) {
++                throw new RuntimeException("Kh├┤ng thß╗â kick/ban Owner cß╗ºa server");
+             }
+         } catch (RuntimeException e) {
+-            throw e; // Re-throw RuntimeException from above
++            throw e; 
+         } catch (Exception e) {
+             log.error("Lß╗ùi kiß╗âm tra owner: {}", e.getMessage());
+         }
+diff --git a/role-service/src/main/resources/application.yml b/role-service/src/main/resources/application.yml
+index a524f42..5340b07 100644
+--- a/role-service/src/main/resources/application.yml
++++ b/role-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8091
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: role-service
+   datasource:
+@@ -20,6 +23,7 @@ services:
+ 
+ management:
+   endpoints:
++
+     web:
+       exposure:
+         include: health,info,prometheus,metrics
+@@ -29,4 +33,22 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
++resilience4j:
++  circuitbreaker:
++    instances:
++      default:
++        registerHealthIndicator: true
++        slidingWindowSize: 10
++        permittedNumberOfCallsInHalfOpenState: 3
++        slidingWindowType: COUNT_BASED
++        minimumNumberOfCalls: 5
++        waitDurationInOpenState: 5000
++        failureRateThreshold: 50
++        eventConsumerBufferSize: 10
++  retry:
++    instances:
++      default:
++        maxAttempts: 3
++        waitDuration: 1000
+diff --git a/server-service/Dockerfile b/server-service/Dockerfile
+index 44d9ae5..7372c6d 100644
+--- a/server-service/Dockerfile
++++ b/server-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/server-service/target/server-service-1.0.0-SNAPSHOT.jar
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8085
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/server-service/bin/Dockerfile b/server-service/bin/Dockerfile
+index 44d9ae5..7372c6d 100644
+--- a/server-service/bin/Dockerfile
++++ b/server-service/bin/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -27,4 +28,4 @@ COPY --from=build /build/server-service/target/server-service-1.0.0-SNAPSHOT.jar
+ 
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8085
+-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+\ No newline at end of file
++ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+diff --git a/server-service/bin/src/main/resources/application.yml b/server-service/bin/src/main/resources/application.yml
+index b9de4df..7cb7440 100644
+--- a/server-service/bin/src/main/resources/application.yml
++++ b/server-service/bin/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8085
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: server-service
+   datasource:
+@@ -25,4 +28,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
+diff --git a/server-service/pom.xml b/server-service/pom.xml
+index ff588e3..f3db930 100644
+--- a/server-service/pom.xml
++++ b/server-service/pom.xml
+@@ -28,15 +28,12 @@
+             <artifactId>spring-boot-starter-data-jpa</artifactId>
+         </dependency>
+ 
+-        <dependency>
+-            <groupId>org.springframework.cloud</groupId>
+-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+-        </dependency>
+         <dependency>
+             <groupId>io.micrometer</groupId>
+             <artifactId>micrometer-registry-prometheus</artifactId>
+             <scope>runtime</scope>
+         </dependency>
++
+         <dependency>
+             <groupId>com.mysql</groupId>
+             <artifactId>mysql-connector-j</artifactId>
+@@ -61,6 +58,22 @@
+             <artifactId>common-lib</artifactId>
+             <version>1.0.0-SNAPSHOT</version>
+         </dependency>
++
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
++
++        <!-- Resilience4j -->
++        <dependency>
++            <groupId>org.springframework.cloud</groupId>
++            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-aop</artifactId>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+@@ -96,4 +109,4 @@
+             </plugin>
+         </plugins>
+     </build>
+-</project>
+\ No newline at end of file
++</project>
+diff --git a/server-service/src/main/java/com/chatsever/server/ServerApplication.java b/server-service/src/main/java/com/chatsever/server/ServerApplication.java
+index 03b9b03..5631997 100644
+--- a/server-service/src/main/java/com/chatsever/server/ServerApplication.java
++++ b/server-service/src/main/java/com/chatsever/server/ServerApplication.java
+@@ -3,10 +3,7 @@ package com.chatsever.server;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
+ 
+-import org.springframework.cloud.openfeign.EnableFeignClients;
+-
+ @SpringBootApplication
+-@EnableFeignClients
+ public class ServerApplication {
+     public static void main(String[] args) {
+         SpringApplication.run(ServerApplication.class, args);
+diff --git a/server-service/src/main/java/com/chatsever/server/adapter/ChannelGrpcAdapter.java b/server-service/src/main/java/com/chatsever/server/adapter/ChannelGrpcAdapter.java
+new file mode 100644
+index 0000000..451a044
+--- /dev/null
++++ b/server-service/src/main/java/com/chatsever/server/adapter/ChannelGrpcAdapter.java
+@@ -0,0 +1,32 @@
++package com.chatsever.server.adapter;
++
++import com.chatsever.grpc.channel.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class ChannelGrpcAdapter {
++
++    @GrpcClient("channel-service")
++    private ChannelServiceGrpc.ChannelServiceBlockingStub channelServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public ChannelResponse createChannel(CreateChannelRequest request) {
++        return channelServiceClient.createChannel(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetChannelsResponse getChannelsByServerId(GetChannelsRequest request) {
++        return channelServiceClient.getChannelsByServerId(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public EmptyChannelResponse deleteChannelsByServerId(DeleteChannelsRequest request) {
++        return channelServiceClient.deleteChannelsByServerId(request);
++    }
++}
+diff --git a/server-service/src/main/java/com/chatsever/server/adapter/RoleGrpcAdapter.java b/server-service/src/main/java/com/chatsever/server/adapter/RoleGrpcAdapter.java
+new file mode 100644
+index 0000000..ac4b18b
+--- /dev/null
++++ b/server-service/src/main/java/com/chatsever/server/adapter/RoleGrpcAdapter.java
+@@ -0,0 +1,26 @@
++package com.chatsever.server.adapter;
++
++import com.chatsever.grpc.role.*;
++import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
++import io.github.resilience4j.retry.annotation.Retry;
++import net.devh.boot.grpc.client.inject.GrpcClient;
++import org.springframework.stereotype.Component;
++
++@Component
++public class RoleGrpcAdapter {
++
++    @GrpcClient("role-service")
++    private RoleServiceGrpc.RoleServiceBlockingStub roleServiceClient;
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public CheckBannedResponse checkBanned(CheckBannedRequest request) {
++        return roleServiceClient.checkBanned(request);
++    }
++
++    @CircuitBreaker(name = "default")
++    @Retry(name = "default")
++    public GetPermissionsResponse getPermissions(GetPermissionsRequest request) {
++        return roleServiceClient.getPermissions(request);
++    }
++}
+diff --git a/server-service/src/main/java/com/chatsever/server/client/ChannelClient.java b/server-service/src/main/java/com/chatsever/server/client/ChannelClient.java
+deleted file mode 100644
+index 3cf1e20..0000000
+--- a/server-service/src/main/java/com/chatsever/server/client/ChannelClient.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-package com.chatsever.server.client;
+-
+-import com.chatsever.common.dto.ChannelDto;
+-import org.springframework.cloud.openfeign.FeignClient;
+-import org.springframework.web.bind.annotation.DeleteMapping;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-
+-import java.util.List;
+-
+-@FeignClient(name = "channel-service", url = "${CHANNEL_SERVICE_URL:http://localhost:8086}")
+-public interface ChannelClient {
+-    
+-    @GetMapping("/api/channels/server/{serverId}")
+-    List<ChannelDto> getChannelsByServerId(@PathVariable("serverId") Long serverId);
+-
+-    @org.springframework.web.bind.annotation.PostMapping("/api/channels")
+-    ChannelDto createChannel(
+-        @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, Object> request,
+-        @org.springframework.web.bind.annotation.RequestHeader("X-User-Id") String userId
+-    );
+-
+-    @DeleteMapping("/api/channels/server/{serverId}")
+-    void deleteChannelsByServerId(@PathVariable("serverId") Long serverId);
+-}
+diff --git a/server-service/src/main/java/com/chatsever/server/client/RoleClient.java b/server-service/src/main/java/com/chatsever/server/client/RoleClient.java
+deleted file mode 100644
+index 5002531..0000000
+--- a/server-service/src/main/java/com/chatsever/server/client/RoleClient.java
++++ /dev/null
+@@ -1,21 +0,0 @@
+-package com.chatsever.server.client;
+-
+-import org.springframework.cloud.openfeign.FeignClient;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-import org.springframework.web.bind.annotation.PostMapping;
+-
+-import java.util.Map;
+-
+-@FeignClient(name = "role-service", url = "${ROLE_SERVICE_URL:http://localhost:8091}")
+-public interface RoleClient {
+-
+-    @PostMapping("/api/servers/{serverId}/roles/init")
+-    void initDefaultRoles(@PathVariable("serverId") Long serverId);
+-
+-    @GetMapping("/api/servers/{serverId}/ban/{userId}/check")
+-    Map<String, Object> checkBanned(@PathVariable("serverId") Long serverId, @PathVariable("userId") String userId);
+-    
+-    @GetMapping("/api/servers/{serverId}/permissions/{userId}")
+-    Map<String, Object> getPermissions(@PathVariable("serverId") Long serverId, @PathVariable("userId") String userId);
+-}
+diff --git a/server-service/src/main/java/com/chatsever/server/exception/GlobalExceptionHandler.java b/server-service/src/main/java/com/chatsever/server/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index 8f72521..0000000
+--- a/server-service/src/main/java/com/chatsever/server/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.chatsever.server.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho server-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Server error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/server-service/src/main/java/com/chatsever/server/service/ServerGrpcServiceImpl.java b/server-service/src/main/java/com/chatsever/server/service/ServerGrpcServiceImpl.java
+new file mode 100644
+index 0000000..04f6ce8
+--- /dev/null
++++ b/server-service/src/main/java/com/chatsever/server/service/ServerGrpcServiceImpl.java
+@@ -0,0 +1,110 @@
++package com.chatsever.server.service;
++
++import com.chatsever.grpc.server.*;
++import com.chatsever.server.model.Member;
++import com.chatsever.server.model.Server;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++import java.time.ZoneOffset;
++import java.util.List;
++import java.util.Map;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class ServerGrpcServiceImpl extends ServerInfoServiceGrpc.ServerInfoServiceImplBase {
++
++    private final ServerService serverService;
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public void getServerDetails(GetServerDetailsRequest request, StreamObserver<GetServerDetailsResponse> responseObserver) {
++        try {
++            Map<String, Object> details = serverService.getServerDetails(request.getServerId());
++            Server s = (Server) details.get("server");
++            List<Member> members = (List<Member>) details.get("members");
++
++            ServerDetails serverDetails = ServerDetails.newBuilder()
++                    .setId(s.getId())
++                    .setName(s.getName() != null ? s.getName() : "")
++                    .setOwnerId(s.getOwnerId() != null ? s.getOwnerId() : "")
++                    .setDescription(s.getDescription() != null ? s.getDescription() : "")
++                    .setIcon(s.getIcon() != null ? s.getIcon() : "")
++                    .setInviteCode(s.getInviteCode() != null ? s.getInviteCode() : "")
++                    .build();
++
++            GetServerDetailsResponse.Builder responseBuilder = GetServerDetailsResponse.newBuilder()
++                    .setServer(serverDetails);
++
++            if (members != null) {
++                for (Member m : members) {
++                    MemberDetails.Builder memberBuilder = MemberDetails.newBuilder()
++                            .setUserId(m.getUserId() != null ? m.getUserId() : "");
++                    if (m.getRoleIds() != null) {
++                        memberBuilder.addAllRoleIds(m.getRoleIds());
++                    }
++                    if (m.getJoinedAt() != null) {
++                        memberBuilder.setJoinedAt(m.getJoinedAt().toInstant(ZoneOffset.UTC).toEpochMilli());
++                    }
++                    responseBuilder.addMembers(memberBuilder.build());
++                }
++            }
++
++            responseObserver.onNext(responseBuilder.build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void ensureMember(EnsureMemberRequest request, StreamObserver<EnsureMemberResponse> responseObserver) {
++        try {
++            serverService.ensureMember(request.getServerId(), request.getUserId());
++            responseObserver.onNext(EnsureMemberResponse.newBuilder()
++                    .setStatus("success")
++                    .setMessage("Ensure member ok")
++                    .build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void updateMemberRoles(UpdateMemberRolesRequest request, StreamObserver<EmptyServerResponse> responseObserver) {
++        try {
++            serverService.updateMemberRoles(request.getServerId(), request.getUserId(), request.getRoleIdsList());
++            responseObserver.onNext(EmptyServerResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++
++    @Override
++    public void leaveServer(LeaveServerRequest request, StreamObserver<EmptyServerResponse> responseObserver) {
++        try {
++            serverService.leaveServer(request.getServerId(), request.getUserId());
++            responseObserver.onNext(EmptyServerResponse.newBuilder().build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++}
+diff --git a/server-service/src/main/java/com/chatsever/server/service/impl/ServerServiceImpl.java b/server-service/src/main/java/com/chatsever/server/service/impl/ServerServiceImpl.java
+index 7553e25..de48a98 100644
+--- a/server-service/src/main/java/com/chatsever/server/service/impl/ServerServiceImpl.java
++++ b/server-service/src/main/java/com/chatsever/server/service/impl/ServerServiceImpl.java
+@@ -4,8 +4,10 @@ import com.chatsever.server.model.Member;
+ import com.chatsever.server.model.Server;
+ import com.chatsever.server.repository.MemberRepository;
+ import com.chatsever.server.repository.ServerRepository;
+-import com.chatsever.server.client.ChannelClient;
+-import com.chatsever.server.client.RoleClient;
++import com.chatsever.server.adapter.ChannelGrpcAdapter;
++import com.chatsever.server.adapter.RoleGrpcAdapter;
++import com.chatsever.grpc.channel.*;
++import com.chatsever.grpc.role.*;
+ import com.chatsever.server.service.ServerService;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.data.domain.Page;
+@@ -24,8 +26,10 @@ import java.util.UUID;
+ public class ServerServiceImpl implements ServerService {
+     private final ServerRepository serverRepository;
+     private final MemberRepository memberRepository;
+-    private final ChannelClient channelClient;
+-    private final RoleClient roleClient;
++    @org.springframework.beans.factory.annotation.Autowired
++    private ChannelGrpcAdapter channelServiceClient;
++    @org.springframework.beans.factory.annotation.Autowired
++    private RoleGrpcAdapter roleServiceClient;
+ 
+     @Override
+     @Transactional
+@@ -47,11 +51,13 @@ public class ServerServiceImpl implements ServerService {
+ 
+         // Tß║ío k├¬nh chat mß║╖c ─æß╗ïnh: "General"
+         try {
+-            java.util.Map<String, Object> req = new java.util.HashMap<>();
+-            req.put("name", "General");
+-            req.put("serverId", saved.getId());
+-            req.put("type", "TEXT");
+-            channelClient.createChannel(req, ownerId);
++            CreateChannelRequest req = CreateChannelRequest.newBuilder()
++                    .setName("General")
++                    .setServerId(saved.getId())
++                    .setType("TEXT")
++                    .setUserId(ownerId)
++                    .build();
++            channelServiceClient.createChannel(req);
+         } catch (Exception e) {
+             // Kh├┤ng hß╗ºy tiß║┐n tr├¼nh nß║┐u tß║ío k├¬nh lß╗ùi
+         }
+@@ -81,7 +87,17 @@ public class ServerServiceImpl implements ServerService {
+         Map<String, Object> details = new HashMap<>();
+         details.put("server", s);
+         // Gß╗ìi API qua channel-service ─æß╗â lß║Ñy danh s├ích k├¬nh (Microservices Inter-communication)
+-        details.put("channels", channelClient.getChannelsByServerId(serverId));
++        try {
++            GetChannelsRequest req = GetChannelsRequest.newBuilder().setServerId(serverId).build();
++            GetChannelsResponse resp = channelServiceClient.getChannelsByServerId(req);
++            java.util.List<java.util.Map<String, Object>> channelList = new java.util.ArrayList<>();
++            for (ChannelResponse ch : resp.getChannelsList()) {
++                channelList.add(java.util.Map.of("id", ch.getId(), "serverId", ch.getServerId(), "name", ch.getName(), "type", ch.getType()));
++            }
++            details.put("channels", channelList);
++        } catch (Exception e) {
++            details.put("channels", new java.util.ArrayList<>());
++        }
+         details.put("members", memberRepository.findByServerId(serverId));
+ 
+         return details;
+@@ -137,7 +153,12 @@ public class ServerServiceImpl implements ServerService {
+ 
+         memberRepository.deleteByServerId(id);
+         // Gß╗ìi API qua channel-service ─æß╗â dß╗ìn dß║╣p c├íc k├¬nh li├¬n quan
+-        channelClient.deleteChannelsByServerId(id);
++        try {
++            DeleteChannelsRequest req = DeleteChannelsRequest.newBuilder().setServerId(id).build();
++            channelServiceClient.deleteChannelsByServerId(req);
++        } catch (Exception e) {
++            // Log
++        }
+         serverRepository.delete(s);
+     }
+ 
+@@ -165,8 +186,9 @@ public class ServerServiceImpl implements ServerService {
+     private void processJoin(Long serverId, String uid) {
+         // R6 - Kiß╗âm tra xem user c├│ bß╗ï ban khß╗Åi server n├áy kh├┤ng
+         try {
+-            Map<String, Object> banCheck = roleClient.checkBanned(serverId, uid);
+-            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
++            CheckBannedRequest req = CheckBannedRequest.newBuilder().setServerId(serverId).setUserId(uid).build();
++            CheckBannedResponse resp = roleServiceClient.checkBanned(req);
++            if (resp.getIsBanned()) {
+                 throw new RuntimeException("Bß║ín ─æ├ú bß╗ï cß║Ñm khß╗Åi server n├áy v─⌐nh viß╗àn");
+             }
+         } catch (RuntimeException e) {
+@@ -239,13 +261,12 @@ public class ServerServiceImpl implements ServerService {
+     
+     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
+         try {
+-            Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
+-            if (perms != null && perms.containsKey("permissionBitmask")) {
+-                int bitmask = (int) perms.get("permissionBitmask");
+-                // Check nß║┐u c├│ quyß╗ün t╞░╞íng ß╗⌐ng, HOß║╢C c├│ quyß╗ün ADMIN (128), HOß║╢C OWNER (255)
+-                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+-                    return; // C├│ quyß╗ün
+-                }
++            GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(userId).build();
++            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
++            int bitmask = resp.getPermissionBitmask();
++            // Check nß║┐u c├│ quyß╗ün t╞░╞íng ß╗⌐ng, HOß║╢C c├│ quyß╗ün ADMIN (128), HOß║╢C OWNER (255)
++            if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
++                return; // C├│ quyß╗ün
+             }
+             throw new RuntimeException("Bß║ín kh├┤ng c├│ ─æß╗º quyß╗ün (cß║ºn " + requiredPermissionBit + " hoß║╖c ADMIN)");
+         } catch (RuntimeException e) {
+diff --git a/server-service/src/main/resources/application.yml b/server-service/src/main/resources/application.yml
+index b9de4df..9033ee6 100644
+--- a/server-service/src/main/resources/application.yml
++++ b/server-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8085
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: server-service
+   datasource:
+@@ -25,4 +28,23 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++
++resilience4j:
++  circuitbreaker:
++    instances:
++      default:
++        registerHealthIndicator: true
++        slidingWindowSize: 10
++        permittedNumberOfCallsInHalfOpenState: 3
++        slidingWindowType: COUNT_BASED
++        minimumNumberOfCalls: 5
++        waitDurationInOpenState: 5000
++        failureRateThreshold: 50
++        eventConsumerBufferSize: 10
++  retry:
++    instances:
++      default:
++        maxAttempts: 3
++        waitDuration: 1000
++
+diff --git a/task.md b/task.md
+new file mode 100644
+index 0000000..6ada681
+--- /dev/null
++++ b/task.md
+@@ -0,0 +1,59 @@
++# Bß║úng Ph├ón Chia C├┤ng Viß╗çc 4 Th├ánh Vi├¬n (Phase 1, 2, 3)
++
++Dß╗▒a tr├¬n Master Plan ─æ├ú ─æ╞░ß╗úc duyß╗çt, d╞░ß╗¢i ─æ├óy l├á danh s├ích c├┤ng viß╗çc (Task Checklist) chi tiß║┐t chia cho 4 th├ánh vi├¬n ─æß╗â b├ím s├ít v├á thß╗▒c thi xuy├¬n suß╗æt v├▓ng ─æß╗¥i dß╗▒ ├ín. 
++
++## ≡ƒºæΓÇì≡ƒÆ╗ Member 1: Kß╗╣ S╞░ Dß╗» Liß╗çu & Hß║í Tß║ºng (Data & Infra Engineer)
++**Tr├ích nhiß╗çm:** Quß║ún trß╗ï Schema Database, Hß╗ç thß╗æng ─Éß╗ïnh danh (Identity) v├á M├┤i tr╞░ß╗¥ng chß║íy thß╗▒c tß║┐ (Kubernetes).
++
++- [ ] **Phase 1: ß╗ön ─æß╗ïnh Dß╗» Liß╗çu & X├íc Thß╗▒c**
++  - [ ] Loß║íi bß╗Å ho├án to├án `SPRING_JPA_DDL_AUTO=update` ß╗ƒ mß╗ìi file cß║Ñu h├¼nh.
++  - [ ] T├¡ch hß╗úp Flyway hoß║╖c Liquibase; xuß║Ñt v├á viß║┐t script `V1__init_schema.sql` cho tß╗½ng database.
++  - [ ] T├¡ch hß╗úp Keycloak v├áo file `docker-compose.yml`. X├│a bß╗Å code `auth-service` tß╗▒ chß║┐. Cß║Ñu h├¼nh API Gateway x├íc thß╗▒c JWT.
++- [ ] **Phase 2: Ph├ón Quyß╗ün Phi Tß║¡p Trung**
++  - [ ] Viß║┐t cß║Ñu h├¼nh Spring Security SecurityContext cho c├íc service nß╗Öi bß╗Ö ─æß╗â tß╗▒ parse JWT Claims v├á ph├ón quyß╗ün (RBAC/CBAC) m├á kh├┤ng cß║ºn gß╗ìi lß║íi Keycloak.
++- [ ] **Phase 3: Kubernetes Migration & Hardening**
++  - [ ] Viß║┐t Helm Charts hoß║╖c YAML Manifests ─æß╗â chuyß╗ân hß║í tß║ºng tß╗½ Docker Compose sang Kubernetes (K8s).
++  - [ ] ─É╞░a to├án bß╗Ö cß║Ñu h├¼nh, password nhß║íy cß║úm v├áo Kubernetes ConfigMap & Secrets.
++  - [ ] Tß╗æi ╞░u h├│a Multi-stage Docker Builds, chuyß╗ân sang image Alpine/Distroless v├á chß║íy d╞░ß╗¢i quyß╗ün `non-root user`.
++  - [ ] Cß║Ñu h├¼nh Horizontal Pod Autoscaler (HPA) tß╗▒ ─æß╗Öng scale c├íc Pod.
++
++## ≡ƒºæΓÇì≡ƒÆ╗ Member 2: Kß╗╣ S╞░ Gi├ím S├ít & Hiß╗çu N─âng (Observability & Performance)
++**Tr├ích nhiß╗çm:** X├óy dß╗▒ng hß╗ç thß╗æng Tracing, Centralized Logging, Caching v├á chß╗ïu tr├ích nhiß╗çm Load Testing.
++
++- [ ] **Phase 1: Gi├ím S├ít Ph├ón T├ín (Observability)**
++  - [ ] T├¡ch hß╗úp th╞░ viß╗çn `micrometer-tracing-bridge-otel` ─æß╗â sinh v├á truyß╗ün tß║úi TraceId/SpanId.
++  - [ ] Dß╗▒ng hß║í tß║ºng ELK Stack (Elasticsearch, Logstash, Kibana) hoß║╖c Grafana Loki tr├¬n m├┤i tr╞░ß╗¥ng local.
++  - [ ] Cß║Ñu h├¼nh Structured JSON Logging (th├┤ng qua `logback-spring.xml`) bß║»t TraceId ß╗ƒ mß╗ìi d├▓ng log cß╗ºa mß╗ìi service.
++- [ ] **Phase 2: Mß╗ƒ Rß╗Öng Gi├ím S├ít Nghiß╗çp Vß╗Ñ**
++  - [ ] ─Éß╗ïnh ngh─⌐a th├¬m c├íc custom metrics (v├¡ dß╗Ñ: sß╗æ l╞░ß╗úng tin nhß║»n gß╗¡i th├ánh c├┤ng/s, l╞░ß╗úng user online) ─æß╗â ─æß║⌐y vß╗ü hß╗ç thß╗æng Prometheus Dashboard.
++- [ ] **Phase 3: Bß╗Ö Nhß╗¢ ─Éß╗çm & Chß╗ïu Tß║úi Kß╗ïch Trß║ºn**
++  - [ ] T├¡ch hß╗úp Redis l├ám Distributed Caching cho c├íc logic lß║Ñy User Profile, Role Check (Read-heavy operations).
++  - [ ] Chß║íy Chaos Testing: D├╣ng kß╗ïch bß║ún ngß║½u nhi├¬n tß║»t n├│ng (kill) container DB/RabbitMQ ─æß╗â kiß╗âm tra sß╗⌐c phß╗Ñc hß╗ôi cß╗ºa hß╗ç thß╗æng.
++  - [ ] Chß║íy Load Testing bß║▒ng JMeter/k6 vß╗¢i 10,000 CCU ─æß╗ông thß╗¥i v├áo Gateway.
++
++## ≡ƒºæΓÇì≡ƒÆ╗ Member 3: Kß╗╣ S╞░ T├¡ch Hß╗úp & Chß╗ïu Lß╗ùi (Integration & Resilience)
++**Tr├ích nhiß╗çm:** ├üp dß╗Ñng Circuit Breaker, gRPC nß╗Öi bß╗Ö, chuß║⌐n h├│a Problem Details v├á x├óy dß╗▒ng ─æ╞░ß╗¥ng ß╗æng CI/CD.
++
++- [ ] **Phase 1: Mß║íng L╞░ß╗¢i Giao Tiß║┐p & Kh├íng Lß╗ùi**
++  - [ ] Th├¬m th╞░ viß╗çn `resilience4j` v├á bß╗ìc to├án bß╗Ö c├íc lß╗¥i gß╗ìi REST client bß║▒ng `@CircuitBreaker`, `@Retry`, `@TimeLimiter`.
++  - [ ] Thiß║┐t kß║┐ `GlobalExceptionHandler` trong `common-lib` ─æß╗â ├⌐p ─æß╗ïnh dß║íng lß╗ùi trß║ú vß╗ü tu├ón thß╗º chuß║⌐n RFC 7807, giß║Ñu k├¡n Stack Trace.
++  - [ ] Setup `grpc-spring-boot-starter` v├á tß║ío module `grpc-contracts` d├╣ng chung.
++  - [ ] **Dß╗ìn dß║╣p Common-lib (Decoupling):** Gß╗í bß╗Å to├án bß╗Ö Business DTOs ra khß╗Åi `common-lib` ─æß╗â dß╗⌐t ─æiß╗âm t├¼nh trß║íng phß╗Ñ thuß╗Öc ch├⌐o.
++- [ ] **Phase 2: Chuyß╗ân ─Éß╗òi 100% sang gRPC**
++  - [ ] C├áy ß║úi x├│a sß╗ò to├án bß╗Ö REST API d├╣ng cho giao tiß║┐p Service-to-Service. ─Éß╗ïnh ngh─⌐a Protobuf v├á thay thß║┐ 100% bß║▒ng gRPC stub.
++- [ ] **Phase 3: Tß╗▒ ─Éß╗Öng H├│a Triß╗ân Khai (CI/CD Pipeline)**
++  - [ ] Thiß║┐t lß║¡p CI Pipeline (Kiß╗âm tra chß║Ñt l╞░ß╗úng code, chß║íy Flyway Migration tr╞░ß╗¢c khi deploy).
++  - [ ] Thiß║┐t lß║¡p Zero-Downtime Deployment (Rolling Update hoß║╖c Blue/Green) tr├¬n cß╗Ñm K8s.
++
++## ≡ƒºæΓÇì≡ƒÆ╗ Member 4: Kß╗╣ S╞░ Logic L├╡i & Sß╗▒ Kiß╗çn (Core Domain & Event-Driven)
++**Tr├ích nhiß╗çm:** Xß╗¡ l├╜ bß║Ñt ─æß╗ông bß╗Ö, ─æß║¡p ─æi x├óy lß║íi cß║Ñu tr├║c m├ú nguß╗ôn nß╗Öi bß╗Ö (Clean Architecture) v├á Rich Domain Model.
++
++- [ ] **Phase 1: ─Éß║úm Bß║úo Nhß║Ñt Qu├ín Dß╗» Liß╗çu Ph├ón T├ín**
++  - [ ] Thiß║┐t kß║┐ bß║úng `OutboxMessage` v├á cß║Ñu h├¼nh Transaction l╞░u dß╗» liß╗çu nghiß╗çp vß╗Ñ k├¿m message v├áo chung 1 commit.
++  - [ ] Viß║┐t Background Worker (Cronjob/ShedLock) ─æß╗â ─æß╗ïnh kß╗│ qu├⌐t bß║úng Outbox v├á publish an to├án l├¬n RabbitMQ.
++- [ ] **Phase 2: T├íi Cß║Ñu Tr├║c Kiß║┐n Tr├║c Vi M├┤ (Nhiß╗çm vß╗Ñ ─æinh cß╗ºa dß╗▒ ├ín)**
++  - [ ] Loß║íi bß╗Å cß║Ñu tr├║c N-Tier c┼⌐ r├¡ch. Bß╗æ tr├¡ lß║íi m├ú nguß╗ôn tß╗½ng service theo Vertical Slice Architecture (Feature-based).
++  - [ ] Cß╗⌐u rß╗ùi Anemic Domain Model: Di chuyß╗ân logic t├¡nh to├ín, kiß╗âm tra ─æiß╗üu kiß╗çn tß╗½ tß║ºng Service nhß╗ôi thß║│ng v├áo c├íc class Entity (Rich Domain Model). ─É├│ng g├│i state chß║╖t chß║╜.
++  - [ ] Thiß║┐t kß║┐ lß║íi c├íc kiß╗âu dß╗» liß╗çu nguy├¬n thß╗ºy rß║úi r├íc th├ánh c├íc Value Objects (`Email`, `Money`).
++- [ ] **Phase 3: Tß╗▒ ─Éß╗Öng H├│a Kiß╗âm Thß╗¡ Logic L├╡i**
++  - [ ] Viß║┐t Unit Test v├á Integration Test ─æß╗Öc lß║¡p, tß║¡p trung s├óu v├áo kiß╗âm thß╗¡ c├íc Domain Entity v├á Value Objects vß╗½a refactor. ─Éß║úm bß║úo Test Coverage v╞░ß╗út mß╗æc tß╗æi thiß╗âu 80%.
+diff --git a/user-profile-service/Dockerfile b/user-profile-service/Dockerfile
+index 15f831a..dc6d3a5 100644
+--- a/user-profile-service/Dockerfile
++++ b/user-profile-service/Dockerfile
+@@ -4,6 +4,7 @@ WORKDIR /build
+ 
+ COPY pom.xml ./
+ COPY common-lib/pom.xml common-lib/pom.xml
++COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
+ COPY auth-service/pom.xml auth-service/pom.xml
+ COPY server-service/pom.xml server-service/pom.xml
+ COPY channel-service/pom.xml channel-service/pom.xml
+@@ -28,3 +29,4 @@ COPY --from=build /build/user-profile-service/target/user-profile-service-1.0.0-
+ ENV TZ=Asia/Ho_Chi_Minh
+ EXPOSE 8090
+ ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
++
+diff --git a/user-profile-service/pom.xml b/user-profile-service/pom.xml
+index 83dc0ac..b5f22ae 100644
+--- a/user-profile-service/pom.xml
++++ b/user-profile-service/pom.xml
+@@ -51,6 +51,16 @@
+             <artifactId>common-lib</artifactId>
+             <version>1.0.0-SNAPSHOT</version>
+         </dependency>
++        <dependency>
++            <groupId>net.devh</groupId>
++            <artifactId>grpc-spring-boot-starter</artifactId>
++            <version>3.1.0.RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>com.chatsever</groupId>
++            <artifactId>grpc-contracts</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/user-profile-service/src/main/java/com/chatsever/profile/exception/GlobalExceptionHandler.java b/user-profile-service/src/main/java/com/chatsever/profile/exception/GlobalExceptionHandler.java
+deleted file mode 100644
+index f27359f..0000000
+--- a/user-profile-service/src/main/java/com/chatsever/profile/exception/GlobalExceptionHandler.java
++++ /dev/null
+@@ -1,49 +0,0 @@
+-package com.chatsever.profile.exception;
+-
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-import org.springframework.web.multipart.MaxUploadSizeExceededException;
+-
+-import java.time.LocalDateTime;
+-import java.util.Map;
+-
+-/**
+- * Global exception handler cho user-profile-service (NF10).
+- */
+-@RestControllerAdvice
+-public class GlobalExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+-
+-    @ExceptionHandler(RuntimeException.class)
+-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+-        log.warn("Profile error: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+-                "error", ex.getMessage(),
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(MaxUploadSizeExceededException.class)
+-    public ResponseEntity<Map<String, Object>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+-        log.warn("File too large: {}", ex.getMessage());
+-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+-                "error", "File qu├í lß╗¢n. K├¡ch th╞░ß╗¢c tß╗æi ─æa cho avatar l├á 2MB.",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+-        log.error("Unexpected error: ", ex);
+-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+-                "error", "Internal server error",
+-                "message", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
+-                "timestamp", LocalDateTime.now().toString()
+-        ));
+-    }
+-}
+diff --git a/user-profile-service/src/main/java/com/chatsever/profile/service/UserGrpcServiceImpl.java b/user-profile-service/src/main/java/com/chatsever/profile/service/UserGrpcServiceImpl.java
+new file mode 100644
+index 0000000..6f425e0
+--- /dev/null
++++ b/user-profile-service/src/main/java/com/chatsever/profile/service/UserGrpcServiceImpl.java
+@@ -0,0 +1,35 @@
++package com.chatsever.profile.service;
++
++import com.chatsever.grpc.user.UserServiceGrpc;
++import com.chatsever.grpc.user.CheckUserExistsRequest;
++import com.chatsever.grpc.user.CheckUserExistsResponse;
++import com.chatsever.profile.repository.UserProfileRepository;
++import io.grpc.stub.StreamObserver;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import net.devh.boot.grpc.server.service.GrpcService;
++
++@Slf4j
++@GrpcService
++@RequiredArgsConstructor
++public class UserGrpcServiceImpl extends UserServiceGrpc.UserServiceImplBase {
++
++    private final UserProfileRepository repository;
++
++    @Override
++    public void checkUserExists(CheckUserExistsRequest request, StreamObserver<CheckUserExistsResponse> responseObserver) {
++        try {
++            boolean exists = repository.findByUsername(request.getUsername()).isPresent();
++            responseObserver.onNext(CheckUserExistsResponse.newBuilder()
++                    .setExists(exists)
++                    .build());
++            responseObserver.onCompleted();
++        } catch (Exception e) {
++            log.error("Error checking user existence: ", e);
++            responseObserver.onError(io.grpc.Status.INTERNAL
++                    .withDescription(e.getMessage())
++                    .withCause(e)
++                    .asRuntimeException());
++        }
++    }
++}
+diff --git a/user-profile-service/src/main/resources/application.yml b/user-profile-service/src/main/resources/application.yml
+index c3c996c..622a063 100644
+--- a/user-profile-service/src/main/resources/application.yml
++++ b/user-profile-service/src/main/resources/application.yml
+@@ -2,6 +2,9 @@ server:
+   port: 8090
+ 
+ spring:
++  mvc:
++    problemdetails:
++      enabled: true
+   application:
+     name: user-profile-service
+   datasource:
+@@ -30,4 +33,5 @@ management:
+   prometheus:
+     metrics:
+       export:
+-        enabled: true
+\ No newline at end of file
++        enabled: true
++

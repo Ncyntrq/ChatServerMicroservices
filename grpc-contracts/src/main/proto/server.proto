@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package server;
+
+option java_multiple_files = true;
+option java_package = "com.chatsever.grpc.server";
+option java_outer_classname = "ServerProto";
+
+service ServerInfoService {
+    rpc GetServerDetails (GetServerDetailsRequest) returns (GetServerDetailsResponse);
+    rpc EnsureMember (EnsureMemberRequest) returns (EnsureMemberResponse);
+    rpc UpdateMemberRoles (UpdateMemberRolesRequest) returns (EmptyServerResponse);
+    rpc LeaveServer (LeaveServerRequest) returns (EmptyServerResponse);
+}
+
+message EmptyServerResponse {}
+
+message GetServerDetailsRequest {
+    int64 serverId = 1;
+}
+
+message ServerDetails {
+    int64 id = 1;
+    string name = 2;
+    string ownerId = 3;
+    string description = 4;
+    string icon = 5;
+    string inviteCode = 6;
+}
+
+message MemberDetails {
+    string userId = 1;
+    repeated string roleIds = 2;
+    int64 joinedAt = 3; // timestamp in millis
+}
+
+message GetServerDetailsResponse {
+    ServerDetails server = 1;
+    repeated MemberDetails members = 2;
+}
+
+message EnsureMemberRequest {
+    int64 serverId = 1;
+    string userId = 2;
+}
+
+message EnsureMemberResponse {
+    string status = 1;
+    string message = 2;
+}
+
+message UpdateMemberRolesRequest {
+    int64 serverId = 1;
+    string userId = 2;
+    repeated string roleIds = 3;
+}
+
+message LeaveServerRequest {
+    int64 serverId = 1;
+    string userId = 2;
+}

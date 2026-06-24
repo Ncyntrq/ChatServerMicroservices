@@ -4,8 +4,10 @@ import com.chatsever.server.model.Member;
 import com.chatsever.server.model.Server;
 import com.chatsever.server.repository.MemberRepository;
 import com.chatsever.server.repository.ServerRepository;
-import com.chatsever.server.client.ChannelClient;
-import com.chatsever.server.client.RoleClient;
+import com.chatsever.server.adapter.ChannelGrpcAdapter;
+import com.chatsever.server.adapter.RoleGrpcAdapter;
+import com.chatsever.grpc.channel.*;
+import com.chatsever.grpc.role.*;
 import com.chatsever.server.service.ServerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +26,10 @@ import java.util.UUID;
 public class ServerServiceImpl implements ServerService {
     private final ServerRepository serverRepository;
     private final MemberRepository memberRepository;
-    private final ChannelClient channelClient;
-    private final RoleClient roleClient;
+    @org.springframework.beans.factory.annotation.Autowired
+    private ChannelGrpcAdapter channelServiceClient;
+    @org.springframework.beans.factory.annotation.Autowired
+    private RoleGrpcAdapter roleServiceClient;
 
     @Override
     @Transactional
@@ -47,11 +51,13 @@ public class ServerServiceImpl implements ServerService {
 
         // Tạo kênh chat mặc định: "General"
         try {
-            java.util.Map<String, Object> req = new java.util.HashMap<>();
-            req.put("name", "General");
-            req.put("serverId", saved.getId());
-            req.put("type", "TEXT");
-            channelClient.createChannel(req, ownerId);
+            CreateChannelRequest req = CreateChannelRequest.newBuilder()
+                    .setName("General")
+                    .setServerId(saved.getId())
+                    .setType("TEXT")
+                    .setUserId(ownerId)
+                    .build();
+            channelServiceClient.createChannel(req);
         } catch (Exception e) {
             // Không hủy tiến trình nếu tạo kênh lỗi
         }
@@ -81,7 +87,17 @@ public class ServerServiceImpl implements ServerService {
         Map<String, Object> details = new HashMap<>();
         details.put("server", s);
         // Gọi API qua channel-service để lấy danh sách kênh (Microservices Inter-communication)
-        details.put("channels", channelClient.getChannelsByServerId(serverId));
+        try {
+            GetChannelsRequest req = GetChannelsRequest.newBuilder().setServerId(serverId).build();
+            GetChannelsResponse resp = channelServiceClient.getChannelsByServerId(req);
+            java.util.List<java.util.Map<String, Object>> channelList = new java.util.ArrayList<>();
+            for (ChannelResponse ch : resp.getChannelsList()) {
+                channelList.add(java.util.Map.of("id", ch.getId(), "serverId", ch.getServerId(), "name", ch.getName(), "type", ch.getType()));
+            }
+            details.put("channels", channelList);
+        } catch (Exception e) {
+            details.put("channels", new java.util.ArrayList<>());
+        }
         details.put("members", memberRepository.findByServerId(serverId));
 
         return details;
@@ -137,7 +153,12 @@ public class ServerServiceImpl implements ServerService {
 
         memberRepository.deleteByServerId(id);
         // Gọi API qua channel-service để dọn dẹp các kênh liên quan
-        channelClient.deleteChannelsByServerId(id);
+        try {
+            DeleteChannelsRequest req = DeleteChannelsRequest.newBuilder().setServerId(id).build();
+            channelServiceClient.deleteChannelsByServerId(req);
+        } catch (Exception e) {
+            // Log
+        }
         serverRepository.delete(s);
     }
 
@@ -165,8 +186,9 @@ public class ServerServiceImpl implements ServerService {
     private void processJoin(Long serverId, String uid) {
         // R6 - Kiểm tra xem user có bị ban khỏi server này không
         try {
-            Map<String, Object> banCheck = roleClient.checkBanned(serverId, uid);
-            if (banCheck != null && Boolean.TRUE.equals(banCheck.get("banned"))) {
+            CheckBannedRequest req = CheckBannedRequest.newBuilder().setServerId(serverId).setUserId(uid).build();
+            CheckBannedResponse resp = roleServiceClient.checkBanned(req);
+            if (resp.getIsBanned()) {
                 throw new RuntimeException("Bạn đã bị cấm khỏi server này vĩnh viễn");
             }
         } catch (RuntimeException e) {
@@ -239,13 +261,12 @@ public class ServerServiceImpl implements ServerService {
     
     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
         try {
-            Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
-            if (perms != null && perms.containsKey("permissionBitmask")) {
-                int bitmask = (int) perms.get("permissionBitmask");
-                // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
-                if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
-                    return; // Có quyền
-                }
+            GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(userId).build();
+            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
+            int bitmask = resp.getPermissionBitmask();
+            // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
+            if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
+                return; // Có quyền
             }
             throw new RuntimeException("Bạn không có đủ quyền (cần " + requiredPermissionBit + " hoặc ADMIN)");
         } catch (RuntimeException e) {

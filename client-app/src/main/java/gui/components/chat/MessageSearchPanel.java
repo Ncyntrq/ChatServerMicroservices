@@ -2,7 +2,7 @@ package gui.components.chat;
 
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import network.MessageSearchApiClient;
 
 import javax.swing.*;
