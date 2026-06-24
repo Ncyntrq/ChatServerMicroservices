@@ -1,85 +1,76 @@
 package com.chatsever.gateway.filter;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Bơm định danh đã xác thực vào header cho downstream (P2.3/P2.4).
+ *
+ * <p>Việc verify JWT do Spring Security ({@code SecurityConfig} + dual-mode decoder)
+ * đảm nhiệm. Filter này chỉ đọc {@link Jwt} từ {@code SecurityContext} rồi set:
+ * <ul>
+ *   <li>{@code X-User-Id} / {@code X-Username} = {@code preferred_username} (Keycloak)
+ *       hoặc {@code sub} (token HMAC cũ = username) — giữ định danh theo username để
+ *       không phá dữ liệu downstream đang gắn theo username.</li>
+ *   <li>{@code X-User-Roles} = realm_access.roles (Keycloak), rỗng với token cũ.</li>
+ * </ul>
+ *
+ * <p>Path public ({@code /api/auth/**}, {@code /ws/**}, {@code /actuator/**}) không có
+ * authentication → đi qua nguyên trạng.
+ */
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
-
-    @Value("${jwt.secret}")
-    private String secretKey;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .filter(JwtAuthenticationToken.class::isInstance)
+                .map(auth -> withIdentityHeaders(exchange, ((JwtAuthenticationToken) auth).getToken()))
+                .defaultIfEmpty(exchange)
+                .flatMap(chain::filter);
+    }
 
-        // 1. Cho phép các request đăng nhập/đăng ký đi qua không cần token
-        if (path.startsWith("/api/auth/")) {
-            return chain.filter(exchange);
+    private ServerWebExchange withIdentityHeaders(ServerWebExchange exchange, Jwt jwt) {
+        String username = jwt.getClaimAsString("preferred_username");
+        if (username == null || username.isBlank()) {
+            username = jwt.getSubject();
         }
+        String roles = String.join(",", extractRealmRoles(jwt));
 
-        // 2. Lấy Token từ Header hoặc Query Parameter
-        String token = null;
-        String authHeader = request.getHeaders().getFirst("Authorization");
-        
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-        } else {
-            // Hỗ trợ WebSocket: lấy token từ query parameter
-            token = request.getQueryParams().getFirst("token");
+        ServerHttpRequest mutated = exchange.getRequest().mutate()
+                .header("X-User-Id", username)
+                .header("X-Username", username)
+                .header("X-User-Roles", roles)
+                .build();
+        return exchange.mutate().request(mutated).build();
+    }
+
+    /** Lấy {@code realm_access.roles} từ claim Keycloak; rỗng nếu không có. */
+    @SuppressWarnings("unchecked")
+    private Collection<String> extractRealmRoles(Jwt jwt) {
+        Object realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess instanceof Map<?, ?> map && map.get("roles") instanceof Collection<?> roles) {
+            return (Collection<String>) roles;
         }
-
-        if (token == null || token.isEmpty()) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
-
-        try {
-            // 3. Giải mã Token
-            Key key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
-            Claims claims = Jwts.parser()
-                    .verifyWith((javax.crypto.SecretKey) key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            String username = claims.getSubject();
-
-            // 4. Bơm X-User-Id và X-Username vào Header cho các service sau (đúng ý Người
-            // C)
-            ServerHttpRequest mutatedRequest = request.mutate()
-                    .header("X-Username", username)
-                    .header("X-User-Id", username)
-                    .build();
-
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
-
-        } catch (Exception e) {
-            logger.error("JWT Validation Failed: {}", e.getMessage(), e);
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
+        return List.of();
     }
 
     @Override
     public int getOrder() {
-        return -1; // Ưu tiên chạy trước mọi filter khác
+        return -1; // Bơm header trước khi route tới downstream.
     }
 }

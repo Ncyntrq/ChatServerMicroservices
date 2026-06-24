@@ -13,9 +13,14 @@ spring:
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_DDL_AUTO:create-drop}           # Dev: create-drop | Docker: update
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}               # Chỉ validate, schema do Flyway quản lý
     show-sql: true                     # In câu SQL ra console để debug
   h2:
     console:
@@ -57,4 +62,4 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces

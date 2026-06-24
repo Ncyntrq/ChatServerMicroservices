@@ -12,9 +12,14 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/chat_messaging_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:root}
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
 
@@ -23,6 +28,10 @@ services:
   presence-url: ${PRESENCE_SERVICE_URL:http://localhost:8083}
   server-url: ${SERVER_SERVICE_URL:http://localhost:8085}
   channel-url: ${CHANNEL_SERVICE_URL:http://localhost:8084}
+
+# JWT verify cục bộ cho WebSocket (RBAC phi tập trung - P2.4)
+jwt:
+  secret: ${JWT_SECRET}
 
 management:
   endpoints:
@@ -42,4 +51,4 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces

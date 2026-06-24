@@ -19,6 +19,7 @@ kiến trúc **Microservices** với **Java 17 + Spring Boot 3 / Spring Cloud**.
 - [Ứng dụng Client](#ứng-dụng-client)
 - [DevOps & Giám sát](#devops--giám-sát)
 - [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Nhóm thực hiện](#nhóm-thực-hiện)
 
 ---
 
@@ -206,3 +207,11 @@ chat-server-microservices/
 └─ devops/                     # Cấu hình Prometheus / Grafana
 ```
 
+## Nhóm thực hiện
+
+| Họ và tên | MSSV |
+|---|---|
+| Tô Thành Nguyên | 24521207 |
+| Lê Vũ Hoàng Nguyên | 24521182 |
+| Nguyễn Quốc Nguyên | 24521197 |
+| Nguyễn Thành Phát | 24521310 |

@@ -6,12 +6,13 @@ package network;
  * Khi test với backend từ xa (VM/VPS), override bằng system property:
  * -Dchatsever.gateway.http=http://host:port
  * -Dchatsever.gateway.ws=ws://host:port
+ * (vd VM cũ: -Dchatsever.gateway.http=http://35.198.251.73:8080 -Dchatsever.gateway.ws=ws://35.198.251.73:8080)
  */
 public final class ApiConfig {
 
-        public static final String GATEWAY_HTTP = System.getProperty("chatsever.gateway.http", "http://35.198.251.73:8080");
+        public static final String GATEWAY_HTTP = System.getProperty("chatsever.gateway.http", "http://localhost:8080");
 
-        public static final String GATEWAY_WS = System.getProperty("chatsever.gateway.ws", "ws://35.198.251.73:8080");
+        public static final String GATEWAY_WS = System.getProperty("chatsever.gateway.ws", "ws://localhost:8080");
 
         public static final String WS_CHAT_PATH = "/ws/chat";
 

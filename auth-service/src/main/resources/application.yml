@@ -10,15 +10,20 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/chat_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:Nn3832143}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: ${SPRING_JPA_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}
     show-sql: true
 
 jwt:
-  secret: ${JWT_SECRET:chatsever-jwt-secret-key-2026-safe-key}
+  secret: ${JWT_SECRET}
   expiration: 7200000
   refresh-expiration: 604800000
 
@@ -37,9 +42,7 @@ management:
   # ===== DISTRIBUTED TRACING =====
   tracing:
     sampling:
-      probability: 1.0   # 100% sampling — giảm xuống 0.1 (10%) cho production
+      probability: 1.0
   otlp:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
-
-

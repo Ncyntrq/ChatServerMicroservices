@@ -64,6 +64,48 @@ services:
     networks:
       - chat-net
 
+  # ---------------------------------------------------------------
+  # Keycloak: Identity Provider (P2.2) + MySQL backend
+  # ---------------------------------------------------------------
+  keycloak-db:
+    image: mysql:8.0
+    container_name: keycloak-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${KC_DB_PASSWORD:-keycloak_pass}
+      MYSQL_DATABASE: keycloak
+    volumes:
+      - keycloak-db-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - chat-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    restart: always
+    command: start-dev --import-realm
+    environment:
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://keycloak-db:3306/keycloak
+      KC_DB_USERNAME: root
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak_pass}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./devops/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - chat-net
+
   gateway-service:
     build:
       context: .
@@ -71,11 +113,19 @@ services:
     image: hoangnguyen1007/gateway-service:${IMAGE_TAG:-latest}
     container_name: gateway-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     ports:
       - "8080:8080"
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/chatserver
+      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/chatserver/protocol/openid-connect/certs
       - AUTH_SERVICE_URL=http://auth-service:8081
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
@@ -92,9 +142,9 @@ services:
       - FRIEND_SERVICE_URL=http://friend-service:8092
     depends_on:
       auth-service:
-        condition: service_started
+        condition: service_healthy
       messaging-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - chat-net
 
@@ -105,6 +155,12 @@ services:
     image: hoangnguyen1007/auth-service:${IMAGE_TAG:-latest}
     container_name: auth-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -116,7 +172,6 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -128,6 +183,12 @@ services:
     image: hoangnguyen1007/server-service:${IMAGE_TAG:-latest}
     container_name: server-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8085/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -144,7 +205,7 @@ services:
       mysql-db:
         condition: service_healthy
       channel-service:
-        condition: service_started
+        condition: service_healthy
 
   channel-service:
     build:
@@ -153,6 +214,12 @@ services:
     image: hoangnguyen1007/channel-service:${IMAGE_TAG:-latest}
     container_name: channel-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8086/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -174,10 +241,17 @@ services:
     image: hoangnguyen1007/messaging-service:${IMAGE_TAG:-latest}
     container_name: messaging-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx384m
+      - JWT_SECRET=${JWT_SECRET}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
@@ -202,6 +276,12 @@ services:
     image: hoangnguyen1007/presence-service:${IMAGE_TAG:-latest}
     container_name: presence-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -228,6 +308,12 @@ services:
     image: hoangnguyen1007/log-service:${IMAGE_TAG:-latest}
     container_name: log-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -250,6 +336,12 @@ services:
     image: hoangnguyen1007/notification-service:${IMAGE_TAG:-latest}
     container_name: notification-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8088/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
@@ -262,7 +354,8 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
+      - SPRING_JPA_DDL_AUTO=validate
+      - SPRING_FLYWAY_ENABLED=true
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -278,6 +371,12 @@ services:
     image: hoangnguyen1007/file-service:${IMAGE_TAG:-latest}
     container_name: file-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8089/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
@@ -289,7 +388,8 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
+      - SPRING_JPA_DDL_AUTO=validate
+      - SPRING_FLYWAY_ENABLED=true
     depends_on:
       minio:
         condition: service_healthy
@@ -305,6 +405,12 @@ services:
     image: hoangnguyen1007/role-service:${IMAGE_TAG:-latest}
     container_name: role-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8091/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -315,7 +421,6 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
       - SERVER_SERVICE_URL=http://server-service:8085
     depends_on:
       mysql-db:
@@ -328,6 +433,12 @@ services:
     image: hoangnguyen1007/user-profile-service:${IMAGE_TAG:-latest}
     container_name: user-profile-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8090/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -338,7 +449,6 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -350,6 +460,12 @@ services:
     image: hoangnguyen1007/friend-service:${IMAGE_TAG:-latest}
     container_name: friend-service
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8092/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - chat-net
     environment:
@@ -360,7 +476,6 @@ services:
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_JPA_DDL_AUTO=update
       - USER_PROFILE_URL=http://user-profile-service:8090
     depends_on:
       mysql-db:
@@ -376,3 +491,4 @@ volumes:
   minio-data:
   rabbitmq-data:
   log-data:
+  keycloak-db-data:

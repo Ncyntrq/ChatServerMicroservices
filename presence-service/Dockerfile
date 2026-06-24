@@ -23,10 +23,20 @@ RUN mvn dependency:go-offline -pl presence-service -am -q || true
 COPY . .
 RUN mvn -pl presence-service -am clean package -DskipTests -q
 
-FROM eclipse-temurin:17-jre-jammy
+# ======== RUNTIME STAGE (Alpine + non-root) ========
+FROM bellsoft/liberica-openjre-alpine:17
+
+# Security: chạy bằng user không phải root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
-COPY --from=build /build/presence-service/target/presence-service-1.0.0-SNAPSHOT.jar app.jar
+COPY --from=build --chown=appuser:appgroup /build/presence-service/target/presence-service-1.0.0-SNAPSHOT.jar app.jar
+
+USER appuser
 
 ENV TZ=Asia/Ho_Chi_Minh
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+
 EXPOSE 8083
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+# exec => PID 1 nhận SIGTERM đúng (graceful shutdown)
+ENTRYPOINT ["sh","-c","exec java $JAVA_OPTS -jar /app/app.jar"]

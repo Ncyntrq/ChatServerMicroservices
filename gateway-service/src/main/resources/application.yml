@@ -6,6 +6,14 @@ server:
 spring:
   application:
     name: gateway-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak realm issuer + JWKS. Dùng jwk-set-uri (nạp lazy lần verify đầu)
+          # để gateway khởi động được kể cả khi Keycloak chưa sẵn sàng.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://keycloak:8080/realms/chatserver}
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8080/realms/chatserver/protocol/openid-connect/certs}
   cloud:
     gateway:
       routes:
@@ -110,7 +118,7 @@ spring:
 
 # Cấu hình bảo mật để JwtAuthFilter sử dụng
 jwt:
-  secret: ${JWT_SECRET:chatsever-jwt-secret-key-2026-safe-key}
+  secret: ${JWT_SECRET}
 
 # Cấu hình Health Check (G3)
 management:
@@ -128,7 +136,7 @@ management:
   # ===== DISTRIBUTED TRACING =====
   tracing:
     sampling:
-      probability: 1.0   # 100% sampling — giảm xuống 0.1 (10%) cho production
+      probability: 1.0
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
