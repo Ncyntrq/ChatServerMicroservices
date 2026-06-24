@@ -83,7 +83,24 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Flyway DB migration (P1.2) -->
+
+        <!-- ===== OBSERVABILITY ===== -->
+        <!-- Micrometer Tracing Bridge — sinh TraceId/SpanId, propagate qua HTTP headers -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <!-- OTLP Exporter — gửi spans về Jaeger qua OTLP HTTP -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <!-- Logstash Logback Encoder — Structured JSON Logging -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
+            <!-- Flyway DB migration (P1.2) -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>

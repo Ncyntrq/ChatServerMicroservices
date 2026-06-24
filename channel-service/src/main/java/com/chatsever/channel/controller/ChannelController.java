@@ -3,7 +3,7 @@ package com.chatsever.channel.controller;
 import com.chatsever.channel.dto.ChannelRequest;
 import com.chatsever.channel.model.PinnedMessage;
 import com.chatsever.channel.service.ChannelService;
-import com.chatsever.common.dto.ChannelDto;
+import com.chatsever.channel.dto.ChannelDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

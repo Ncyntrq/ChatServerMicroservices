@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  auth-service — Structured JSON Logging
+  Format: JSON (logstash-logback-encoder)
+  Fields:  timestamp, level, service, traceId, spanId, thread, logger, message, stack_trace
+  TraceId/SpanId: auto-injected bởi Micrometer Tracing vào MDC
+-->
+<configuration>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="auth-service"/>
+
+    <!-- ===== CONSOLE APPENDER (JSON) ===== -->
+    <!-- Docker Promtail sẽ đọc stdout của container → ship về Loki -->
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Thêm service name vào mỗi log line -->
+            <customFields>{"service":"${APP_NAME}"}</customFields>
+            <!-- Đổi tên field timestamp thành @timestamp (Loki/Elastic convention) -->
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampPattern>
+            <timeZone>UTC</timeZone>
+            <!-- Include MDC fields: traceId, spanId tự động inject bởi Micrometer -->
+            <!-- Bỏ fields không cần thiết để giảm size log -->
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- ===== CONSOLE PLAIN (chỉ dùng khi debug local, tắt trong Docker) ===== -->
+    <appender name="CONSOLE_PLAIN" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level [${APP_NAME},%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Spring Boot profile: mặc định dùng JSON khi chạy Docker (profile=docker/prod) -->
+    <springProfile name="docker,prod,staging">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </root>
+        <!-- Giảm noise từ framework nội bộ -->
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="com.chatsever" level="DEBUG"/>
+    </springProfile>
+
+    <!-- Dev local: plain text để dễ đọc -->
+    <springProfile name="default,dev">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_PLAIN"/>
+        </root>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="com.chatsever" level="DEBUG"/>
+    </springProfile>
+</configuration>

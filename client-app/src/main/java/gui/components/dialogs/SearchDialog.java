@@ -3,7 +3,7 @@ package gui.components.dialogs;
 import gui.theme.AppColors;
 import gui.theme.AppFonts;
 import network.ChannelApiClient;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

@@ -1,6 +1,6 @@
 package com.chatsever.notification.listener;
 
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.notification.dto.MessageDTO;
 import com.chatsever.notification.config.RabbitMQConfig;
 import com.chatsever.notification.model.NotificationType;
 import com.chatsever.notification.service.NotificationService;
@@ -127,3 +127,5 @@ public class MessageEventListener {
         return mentions;
     }
 }
+
+

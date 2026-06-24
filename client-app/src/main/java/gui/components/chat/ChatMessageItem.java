@@ -1,6 +1,6 @@
 package gui.components.chat;
 
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import gui.components.AvatarBadge;
 import gui.components.AppIcons;

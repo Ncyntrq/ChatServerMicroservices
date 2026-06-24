@@ -4,6 +4,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
+    restart: always
     hostname: rabbitmq
     ports:
       - "5672:5672"
@@ -13,6 +14,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark 0.8 -memsup system_memory_high_watermark 1.0"
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
@@ -24,6 +26,7 @@ services:
   mysql-db:
     image: mysql:8.0
     container_name: mysql-db
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -43,6 +46,7 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    restart: always
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -66,6 +70,7 @@ services:
   keycloak-db:
     image: mysql:8.0
     container_name: keycloak-db
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${KC_DB_PASSWORD:-keycloak_pass}
       MYSQL_DATABASE: keycloak
@@ -82,6 +87,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: keycloak
+    restart: always
     command: start-dev --import-realm
     environment:
       KC_DB: mysql
@@ -106,6 +112,7 @@ services:
       dockerfile: gateway-service/Dockerfile
     image: hoangnguyen1007/gateway-service:${IMAGE_TAG:-latest}
     container_name: gateway-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
       interval: 15s
@@ -115,11 +122,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/chatserver
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/chatserver/protocol/openid-connect/certs
       - AUTH_SERVICE_URL=http://auth-service:8081
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SERVER_SERVICE_URL=http://server-service:8085
       - CHANNEL_SERVICE_URL=http://channel-service:8086
       - MESSAGING_SERVICE_URL=http://messaging-service:8082
@@ -145,6 +154,7 @@ services:
       dockerfile: auth-service/Dockerfile
     image: hoangnguyen1007/auth-service:${IMAGE_TAG:-latest}
     container_name: auth-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
       interval: 15s
@@ -154,8 +164,10 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -170,6 +182,7 @@ services:
       dockerfile: server-service/Dockerfile
     image: hoangnguyen1007/server-service:${IMAGE_TAG:-latest}
     container_name: server-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8085/actuator/health || exit 1"]
       interval: 15s
@@ -179,7 +192,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -198,6 +213,7 @@ services:
       dockerfile: channel-service/Dockerfile
     image: hoangnguyen1007/channel-service:${IMAGE_TAG:-latest}
     container_name: channel-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8086/actuator/health || exit 1"]
       interval: 15s
@@ -207,7 +223,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -222,6 +240,7 @@ services:
       dockerfile: messaging-service/Dockerfile
     image: hoangnguyen1007/messaging-service:${IMAGE_TAG:-latest}
     container_name: messaging-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
       interval: 15s
@@ -231,8 +250,10 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx512m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx384m
       - JWT_SECRET=${JWT_SECRET}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -254,6 +275,7 @@ services:
       dockerfile: presence-service/Dockerfile
     image: hoangnguyen1007/presence-service:${IMAGE_TAG:-latest}
     container_name: presence-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
       interval: 15s
@@ -263,7 +285,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_presence_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -283,6 +307,7 @@ services:
       dockerfile: log-service/Dockerfile
     image: hoangnguyen1007/log-service:${IMAGE_TAG:-latest}
     container_name: log-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
       interval: 15s
@@ -292,7 +317,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -308,6 +335,7 @@ services:
       dockerfile: notification-service/Dockerfile
     image: hoangnguyen1007/notification-service:${IMAGE_TAG:-latest}
     container_name: notification-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8088/actuator/health || exit 1"]
       interval: 15s
@@ -315,7 +343,9 @@ services:
       retries: 5
       start_period: 40s
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -340,6 +370,7 @@ services:
       dockerfile: file-service/Dockerfile
     image: hoangnguyen1007/file-service:${IMAGE_TAG:-latest}
     container_name: file-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8089/actuator/health || exit 1"]
       interval: 15s
@@ -347,7 +378,9 @@ services:
       retries: 5
       start_period: 40s
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx512m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -371,6 +404,7 @@ services:
       dockerfile: role-service/Dockerfile
     image: hoangnguyen1007/role-service:${IMAGE_TAG:-latest}
     container_name: role-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8091/actuator/health || exit 1"]
       interval: 15s
@@ -380,7 +414,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -396,6 +432,7 @@ services:
       dockerfile: user-profile-service/Dockerfile
     image: hoangnguyen1007/user-profile-service:${IMAGE_TAG:-latest}
     container_name: user-profile-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8090/actuator/health || exit 1"]
       interval: 15s
@@ -405,7 +442,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -420,6 +459,7 @@ services:
       dockerfile: friend-service/Dockerfile
     image: hoangnguyen1007/friend-service:${IMAGE_TAG:-latest}
     container_name: friend-service
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8092/actuator/health || exit 1"]
       interval: 15s
@@ -429,7 +469,9 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_friend_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -441,7 +483,8 @@ services:
 
 networks:
   chat-net:
-    driver: bridge
+    external: true
+    name: chat-net
 
 volumes:
   mysql-data:

@@ -6,9 +6,11 @@ import com.chatsever.channel.model.PinnedMessage;
 import com.chatsever.channel.repository.ChannelRepository;
 import com.chatsever.channel.repository.PinnedMessageRepository;
 import com.chatsever.channel.service.ChannelService;
-import com.chatsever.common.dto.ChannelDto;
+import com.chatsever.channel.dto.ChannelDto;
 import com.chatsever.channel.dto.ChannelRequest;
-import com.chatsever.channel.client.RoleClient;
+import com.chatsever.grpc.role.*;
+import com.chatsever.channel.adapter.RoleGrpcAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +24,8 @@ public class ChannelServiceImpl implements ChannelService {
 
     private final ChannelRepository channelRepository;
     private final PinnedMessageRepository pinnedMessageRepository;
-    private final RoleClient roleClient;
+    @Autowired
+    private RoleGrpcAdapter roleServiceClient;
 
     @Override
     @Transactional
@@ -149,9 +152,10 @@ public class ChannelServiceImpl implements ChannelService {
 
     private void checkPermission(Long serverId, String userId, int requiredPermissionBit) {
         try {
-            java.util.Map<String, Object> perms = roleClient.getPermissions(serverId, userId);
-            if (perms != null && perms.containsKey("permissionBitmask")) {
-                int bitmask = (int) perms.get("permissionBitmask");
+            GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(userId).build();
+            GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
+            if (true) {
+                int bitmask = resp.getPermissionBitmask();
                 // Check nếu có quyền tương ứng, HOẶC có quyền ADMIN (128), HOẶC OWNER (255)
                 if ((bitmask & requiredPermissionBit) != 0 || (bitmask & 128) != 0 || bitmask == 255) {
                     return; // Có quyền

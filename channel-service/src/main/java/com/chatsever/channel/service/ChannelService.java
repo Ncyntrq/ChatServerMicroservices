@@ -1,6 +1,6 @@
 package com.chatsever.channel.service;
 
-import com.chatsever.common.dto.ChannelDto;
+import com.chatsever.channel.dto.ChannelDto;
 import com.chatsever.channel.dto.ChannelRequest;
 import com.chatsever.channel.model.PinnedMessage;
 
@@ -21,3 +21,5 @@ public interface ChannelService {
     // CH8 — Pin channels
     ChannelDto togglePinChannel(Long channelId, String userId);
 }
+
+

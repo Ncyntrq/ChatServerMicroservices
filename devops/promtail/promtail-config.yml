@@ -1,0 +1,113 @@
+# Promtail — Docker log shipper → Grafana Loki
+# Chạy trong Docker: mount /var/run/docker.sock để đọc log của tất cả containers
+# Tài liệu: https://grafana.com/docs/loki/latest/send-data/promtail/
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+# Địa chỉ Loki server nhận log
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: chat-server
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+    external_labels:
+      cluster: local
+      environment: development
+
+# Vị trí lưu trữ position file (để biết đã đọc đến đâu)
+positions:
+  filename: /tmp/positions.yaml
+
+# ===== SCRAPE CONFIG =====
+scrape_configs:
+  # --- Đọc log từ tất cả Docker containers ---
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          # Chỉ scrape containers trong network chat-net
+          - name: network
+            values: ["chat-net"]
+
+    relabel_configs:
+      # Lấy tên container làm label "container"
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+
+      # Lấy image name làm label "image"
+      - source_labels: ["__meta_docker_container_image"]
+        target_label: "image"
+
+      # Map container name → service name label
+      # Pattern: auth-service → service=auth-service
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.+)"
+        target_label: "service"
+
+      # Thêm job label
+      - target_label: "job"
+        replacement: "chat-server"
+
+    # Pipeline để xử lý log JSON
+    pipeline_stages:
+      # Bước 1: Parse JSON log (từ logstash-logback-encoder)
+      - json:
+          expressions:
+            level: level
+            logger: logger_name
+            message: message
+            traceId: traceId
+            spanId: spanId
+            thread: thread_name
+            timestamp: '"@timestamp"'
+            service_field: service
+
+      # Bước 2: Đặt timestamp từ log JSON (không dùng thời gian ingestion)
+      - timestamp:
+          source: timestamp
+          format: "2006-01-02T15:04:05.000Z"
+          fallback_formats:
+            - "2006-01-02T15:04:05Z"
+
+      # Bước 3: Promote các field quan trọng thành Loki labels để filter nhanh
+      - labels:
+          level:
+          service: service_field
+          traceId:
+
+      # Bước 4: Đặt nội dung log line là message field
+      - output:
+          source: message
+
+  # --- Scrape devops containers (Prometheus, Grafana, Jaeger, v.v.) ---
+  - job_name: devops-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: network
+            values: ["devops-net"]
+
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - target_label: "job"
+        replacement: "devops"
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.+)"
+        target_label: "service"
+
+    pipeline_stages:
+      - labels:
+          container:

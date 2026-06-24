@@ -8,13 +8,11 @@ import com.chatsever.role.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import com.chatsever.role.adapter.ServerInfoGrpcAdapter;
+import com.chatsever.grpc.server.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
@@ -31,10 +29,8 @@ public class RoleService {
 
     private final RoleRepository roleRepository;
     private final BannedMemberRepository bannedMemberRepository;
-    private final RestTemplate restTemplate;
-
-    @Value("${services.server-url}")
-    private String serverServiceUrl;
+    @Autowired
+    private ServerInfoGrpcAdapter serverServiceClient;
 
     // ========================================================================
     // R1 — Tạo role
@@ -123,11 +119,12 @@ public class RoleService {
 
         // Gọi server-service để cập nhật roleIds cho member
         try {
-            String url = serverServiceUrl + "/api/servers/" + serverId + "/members/" + userId + "/roles";
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Content-Type", "application/json");
-            Map<String, Object> body = Map.of("roleIds", roleIds);
-            restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
+            UpdateMemberRolesRequest req = UpdateMemberRolesRequest.newBuilder()
+                    .setServerId(Long.parseLong(serverId))
+                    .setUserId(userId)
+                    .addAllRoleIds(roleIds)
+                    .build();
+            serverServiceClient.updateMemberRoles(req);
         } catch (Exception e) {
             log.error("Lỗi gán role cho member: {}", e.getMessage());
             throw new RuntimeException("Không thể gán role: " + e.getMessage());
@@ -150,44 +147,39 @@ public class RoleService {
     public Map<String, Object> getEffectivePermissions(String serverId, String userId) {
         // 1. Kiểm tra user có phải Owner không (bằng cách gọi server-service)
         try {
-            Map<String, Object> details = restTemplate.getForObject(
-                    serverServiceUrl + "/api/servers/" + serverId, Map.class);
+            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder()
+                    .setServerId(Long.parseLong(serverId))
+                    .build();
+            GetServerDetailsResponse response = serverServiceClient.getServerDetails(req);
 
-            if (details != null) {
+            if (response.hasServer()) {
                 // Check nếu là server owner → ALL permissions
-                Object serverObj = details.get("server");
-                if (serverObj instanceof Map) {
-                    String ownerId = (String) ((Map<String, Object>) serverObj).get("ownerId");
-                    if (userId.equals(ownerId)) {
-                        return Map.of(
-                                "userId", userId,
-                                "serverId", serverId,
-                                "role", "Owner",
-                                "permissionBitmask", Permission.ALL,
-                                "permissions", Permission.toNames(Permission.ALL)
-                        );
-                    }
+                if (userId.equals(response.getServer().getOwnerId())) {
+                    return Map.of(
+                            "userId", userId,
+                            "serverId", serverId,
+                            "role", "Owner",
+                            "permissionBitmask", Permission.ALL,
+                            "permissions", Permission.toNames(Permission.ALL)
+                    );
                 }
 
                 // 2. Lấy member info → roleIds
-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
-                if (members != null) {
-                    for (Map<String, Object> member : members) {
-                        if (userId.equals(member.get("userId"))) {
-                            List<String> roleIdStrings = (List<String>) member.get("roleIds");
-                            if (roleIdStrings == null || roleIdStrings.isEmpty()) {
-                                // Không có role → dùng Member default
-                                return Map.of(
-                                        "userId", userId,
-                                        "serverId", serverId,
-                                        "role", "Member",
-                                        "permissionBitmask", Permission.MEMBER_DEFAULT,
-                                        "permissions", Permission.toNames(Permission.MEMBER_DEFAULT)
-                                );
-                            }
+                for (MemberDetails member : response.getMembersList()) {
+                    if (userId.equals(member.getUserId())) {
+                        List<String> roleIds = member.getRoleIdsList();
+                        if (roleIds == null || roleIds.isEmpty()) {
+                            // Không có role → dùng Member default
+                            return Map.of(
+                                    "userId", userId,
+                                    "serverId", serverId,
+                                    "role", "Member",
+                                    "permissionBitmask", Permission.MEMBER_DEFAULT,
+                                    "permissions", Permission.toNames(Permission.MEMBER_DEFAULT)
+                            );
+                        }
 
-                            // 3. Tính effective permissions = OR tất cả role permissions
-                            List<String> roleIds = roleIdStrings;
+                        // 3. Tính effective permissions = OR tất cả role permissions
                             List<Role> roles = roleRepository.findByIdIn(roleIds);
                             int effectiveMask = 0;
                             String highestRole = "Member";
@@ -207,7 +199,6 @@ public class RoleService {
                                     "permissionBitmask", effectiveMask,
                                     "permissions", Permission.toNames(effectiveMask)
                             );
-                        }
                     }
                 }
             }
@@ -238,11 +229,11 @@ public class RoleService {
 
         // 4. Gọi server-service để xóa member (leave)
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-User-Id", userId);
-            restTemplate.exchange(
-                    serverServiceUrl + "/api/servers/" + serverId + "/leave",
-                    HttpMethod.POST, new HttpEntity<>(headers), String.class);
+            LeaveServerRequest request = LeaveServerRequest.newBuilder()
+                    .setServerId(Long.parseLong(serverId))
+                    .setUserId(userId)
+                    .build();
+            serverServiceClient.leaveServer(request);
         } catch (Exception e) {
             log.error("Lỗi kick member: {}", e.getMessage());
             throw new RuntimeException("Không thể kick member: " + e.getMessage());
@@ -285,11 +276,11 @@ public class RoleService {
 
         // 6. Kick member khỏi server (gọi server-service leave)
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-User-Id", userId);
-            restTemplate.exchange(
-                    serverServiceUrl + "/api/servers/" + serverId + "/leave",
-                    HttpMethod.POST, new HttpEntity<>(headers), String.class);
+            LeaveServerRequest request = LeaveServerRequest.newBuilder()
+                    .setServerId(Long.parseLong(serverId))
+                    .setUserId(userId)
+                    .build();
+            serverServiceClient.leaveServer(request);
         } catch (Exception e) {
             // Nếu user đã rời rồi thì bỏ qua
             log.warn("User {} có thể đã rời server {}: {}", userId, serverId, e.getMessage());
@@ -356,19 +347,15 @@ public class RoleService {
     @SuppressWarnings("unchecked")
     private void checkNotOwner(String serverId, String userId) {
         try {
-            Map<String, Object> details = restTemplate.getForObject(
-                    serverServiceUrl + "/api/servers/" + serverId, Map.class);
-            if (details != null) {
-                Object serverObj = details.get("server");
-                if (serverObj instanceof Map) {
-                    String ownerId = (String) ((Map<String, Object>) serverObj).get("ownerId");
-                    if (userId.equals(ownerId)) {
-                        throw new RuntimeException("Không thể kick/ban Owner của server");
-                    }
-                }
+            GetServerDetailsRequest request = GetServerDetailsRequest.newBuilder()
+                    .setServerId(Long.parseLong(serverId))
+                    .build();
+            GetServerDetailsResponse response = serverServiceClient.getServerDetails(request);
+            if (response.hasServer() && userId.equals(response.getServer().getOwnerId())) {
+                throw new RuntimeException("Không thể kick/ban Owner của server");
             }
         } catch (RuntimeException e) {
-            throw e; // Re-throw RuntimeException from above
+            throw e; 
         } catch (Exception e) {
             log.error("Lỗi kiểm tra owner: {}", e.getMessage());
         }
