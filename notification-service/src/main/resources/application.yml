@@ -5,6 +5,8 @@ server:
   port: 8088
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: notification-service
   # Dev: H2 in-memory | Docker: MySQL (override bằng env vars)
@@ -49,7 +51,7 @@ management:
   # ===== DISTRIBUTED TRACING =====
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.1
   otlp:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces

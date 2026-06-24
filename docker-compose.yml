@@ -122,7 +122,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/chatserver
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/chatserver/protocol/openid-connect/certs
@@ -164,7 +164,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
@@ -192,7 +192,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx192m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
@@ -223,7 +223,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx192m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
@@ -250,7 +250,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx384m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx384m
       - JWT_SECRET=${JWT_SECRET}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
@@ -285,7 +285,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx192m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_presence_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
@@ -317,7 +317,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
@@ -343,7 +343,7 @@ services:
       retries: 5
       start_period: 300s
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
@@ -378,7 +378,7 @@ services:
       retries: 5
       start_period: 300s
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx256m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - MINIO_ENDPOINT=http://minio:9000
@@ -414,7 +414,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
@@ -442,7 +442,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
@@ -469,7 +469,7 @@ services:
     networks:
       - chat-net
     environment:
-      - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - JAVA_OPTS=-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError -Xmx128m
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_friend_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
