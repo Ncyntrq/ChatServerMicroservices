@@ -34,16 +34,16 @@ Dựa trên Master Plan đã được duyệt, dưới đây là danh sách côn
 ## 🧑‍💻 Member 3: Kỹ Sư Tích Hợp & Chịu Lỗi (Integration & Resilience)
 **Trách nhiệm:** Áp dụng Circuit Breaker, gRPC nội bộ, chuẩn hóa Problem Details và xây dựng đường ống CI/CD.
 
-- [x] **Phase 1: Mạng Lưới Giao Tiếp & Kháng Lỗi**
-  - [x] Thêm thư viện `resilience4j` và bọc toàn bộ các lời gọi REST client bằng `@CircuitBreaker`, `@Retry`, `@TimeLimiter`.
-  - [x] Thiết kế `GlobalExceptionHandler` trong `common-lib` để ép định dạng lỗi trả về tuân thủ chuẩn RFC 7807, giấu kín Stack Trace.
-  - [x] Setup `grpc-spring-boot-starter` và tạo module `grpc-contracts` dùng chung.
-  - [x] **Dọn dẹp Common-lib (Decoupling):** Gỡ bỏ toàn bộ Business DTOs ra khỏi `common-lib` để dứt điểm tình trạng phụ thuộc chéo.
-- [x] **Phase 2: Chuyển Đổi 100% sang gRPC**
-  - [x] Cày ải xóa sổ toàn bộ REST API dùng cho giao tiếp Service-to-Service. Định nghĩa Protobuf và thay thế 100% bằng gRPC stub.
-- [x] **Phase 3: Tự Động Hóa Triển Khai (CI/CD Pipeline)**
-  - [x] Thiết lập CI Pipeline (Kiểm tra chất lượng code, chạy Flyway Migration trước khi deploy).
-  - [x] Thiết lập Zero-Downtime Deployment (Rolling Update hoặc Blue/Green) trên cụm K8s.
+- [ ] **Phase 1: Mạng Lưới Giao Tiếp & Kháng Lỗi**
+  - [ ] Thêm thư viện `resilience4j` và bọc toàn bộ các lời gọi REST client bằng `@CircuitBreaker`, `@Retry`, `@TimeLimiter`.
+  - [ ] Thiết kế `GlobalExceptionHandler` trong `common-lib` để ép định dạng lỗi trả về tuân thủ chuẩn RFC 7807, giấu kín Stack Trace.
+  - [ ] Setup `grpc-spring-boot-starter` và tạo module `grpc-contracts` dùng chung.
+  - [ ] **Dọn dẹp Common-lib (Decoupling):** Gỡ bỏ toàn bộ Business DTOs ra khỏi `common-lib` để dứt điểm tình trạng phụ thuộc chéo.
+- [ ] **Phase 2: Chuyển Đổi 100% sang gRPC**
+  - [ ] Cày ải xóa sổ toàn bộ REST API dùng cho giao tiếp Service-to-Service. Định nghĩa Protobuf và thay thế 100% bằng gRPC stub.
+- [ ] **Phase 3: Tự Động Hóa Triển Khai (CI/CD Pipeline)**
+  - [ ] Thiết lập CI Pipeline (Kiểm tra chất lượng code, chạy Flyway Migration trước khi deploy).
+  - [ ] Thiết lập Zero-Downtime Deployment (Rolling Update hoặc Blue/Green) trên cụm K8s.
 
 ## 🧑‍💻 Member 4: Kỹ Sư Logic Lõi & Sự Kiện (Core Domain & Event-Driven)
 **Trách nhiệm:** Xử lý bất đồng bộ, đập đi xây lại cấu trúc mã nguồn nội bộ (Clean Architecture) và Rich Domain Model.
