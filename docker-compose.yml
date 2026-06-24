@@ -77,6 +77,8 @@ services:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:8081
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SERVER_SERVICE_URL=http://server-service:8085
       - CHANNEL_SERVICE_URL=http://channel-service:8086
       - MESSAGING_SERVICE_URL=http://messaging-service:8082
@@ -108,6 +110,8 @@ services:
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
       - JWT_SECRET=${JWT_SECRET}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_auth_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -128,6 +132,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_server_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -151,6 +157,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_channel_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -170,6 +178,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx384m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -196,6 +206,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx192m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_presence_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -220,6 +232,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS}
@@ -238,6 +252,8 @@ services:
     restart: always
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -264,6 +280,8 @@ services:
     restart: always
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx256m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -291,6 +309,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_role_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -312,6 +332,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_profile_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -332,6 +354,8 @@ services:
       - chat-net
     environment:
       - JAVA_OPTS=-XX:+UseSerialGC -Xmx128m
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/chat_friend_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
       - SPRING_DATASOURCE_USERNAME=root
@@ -344,7 +368,8 @@ services:
 
 networks:
   chat-net:
-    driver: bridge
+    external: true
+    name: chat-net
 
 volumes:
   mysql-data:

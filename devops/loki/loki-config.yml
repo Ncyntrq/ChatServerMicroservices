@@ -1,0 +1,92 @@
+# Grafana Loki — Single-binary mode (phù hợp local/dev environment)
+# Tài liệu: https://grafana.com/docs/loki/latest/configure/
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: warn
+
+# Cấu hình ingester — nhận log từ Promtail
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  wal:
+    enabled: true
+    dir: /loki/wal
+
+# Cấu hình schema — index và chunks storage
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# Cấu hình storage — dùng filesystem cho local dev
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+  filesystem:
+    directory: /loki/chunks
+
+# Giới hạn query để tránh quá tải
+limits_config:
+  retention_period: 168h      # Giữ log 7 ngày
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  max_query_series: 5000
+  max_query_lookback: 168h
+  allow_structured_metadata: true
+
+# Compactor — nén và xóa log cũ
+compactor:
+  working_directory: /loki/retention
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
+
+
+# Query range config
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+# Frontend config
+frontend:
+  max_outstanding_per_tenant: 2048
+
+# Ruler (optional, tắt cho đơn giản)
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules-temp
+  alertmanager_url: http://localhost:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+
+# Analytics — tắt để không gửi data về Grafana
+analytics:
+  reporting_enabled: false

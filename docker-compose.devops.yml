@@ -94,13 +94,13 @@ services:
       - chat-net
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy" ]
+      test: [ "CMD", "promtool", "check", "healthy" ]
       interval: 15s
       timeout: 5s
       retries: 5
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.4.2
     container_name: grafana
     ports:
       - "3001:3000"
@@ -110,12 +110,15 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://localhost:3001
       - GF_ANALYTICS_REPORTING_ENABLED=false
+      # Jaeger datasource đã được tích hợp sẵn từ Grafana 10+, không cần cài thêm
     volumes:
       - grafana-data:/var/lib/grafana
       - ./devops/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       prometheus:
         condition: service_healthy
+      loki:
+        condition: service_started
     networks:
       - devops-net
     restart: unless-stopped
@@ -125,13 +128,88 @@ services:
       timeout: 5s
       retries: 5
 
+  # ================================================================
+  # JAEGER — Distributed Tracing (all-in-one)
+  # UI:        http://localhost:16686
+  # OTLP HTTP: http://jaeger:4318  (services → Jaeger)
+  # OTLP gRPC: http://jaeger:4317
+  # ================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC (optional)
+      - "4318:4318"     # OTLP HTTP (Spring Boot services gửi trace về đây)
+      - "14268:14268"   # Jaeger HTTP Thrift (legacy)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+      - MEMORY_MAX_TRACES=50000
+      - LOG_LEVEL=warn
+    networks:
+      - devops-net
+      - chat-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:16686/" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ================================================================
+  # GRAFANA LOKI — Log Aggregation
+  # API:  http://loki:3100  (Promtail → Loki)
+  # Query qua Grafana datasource
+  # ================================================================
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"    # Loki HTTP API (để test trực tiếp nếu cần)
+    volumes:
+      - ./devops/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - devops-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3100/ready" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ================================================================
+  # PROMTAIL — Docker Log Shipper → Loki
+  # Đọc stdout của tất cả containers, parse JSON, ship về Loki
+  # Không expose port ra ngoài
+  # ================================================================
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - ./devops/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # Đọc Docker container logs
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - devops-net
+      - chat-net
+    user: root   # Cần root để đọc Docker socket và container logs
+
+
 networks:
   devops-net:
     driver: bridge
     name: devops-net
   chat-net:
     external: true
-    name: chat-server-microservices_chat-net
+    name: chat-net
 
 volumes:
   jenkins-home:
@@ -141,3 +219,4 @@ volumes:
   sonar-db-data:
   prometheus-data:
   grafana-data:
+  loki-data:       # Lưu trữ logs của Grafana Loki

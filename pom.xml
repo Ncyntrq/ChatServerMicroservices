@@ -28,13 +28,14 @@
 
     <properties>
         <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <spring-boot.version>3.2.4</spring-boot.version>
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <lombok.version>1.18.34</lombok.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- Observability -->
+        <micrometer-tracing.version>1.2.4</micrometer-tracing.version>
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
     </properties>
 
     <dependencyManagement>
@@ -53,6 +54,21 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- ===== OBSERVABILITY BOM ===== -->
+            <!-- Micrometer Tracing BOM — quản lý đồng nhất TẤT CẢ OTel versions -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bom</artifactId>
+                <version>${micrometer-tracing.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Logstash Logback Encoder — Structured JSON Logging -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -64,9 +80,10 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.13.0</version>
                     <configuration>
-                        <source>17</source>
-                        <target>17</target>
-                        <fork>true</fork>
+                        <!-- Dùng release thay vì source+target:
+                             Dùng cờ release 17 = set source + target + system modules path cùng lúc
+                             Loại bỏ warning system modules path not set -> compile nhanh hơn -->
+                        <release>17</release>
                         <compilerArgs>
                             <arg>-parameters</arg>
                         </compilerArgs>

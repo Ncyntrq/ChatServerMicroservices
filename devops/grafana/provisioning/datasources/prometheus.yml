@@ -1,9 +1,61 @@
+# Grafana Datasources Provisioning
+# File này được load tự động khi Grafana khởi động
+# Thêm: Loki (logs) + Jaeger (traces) bên cạnh Prometheus (metrics)
+
 apiVersion: 1
 
 datasources:
+  # ===== PROMETHEUS — Metrics =====
   - name: Prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
     editable: false
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        # Link từ metric → trace trong Jaeger (Exemplar)
+        - name: traceID
+          datasourceUid: jaeger
+          urlDisplayLabel: "Xem trace trong Jaeger"
+
+  # ===== LOKI — Centralized Logs =====
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    editable: false
+    jsonData:
+      httpHeaderName1: "X-Scope-OrgID"
+      maxLines: 1000
+      derivedFields:
+        # Tự động tạo link từ traceId trong log → Jaeger trace
+        - datasourceUid: jaeger
+          matcherRegex: '"traceId":"([a-f0-9]+)"'
+          name: TraceID
+          url: "$${__value.raw}"
+          urlDisplayLabel: "Xem trace trong Jaeger"
+
+  # ===== JAEGER — Distributed Traces =====
+  - name: Jaeger
+    uid: jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    isDefault: false
+    editable: false
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{service="$${__span.tags.service.name}"} |= "$${__trace.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        filterByTraceID: false
+        filterBySpanID: false
