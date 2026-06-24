@@ -2,7 +2,7 @@ package gui.chat;
 
 import gui.components.feedback.Toast;
 import network.ChatWebSocketClient;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.SwingUtilities;

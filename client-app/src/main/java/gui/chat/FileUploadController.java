@@ -4,7 +4,7 @@ import gui.components.chat.ChatMessageItem;
 import gui.components.feedback.Toast;
 import network.ChatWebSocketClient;
 import network.FileApiClient;
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 
 import javax.swing.*;

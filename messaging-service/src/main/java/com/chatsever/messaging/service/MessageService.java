@@ -1,10 +1,17 @@
 package com.chatsever.messaging.service;
 
-import com.chatsever.common.dto.LogEntry;
-import com.chatsever.common.dto.MessageDTO;
+import com.chatsever.messaging.dto.LogEntry;
+import com.chatsever.messaging.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
-import com.chatsever.messaging.client.RoleClient;
-import com.chatsever.messaging.client.ServerServiceClient;
+import com.chatsever.grpc.role.*;
+import com.chatsever.messaging.adapter.RoleGrpcAdapter;
+import com.chatsever.grpc.server.*;
+import com.chatsever.messaging.adapter.ServerInfoGrpcAdapter;
+import com.chatsever.grpc.channel.*;
+import com.chatsever.messaging.adapter.ChannelGrpcAdapter;
+import com.chatsever.grpc.presence.*;
+import com.chatsever.messaging.adapter.PresenceGrpcAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.entity.MessageReaction;
 import com.chatsever.messaging.repository.MessageRepository;
@@ -20,7 +27,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -36,46 +43,54 @@ import java.util.stream.Collectors;
 @Service
 public class MessageService {
     private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
-    private final RestTemplate restTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
-    private final ServerServiceClient serverServiceClient;
     private final MessageRepository messageRepository;
     private final MessageReactionRepository reactionRepository;
-    private final RoleClient roleClient;
-    private final OutboxMessageRepository outboxMessageRepository;
-    private final String presenceUrl;
-    private final String channelUrl;
+    @Autowired
+    private RoleGrpcAdapter roleServiceClient;
 
-    public MessageService(RestTemplate restTemplate, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, ServerServiceClient serverServiceClient, MessageRepository messageRepository, MessageReactionRepository reactionRepository, RoleClient roleClient, OutboxMessageRepository outboxMessageRepository, @Value("${services.presence-url}") String presenceUrl, @Value("${services.channel-url}") String channelUrl) {
-        this.restTemplate = restTemplate;
+    @Autowired
+    private ServerInfoGrpcAdapter serverServiceClient;
+
+    @Autowired
+    private ChannelGrpcAdapter channelServiceClient;
+
+    @Autowired
+    private PresenceGrpcAdapter presenceServiceClient;
+
+    // Giữ lại OutboxRepository từ nhánh main
+    private final OutboxMessageRepository outboxMessageRepository;
+
+    // Gộp constructor: Loại bỏ RestTemplate/FeignClient cũ, giữ lại Outbox
+    public MessageService(RabbitTemplate rabbitTemplate, 
+                          ObjectMapper objectMapper, 
+                          MessageRepository messageRepository, 
+                          MessageReactionRepository reactionRepository, 
+                          OutboxMessageRepository outboxMessageRepository) {
+        this.outboxMessageRepository = outboxMessageRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
-        this.serverServiceClient = serverServiceClient;
         this.messageRepository = messageRepository;
         this.reactionRepository = reactionRepository;
-        this.roleClient = roleClient;
         this.outboxMessageRepository = outboxMessageRepository;
-        this.presenceUrl = presenceUrl;
-        this.channelUrl = channelUrl;
     }
 
     // Kiểm tra quyền của User — nếu chưa là member, tự động thêm vào server
     @SuppressWarnings("unchecked")
     public boolean hasPermission(Long serverId, String username) {
         try {
-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
-            if (details != null && details.containsKey("members")) {
-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
-                for (Map<String, Object> member : members) {
-                    if (username.equals(member.get("userId"))) {
-                        return true;
-                    }
+            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
+            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
+            for (MemberDetails member : resp.getMembersList()) {
+                if (username.equals(member.getUserId())) {
+                    return true;
                 }
             }
             // User chưa là member → tự động thêm vào server
             logger.info("User {} chưa là member của server {} → tự động thêm", username, serverId);
-            serverServiceClient.ensureMember(serverId, username);
+            EnsureMemberRequest ensureReq = EnsureMemberRequest.newBuilder().setServerId(serverId).setUserId(username).build();
+            serverServiceClient.ensureMember(ensureReq);
             return true;
         } catch (Exception e) {
             logger.error("Error checking permission: {}", e.getMessage(), e);
@@ -101,11 +116,9 @@ public class MessageService {
     private boolean isServerMember(Long serverId, String username) {
         if (serverId == null) return true;
         try {
-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
-            if (details != null && details.containsKey("members")) {
-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
-                return members.stream().anyMatch(m -> username.equals(m.get("userId")));
-            }
+            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
+            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
+            return resp.getMembersList().stream().anyMatch(m -> username.equals(m.getUserId()));
         } catch (Exception e) {
             logger.error("Error checking server membership: {}", e.getMessage());
         }
@@ -140,13 +153,9 @@ public class MessageService {
     private Set<String> getServerMembers(Long serverId) {
         try {
             if (serverId == null) return Set.of();
-            Map<String, Object> details = serverServiceClient.getServerDetails(serverId);
-            if (details != null && details.containsKey("members")) {
-                List<Map<String, Object>> members = (List<Map<String, Object>>) details.get("members");
-                return members.stream()
-                        .map(m -> (String) m.get("userId"))
-                        .collect(Collectors.toSet());
-            }
+            GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
+            GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
+            return resp.getMembersList().stream().map(MemberDetails::getUserId).collect(Collectors.toSet());
         } catch (Exception e) {
             logger.error("Error fetching server members: {}", e.getMessage(), e);
         }
@@ -171,8 +180,8 @@ public class MessageService {
     // Gọi Presence Service báo trạng thái
     public void notifyPresence(String username, String action) {
         try {
-            String url = presenceUrl + "/api/presence/" + action + "?username=" + username;
-            restTemplate.postForObject(url, null, Void.class);
+            NotifyPresenceRequest req = NotifyPresenceRequest.newBuilder().setUsername(username).setAction(action).build();
+            presenceServiceClient.notifyPresence(req);
         } catch (Exception e) {
             logger.error("Error notifying presence: {}", e.getMessage(), e);
         }
@@ -294,10 +303,8 @@ public class MessageService {
             // Bỏ ghim nếu tin nhắn này đang được ghim
             if (entity.getChannelId() != null) {
                 try {
-                    String url = channelUrl + "/api/channels/" + entity.getChannelId() + "/pins/" + messageId;
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.set("X-User-Id", "system"); // Bypass quyền
-                    restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+                    RemovePinnedMessageRequest req = RemovePinnedMessageRequest.newBuilder().setChannelId(entity.getChannelId()).setMessageId(messageId).setUserId("system").build();
+                    channelServiceClient.removePinnedMessage(req);
                 } catch (Exception e) {
                     logger.error("Lỗi khi xóa ghim tin nhắn bị xóa: {}", e.getMessage());
                 }
@@ -320,9 +327,10 @@ public class MessageService {
         }
         if (serverId != null) {
             try {
-                Map<String, Object> perms = roleClient.getPermissions(serverId, username);
-                if (perms != null && perms.containsKey("permissionBitmask")) {
-                    int bitmask = (int) perms.get("permissionBitmask");
+                GetPermissionsRequest req = GetPermissionsRequest.newBuilder().setServerId(serverId).setUserId(username).build();
+                GetPermissionsResponse resp = roleServiceClient.getPermissions(req);
+                if (true) {
+                    int bitmask = resp.getPermissionBitmask();
                     // MANAGE_MESSAGES (4), ADMIN (128), OWNER (255)
                     return (bitmask & 4) != 0 || (bitmask & 128) != 0 || bitmask == 255;
                 }

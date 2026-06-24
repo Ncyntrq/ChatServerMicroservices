@@ -1,6 +1,6 @@
 package network;
 
-import com.chatsever.common.dto.MessageDTO;
+import network.dto.MessageDTO;
 import com.chatsever.common.enums.MessageType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

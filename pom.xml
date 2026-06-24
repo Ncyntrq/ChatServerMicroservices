@@ -10,6 +10,7 @@
 
     <modules>
         <module>common-lib</module>
+        <module>grpc-contracts</module>
         <module>log-service</module>
         <module>auth-service</module>
         <module>presence-service</module>

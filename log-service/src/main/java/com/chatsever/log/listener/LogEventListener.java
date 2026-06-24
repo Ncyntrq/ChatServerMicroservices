@@ -1,6 +1,6 @@
 package com.chatsever.log.listener;
 
-import com.chatsever.common.dto.LogEntry;
+import com.chatsever.log.dto.LogEntry;
 import com.chatsever.log.config.RabbitMQConfig;
 import com.chatsever.log.service.LogService;
 import org.slf4j.Logger;
