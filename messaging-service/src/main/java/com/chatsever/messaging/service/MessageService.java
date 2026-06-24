@@ -73,7 +73,6 @@ public class MessageService {
         this.objectMapper = objectMapper;
         this.messageRepository = messageRepository;
         this.reactionRepository = reactionRepository;
-        this.outboxMessageRepository = outboxMessageRepository;
     }
 
     // Kiểm tra quyền của User — nếu chưa là member, tự động thêm vào server
