@@ -76,7 +76,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
-         <dependency>
+        </dependency>
         <!-- ShedLock for Outbox Relay Worker -->
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
