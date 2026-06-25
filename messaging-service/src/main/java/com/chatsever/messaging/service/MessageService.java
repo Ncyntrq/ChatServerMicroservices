@@ -21,6 +21,8 @@ import com.chatsever.messaging.repository.OutboxMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +61,12 @@ public class MessageService {
 
     @Autowired
     private PresenceGrpcAdapter presenceServiceClient;
+
+    // Worker đẩy outbox -> RabbitMQ. Inject để kích hoạt đẩy-ngay sau khi transaction commit
+    // (giao tin realtime thay vì đợi vòng quét định kỳ). Không tạo vòng phụ thuộc vì
+    // OutboxRelayWorker không tham chiếu ngược MessageService.
+    @Autowired
+    private OutboxRelayWorker outboxRelayWorker;
 
     // Giữ lại OutboxRepository từ nhánh main
     private final OutboxMessageRepository outboxMessageRepository;
@@ -148,15 +157,34 @@ public class MessageService {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    // Cache danh sách member theo serverId để KHÔNG gọi gRPC GetServerDetails cho MỖI tin broadcast.
+    // TTL ngắn: chấp nhận trễ tối đa ~TTL khi member thay đổi, đổi lại giảm mạnh tải gRPC + độ trễ giao tin.
+    private static final long MEMBERS_CACHE_TTL_MS = 10_000;
+    private final Map<Long, CachedMembers> serverMembersCache = new ConcurrentHashMap<>();
+
+    private record CachedMembers(Set<String> members, long expiresAt) {}
+
     private Set<String> getServerMembers(Long serverId) {
+        if (serverId == null) return Set.of();
+
+        long now = System.currentTimeMillis();
+        CachedMembers cached = serverMembersCache.get(serverId);
+        if (cached != null && cached.expiresAt() > now) {
+            return cached.members();   // cache hit còn hạn -> bỏ qua gRPC
+        }
+
         try {
-            if (serverId == null) return Set.of();
             GetServerDetailsRequest req = GetServerDetailsRequest.newBuilder().setServerId(serverId).build();
             GetServerDetailsResponse resp = serverServiceClient.getServerDetails(req);
-            return resp.getMembersList().stream().map(MemberDetails::getUserId).collect(Collectors.toSet());
+            Set<String> members = resp.getMembersList().stream()
+                    .map(MemberDetails::getUserId)
+                    .collect(Collectors.toSet());
+            serverMembersCache.put(serverId, new CachedMembers(members, now + MEMBERS_CACHE_TTL_MS));
+            return members;
         } catch (Exception e) {
             logger.error("Error fetching server members: {}", e.getMessage(), e);
+            // Fallback: dùng cache cũ (dù hết hạn) để không chặn giao tin khi server-service tạm lỗi.
+            if (cached != null) return cached.members();
         }
         return Set.of();
     }
@@ -210,9 +238,46 @@ public class MessageService {
                 jsonPayload
             );
             outboxMessageRepository.save(outbox);
+            // Đẩy ngay lên RabbitMQ sau khi commit -> tin nhắn realtime (~ms) thay vì đợi tới 3s.
+            triggerImmediateRelayAfterCommit();
         } catch (Exception e) {
             logger.error("Error saving outbox event: {}", e.getMessage());
         }
+    }
+
+    // Khóa đánh dấu đã đăng ký đẩy-ngay cho transaction hiện tại (tránh đăng ký trùng khi
+    // 1 tin nhắn ghi nhiều outbox event: fanout + notify + log).
+    private static final String RELAY_SCHEDULED_KEY = "OUTBOX_RELAY_SCHEDULED";
+
+    /**
+     * Sau khi transaction commit thành công, kích hoạt OutboxRelayWorker đẩy outbox lên RabbitMQ
+     * ngay lập tức thay vì chờ vòng quét định kỳ. Nếu không có transaction đang mở thì bỏ qua
+     * (để scheduler dự phòng quét sau). Lỗi đẩy-ngay không ảnh hưởng tin đã lưu — scheduler sẽ retry.
+     */
+    private void triggerImmediateRelayAfterCommit() {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()
+                || TransactionSynchronizationManager.hasResource(RELAY_SCHEDULED_KEY)) {
+            return;
+        }
+        TransactionSynchronizationManager.bindResource(RELAY_SCHEDULED_KEY, Boolean.TRUE);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    outboxRelayWorker.processOutboxMessages();
+                } catch (Exception e) {
+                    logger.warn("Immediate outbox relay failed, scheduler sẽ thử lại: {}", e.getMessage());
+                }
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                // Gỡ resource để không rò rỉ trên thread pool dùng lại
+                if (TransactionSynchronizationManager.hasResource(RELAY_SCHEDULED_KEY)) {
+                    TransactionSynchronizationManager.unbindResource(RELAY_SCHEDULED_KEY);
+                }
+            }
+        });
     }
 
     public void sendError(WebSocketSession session, String errorMsg) throws Exception {

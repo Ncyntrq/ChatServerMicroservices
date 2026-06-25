@@ -168,6 +168,48 @@ pipeline {
                 }
             }
         }
+
+        // Chốt chặn: bảo đảm MỌI service đang chạy ĐÚNG image tag vừa build và đã healthy.
+        // Bắt được lỗi "deploy hụt / chạy image cũ" (vd: gRPC static:// chưa được redeploy)
+        // -> pipeline FAIL ngay thay vì báo SUCCESS giả.
+        stage('Verify Deploy') {
+            steps {
+                // Dùng nháy đơn để shell tự expand $IMAGE_TAG/$DOCKER_REGISTRY/$SERVICES (Jenkins đã export).
+                sh '''
+                    set -e
+                    DEADLINE=$(( $(date +%s) + 600 ))   # tối đa 10 phút cho JVM cold-start (start_period 300s)
+
+                    echo "=== Verify 1/2: tất cả service phải đúng image tag ${IMAGE_TAG} ==="
+                    bad=0
+                    for s in ${SERVICES}; do
+                        img=$(docker inspect --format '{{.Config.Image}}' "$s" 2>/dev/null || echo MISSING)
+                        want="${DOCKER_REGISTRY}/$s:${IMAGE_TAG}"
+                        if [ "$img" != "$want" ]; then
+                            echo "  MISMATCH $s: running='$img' want='$want'"
+                            bad=1
+                        fi
+                    done
+                    [ "$bad" = "0" ] || { echo "FAIL: có service chưa chạy tag ${IMAGE_TAG} (deploy hụt/stale image)"; exit 1; }
+                    echo "OK: toàn bộ service đang chạy tag ${IMAGE_TAG}"
+
+                    echo "=== Verify 2/2: chờ healthcheck (timeout 600s) ==="
+                    for s in ${SERVICES}; do
+                        while true; do
+                            st=$(docker inspect --format '{{.State.Health.Status}}' "$s" 2>/dev/null || echo missing)
+                            [ "$st" = "healthy" ] && { echo "  $s -> healthy"; break; }
+                            if [ "$st" = "unhealthy" ]; then
+                                echo "  $s -> UNHEALTHY"; docker logs --tail 60 "$s" 2>&1 | tail -60 || true; exit 1
+                            fi
+                            if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+                                echo "  $s -> TIMEOUT (status=$st)"; docker logs --tail 60 "$s" 2>&1 | tail -60 || true; exit 1
+                            fi
+                            sleep 5
+                        done
+                    done
+                    echo "=== Deploy verified: tất cả service healthy trên tag ${IMAGE_TAG} ==="
+                '''
+            }
+        }
     }
 
     post {
