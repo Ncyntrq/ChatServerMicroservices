@@ -5,6 +5,34 @@
 
 ---
 
+## [2026-06-25] Fix gRPC resolver + Tối ưu độ trễ tin nhắn (Outbox + cache member)
+
+**Bối cảnh:** Người dùng báo "không gửi được tin / không tạo được channel" và "tin nhắn chậm". Trace qua Jaeger (`http://35.198.251.73:16686`).
+
+### 🐛 Fix: gRPC `static://` → `unresolved address` (đã có trong source, cần redeploy)
+- **Triệu chứng:** `messaging-service` & `channel-service` văng `java.nio.channels.UnresolvedAddressException` → gRPC `UNAVAILABLE` khi gọi `server.ServerInfoService/GetServerDetails` và `role.RoleService/GetPermissions`. Check quyền fail → hiện ra "không có permission gửi tin / tạo channel".
+- **Root cause:** gRPC client dùng scheme `static://<host>:9090`. Resolver `static` (net.devh) chỉ resolve hostname **1 lần lúc khởi tạo channel**; nếu service đích chưa sẵn sàng lúc boot → địa chỉ bị cache *unresolved vĩnh viễn* → mọi call sau đều lỗi.
+- **Fix:** đổi sang `dns:///<host>:9090` (re-resolve mỗi lần reconnect) cho toàn bộ gRPC client. Đã commit ở `261ea68`. **Lưu ý:** image production cũ vẫn chạy `static://` → cần build+deploy lại để áp dụng.
+
+### 🚀 Tối ưu độ trễ tin nhắn (messaging-service)
+Nguyên nhân "chậm" KHÔNG phải RabbitMQ (publish ~16ms) mà do **Transactional Outbox poll mỗi 3s** → tin chờ ≤3s mới được đẩy.
+- **Đẩy-ngay sau commit:** `MessageService` đăng ký `TransactionSynchronization.afterCommit` để kích hoạt `OutboxRelayWorker.processOutboxMessages()` ngay sau khi transaction commit → tin realtime **~20–40ms** (trước ≤3s). Dedup 1 lần/transaction; lỗi đẩy-ngay tự fallback về scheduler (không mất tin).
+- **Vòng quét dự phòng:** `@Scheduled` 3s → **1s**; `lockAtLeastFor` (ShedLock) 1s → **0s** để các lần đẩy-ngay liên tiếp không bị chặn.
+- **Cache danh sách member:** `getServerMembers()` trước gọi gRPC `GetServerDetails` cho **mỗi** tin broadcast. Thêm cache `ConcurrentHashMap` TTL **10s** (không thêm dependency) → bỏ gRPC khỏi đường giao tin nóng; gRPC lỗi thì fallback cache cũ. Trade-off: member thay đổi trễ tối đa ~10s mới phản ánh.
+
+### 🛡️ Hardening CI/CD (Jenkinsfile)
+- Thêm stage **`Verify Deploy`**: sau `up -d`, kiểm tra mọi service đang chạy **đúng image tag** vừa build + chờ **healthcheck = healthy** (timeout 600s). Bắt được lỗi "deploy hụt / chạy image cũ" → pipeline FAIL ngay thay vì báo SUCCESS giả (đúng kịch bản sự cố lần này).
+
+**Files thay đổi:**
+- `messaging-service/.../service/OutboxRelayWorker.java` — interval 3s→1s, lockAtLeastFor 0s.
+- `messaging-service/.../service/MessageService.java` — đẩy-ngay sau commit + cache member TTL.
+- `Jenkinsfile` — stage Verify Deploy.
+- (gRPC `dns:///`: đã có từ `261ea68`.)
+
+**Cần làm:** Trigger Jenkins build trên `main` để rebuild+redeploy toàn bộ service.
+
+---
+
 ## [2026-06-24] P2.2 & P2.3 — Keycloak OIDC + Gateway Dual-Mode OAuth2
 
 **Giai đoạn hoàn thành:**

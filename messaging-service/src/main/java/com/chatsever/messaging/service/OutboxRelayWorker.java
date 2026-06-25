@@ -28,8 +28,12 @@ public class OutboxRelayWorker {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    @Scheduled(fixedDelayString = "3000")
-    @SchedulerLock(name = "outbox_relay_lock", lockAtMostFor = "2m", lockAtLeastFor = "1s")
+    // Vòng quét dự phòng (fallback): bắt các message bị sót nếu lần đẩy-ngay sau commit thất bại
+    // hoặc tiến trình restart giữa chừng. Đẩy-ngay (MessageService.triggerImmediateRelayAfterCommit)
+    // mới là đường giao tin realtime; vòng này chỉ là lưới an toàn nên 1s là đủ.
+    // lockAtLeastFor = 0s để các lần đẩy-ngay liên tiếp (nhiều tin dồn) không bị ShedLock chặn.
+    @Scheduled(fixedDelayString = "1000")
+    @SchedulerLock(name = "outbox_relay_lock", lockAtMostFor = "2m", lockAtLeastFor = "0s")
     @Transactional
     public void processOutboxMessages() {
         List<OutboxMessage> messages = repository.findTop50ByStatusOrderByCreatedAtAsc("PENDING");
