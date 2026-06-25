@@ -2,6 +2,7 @@ package com.chatsever.messaging.controller;
 
 import com.chatsever.messaging.entity.ChatMessage;
 import com.chatsever.messaging.repository.MessageRepository;
+import com.chatsever.messaging.repository.OutboxMessageRepository;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,10 +17,12 @@ public class MessageController {
     
     private final MessageRepository messageRepository;
     private final com.chatsever.messaging.service.MessageService messageService;
+    private final OutboxMessageRepository outboxRepository;
 
-    public MessageController(MessageRepository messageRepository, com.chatsever.messaging.service.MessageService messageService) {
+    public MessageController(MessageRepository messageRepository, com.chatsever.messaging.service.MessageService messageService, OutboxMessageRepository outboxRepository) {
         this.messageRepository = messageRepository;
         this.messageService = messageService;
+        this.outboxRepository = outboxRepository;
     }
     
     @GetMapping("/{channelId}/messages")
@@ -38,8 +41,23 @@ public class MessageController {
         }
         
         populateReplyInfo(messages);
+        populateOutboxStatus(messages);
         
         return ResponseEntity.ok(messages);
+    }
+
+    private void populateOutboxStatus(List<ChatMessage> messages) {
+        if (messages.isEmpty()) return;
+        List<String> msgIds = messages.stream().map(m -> String.valueOf(m.getId())).toList();
+        List<com.chatsever.messaging.entity.OutboxMessage> pending = outboxRepository.findByAggregateIdInAndStatus(msgIds, "PENDING");
+        java.util.Set<Long> pendingIds = pending.stream().map(o -> Long.parseLong(o.getAggregateId())).collect(java.util.stream.Collectors.toSet());
+        for (ChatMessage msg : messages) {
+            if (pendingIds.contains(msg.getId())) {
+                msg.setStatus("SENDING");
+            } else {
+                msg.setStatus("SENT");
+            }
+        }
     }
 
     private void populateReplyInfo(List<ChatMessage> messages) {
@@ -71,7 +89,9 @@ public class MessageController {
         if (ids == null || ids.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
-        return ResponseEntity.ok(messageRepository.findAllById(ids));
+        List<ChatMessage> messages = messageRepository.findAllById(ids);
+        populateOutboxStatus(messages);
+        return ResponseEntity.ok(messages);
     }
 
     // Tìm kiếm tin nhắn theo từ khóa
@@ -92,6 +112,7 @@ public class MessageController {
         }
         
         populateReplyInfo(results);
+        populateOutboxStatus(results);
         
         return ResponseEntity.ok(results);
     }

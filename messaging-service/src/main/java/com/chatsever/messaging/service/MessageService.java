@@ -126,7 +126,7 @@ public class MessageService {
 
     // Lưu sự kiện vào Outbox thay vì bắn trực tiếp
     public void broadcastToChannel(MessageDTO msg) {
-        saveOutboxEvent("chat.fanout", "", msg);
+        saveOutboxEvent("chat.fanout", "", msg, msg.getMessageId() != null ? msg.getMessageId().toString() : null);
     }
 
     // Node cục bộ nhận từ RabbitMQ và đẩy xuống các WebSocket sessions nó đang quản lý
@@ -191,20 +191,20 @@ public class MessageService {
         LogEntry log = new LogEntry(msg.getTimestamp(), msg.getType().name(),
                 msg.getSender(), msg.getReceiver(), msg.getContent(),
                 msg.getChannelId(), msg.getServerId());
-        saveOutboxEvent("chat.exchange", "log." + msg.getType().name().toLowerCase(), log);
+        saveOutboxEvent("chat.exchange", "log." + msg.getType().name().toLowerCase(), log, msg.getMessageId() != null ? msg.getMessageId().toString() : null);
     }
 
     // Publish Notification Event sang RabbitMQ (cho notification-service) (Qua Outbox)
     public void publishNotificationEvent(MessageDTO msg) {
-        saveOutboxEvent("chat.exchange", "notify.message", msg);
+        saveOutboxEvent("chat.exchange", "notify.message", msg, msg.getMessageId() != null ? msg.getMessageId().toString() : null);
     }
 
-    private void saveOutboxEvent(String exchange, String routingKey, Object payload) {
+    private void saveOutboxEvent(String exchange, String routingKey, Object payload, String aggregateId) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
             OutboxMessage outbox = new OutboxMessage(
                 "MESSAGE_EVENT", 
-                null, 
+                aggregateId, 
                 exchange, 
                 routingKey, 
                 jsonPayload

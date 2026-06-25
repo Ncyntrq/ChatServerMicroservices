@@ -24,6 +24,7 @@ public class RawChatMessage {
     public MessageType type;
     public Boolean isEdited;
     public Boolean isDeleted;
+    public String status;
     public Long replyToMessageId;
     public String replyToSender;
     public String replyToContent;
@@ -51,6 +52,7 @@ public class RawChatMessage {
         dto.setMessageId(id);
         dto.setIsEdited(isEdited);
         dto.setIsDeleted(isDeleted);
+        dto.setStatus(status);
         dto.setReplyToMessageId(replyToMessageId);
         dto.setReplyToSender(replyToSender);
         dto.setReplyToContent(replyToContent);
