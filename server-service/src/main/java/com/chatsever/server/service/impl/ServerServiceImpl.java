@@ -49,13 +49,19 @@ public class ServerServiceImpl implements ServerService {
         // Không khởi tạo 4 Role mặc định nữa theo yêu cầu của user (bỏ role null)
         // roleClient.initDefaultRoles(saved.getId());
 
-        // Tạo kênh chat mặc định: "General"
+        // Tạo kênh chat mặc định: "General".
+        // userId="system" -> channel-service BỎ QUA check quyền (if (!"system".equals(userId))).
+        // QUAN TRỌNG: createServer là @Transactional, server vừa save CHƯA commit. Nếu truyền ownerId,
+        // channel-service sẽ gọi ngược chain role->server getServerDetails(serverId) để check quyền,
+        // nhưng server row chưa visible với transaction khác -> "Server not found" -> trip circuit breaker
+        // -> mọi tạo channel sau đó bị 503. Dùng "system" để tránh đọc-trước-commit (đây là tạo channel
+        // do hệ thống, owner vừa tạo server nên không cần check quyền lại).
         try {
             CreateChannelRequest req = CreateChannelRequest.newBuilder()
                     .setName("General")
                     .setServerId(saved.getId())
                     .setType("TEXT")
-                    .setUserId(ownerId)
+                    .setUserId("system")
                     .build();
             channelServiceClient.createChannel(req);
         } catch (Exception e) {
