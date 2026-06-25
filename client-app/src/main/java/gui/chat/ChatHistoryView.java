@@ -26,8 +26,8 @@ public class ChatHistoryView extends JScrollPane {
     private final String sessionUsername;
     private final ChatMessageItem.MessageActions messageActions;
 
-    // Theo dõi item theo messageId để cập nhật/xóa tại chỗ khi nhận EDIT/DELETE
     private final Map<Long, ChatMessageItem> messageItems = new LinkedHashMap<>();
+    private final Map<String, ChatMessageItem> optimisticItems = new LinkedHashMap<>();
     private String lastSender = null;
     private LocalDateTime lastTimestamp = null;
     /** Tin cùng người trong khoảng này → gộp nhóm (chỉ tin đầu hiện giờ). */
@@ -124,6 +124,9 @@ public class ChatHistoryView extends JScrollPane {
         if (message.getMessageId() != null) {
             messageItems.put(message.getMessageId(), item);
         }
+        if (message.getTempId() != null) {
+            optimisticItems.put(message.getTempId(), item);
+        }
 
         chatHistoryPanel.revalidate();
         chatHistoryPanel.repaint();
@@ -159,6 +162,7 @@ public class ChatHistoryView extends JScrollPane {
         lastSender = null;
         lastTimestamp = null;
         messageItems.clear();
+        optimisticItems.clear();
         showingPlaceholder = true;
         chatHistoryPanel.add(Box.createVerticalGlue());
         chatHistoryPanel.add(buildPlaceholder());
@@ -232,6 +236,29 @@ public class ChatHistoryView extends JScrollPane {
     /** Tin nhắn có nằm trong phần đã tải hiện tại không? */
     public boolean hasMessage(Long messageId) {
         return messageId != null && messageItems.containsKey(messageId);
+    }
+
+    /** Cập nhật một tin nhắn lạc quan thành tin nhắn thực. */
+    public boolean applyOptimisticUpdate(MessageDTO realMsg) {
+        if (realMsg.getTempId() == null) return false;
+        ChatMessageItem item = optimisticItems.get(realMsg.getTempId());
+        if (item == null) return false;
+
+        // Cập nhật DTO bên trong
+        MessageDTO optMsg = item.getMessage();
+        optMsg.setMessageId(realMsg.getMessageId());
+        optMsg.setStatus(realMsg.getStatus() != null ? realMsg.getStatus() : "SENT");
+        optMsg.setTimestamp(realMsg.getTimestamp());
+        optMsg.setContent(realMsg.getContent()); // In case server modified it
+        
+        // Thêm vào messageItems vì giờ nó đã có messageId thực
+        if (realMsg.getMessageId() != null) {
+            messageItems.put(realMsg.getMessageId(), item);
+        }
+        
+        // Yêu cầu item vẽ lại (bỏ opacity hoặc icon gửi đi)
+        item.repaint();
+        return true;
     }
 
     /**

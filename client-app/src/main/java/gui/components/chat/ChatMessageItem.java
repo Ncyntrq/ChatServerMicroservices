@@ -12,6 +12,7 @@ import network.FileApiClient;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.AlphaComposite;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -125,6 +126,18 @@ public class ChatMessageItem extends JPanel {
         // do updateHover quyết định dựa trên con trỏ có nằm trong bubble/toolbar hay
         // không.
         installHover(this);
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        if ("SENDING".equals(message.getStatus())) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            super.paint(g2);
+            g2.dispose();
+        } else {
+            super.paint(g);
+        }
     }
 
     private void buildSystemLayout(MessageDTO message) {
@@ -417,6 +430,9 @@ public class ChatMessageItem extends JPanel {
             String timeStr = message.getTimestamp() != null
                     ? message.getTimestamp().format(TIME_FMT)
                     : "Bây giờ";
+            if ("SENDING".equals(message.getStatus())) {
+                timeStr += " ⏳";
+            }
             JLabel timeLabel = new JLabel(timeStr);
             timeLabel.setFont(AppFonts.CAPTION);
             timeLabel.setForeground(new Color(0x80, 0x84, 0x8E, 0x99));

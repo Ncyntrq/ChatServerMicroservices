@@ -5,6 +5,7 @@ WORKDIR /build
 # Copy POM files trước để cache dependencies
 COPY pom.xml ./
 COPY common-lib/pom.xml common-lib/pom.xml
+COPY grpc-contracts/pom.xml grpc-contracts/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
 COPY server-service/pom.xml server-service/pom.xml
 COPY channel-service/pom.xml channel-service/pom.xml

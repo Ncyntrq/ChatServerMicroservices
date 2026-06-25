@@ -115,7 +115,10 @@ public class ChatClientGUI extends JFrame {
         this.rightSidebar = new RightSidebarView(sessionUsername, this::openAssignRoleDialog, this::confirmKick);
         this.unreadSync = new UnreadCountSync(notificationApi, serverSidebar, channelSidebar, friendSidebar, sessionUsername);
         this.fileUpload = new FileUploadController(this, fileApi, wsClient, sessionUsername, this::toast, chatInput::setUploading);
-        this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast);
+        this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast, msg -> {
+            // Optimistic UI: append to view immediately
+            chatHistoryView.appendMessage(msg);
+        });
         // Sau khi ghim/bỏ ghim → broadcast marker kèm channelId để client khác refresh real-time.
         this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId,
                 cid -> outbound.broadcast(MessageType.CHAT, "[SYSTEM_PIN_UPDATE]", activeServerId, cid, null));
@@ -767,7 +770,12 @@ public class ChatClientGUI extends JFrame {
                 if (belongsToActiveChannel(msg)) chatHistoryView.applyReaction(msg);
             }
             default -> {
-                if (belongsToActiveChannel(msg)) chatHistoryView.appendMessage(msg);
+                if (msg.getTempId() != null && chatHistoryView.applyOptimisticUpdate(msg)) {
+                    // It was an optimistic update, nothing more to append
+                    refreshSidebarAttachments();
+                } else if (belongsToActiveChannel(msg)) {
+                    chatHistoryView.appendMessage(msg);
+                }
             }
         }
     }
@@ -775,7 +783,11 @@ public class ChatClientGUI extends JFrame {
     /** Tin thuộc kênh đang mở → hiển thị + ack; ngược lại chỉ cập nhật badge. */
     private void deliverOrCount(MessageDTO msg) {
         if (belongsToActiveChannel(msg)) {
-            chatHistoryView.appendMessage(msg);
+            if (msg.getTempId() != null && chatHistoryView.applyOptimisticUpdate(msg)) {
+                // Đã cập nhật tin nhắn chờ
+            } else {
+                chatHistoryView.appendMessage(msg);
+            }
             unreadSync.ack(msg);
             refreshSidebarAttachments();
         } else {

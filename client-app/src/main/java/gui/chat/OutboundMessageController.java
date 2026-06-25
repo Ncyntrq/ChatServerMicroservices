@@ -7,7 +7,9 @@ import com.chatsever.common.enums.MessageType;
 
 import javax.swing.SwingUtilities;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /** Tập trung mọi thao tác gửi tin qua WebSocket: chat, sửa, xóa, broadcast thông báo ngầm. */
 public class OutboundMessageController {
@@ -15,11 +17,13 @@ public class OutboundMessageController {
     private final ChatWebSocketClient wsClient;
     private final String sessionUsername;
     private final BiConsumer<Toast.Level, String> feedback;
+    private final Consumer<MessageDTO> optimisticAppender;
 
-    public OutboundMessageController(ChatWebSocketClient wsClient, String sessionUsername, BiConsumer<Toast.Level, String> feedback) {
+    public OutboundMessageController(ChatWebSocketClient wsClient, String sessionUsername, BiConsumer<Toast.Level, String> feedback, Consumer<MessageDTO> optimisticAppender) {
         this.wsClient = wsClient;
         this.sessionUsername = sessionUsername;
         this.feedback = feedback;
+        this.optimisticAppender = optimisticAppender;
     }
 
     public void sendChat(String text, long activeChannelId, long activeServerId, String activePrivateUser, Long replyToMessageId) {
@@ -35,6 +39,14 @@ public class OutboundMessageController {
         if (replyToMessageId != null) {
             out.setReplyToMessageId(replyToMessageId);
         }
+        
+        // Optimistic UI
+        out.setTempId(UUID.randomUUID().toString());
+        out.setStatus("SENDING");
+        if (optimisticAppender != null) {
+            optimisticAppender.accept(out);
+        }
+
         sendWithError(out, "Gửi thất bại: ");
     }
 
