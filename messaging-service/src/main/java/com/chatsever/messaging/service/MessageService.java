@@ -289,6 +289,7 @@ public class MessageService {
     public void processChatMessage(MessageDTO msg) {
         ChatMessage saved = saveMessage(msg);
         msg.setMessageId(saved.getId());
+        msg.setStatus("SENT"); // Cập nhật trạng thái thành SENT để client xóa hiệu ứng mờ
         broadcastToChannel(msg);
         publishNotificationEvent(msg);
         publishLogEvent(msg);
@@ -315,6 +316,7 @@ public class MessageService {
     public void processPrivateMessage(MessageDTO msg) {
         ChatMessage saved = saveMessage(msg);
         msg.setMessageId(saved.getId());
+        msg.setStatus("SENT"); // Cập nhật trạng thái thành SENT để client xóa hiệu ứng mờ
         publishNotificationEvent(msg);
         publishLogEvent(msg);
     }
