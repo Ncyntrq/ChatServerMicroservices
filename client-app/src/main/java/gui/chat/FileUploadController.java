@@ -31,16 +31,18 @@ public class FileUploadController {
     private final String sessionUsername;
     private final BiConsumer<Toast.Level, String> feedback;
     private final Consumer<Boolean> uploadingState;
+    private final Consumer<MessageDTO> optimisticAppender;
 
     public FileUploadController(Component parent, FileApiClient fileApi, ChatWebSocketClient wsClient,
                                String sessionUsername, BiConsumer<Toast.Level, String> feedback,
-                               Consumer<Boolean> uploadingState) {
+                               Consumer<Boolean> uploadingState, Consumer<MessageDTO> optimisticAppender) {
         this.parent = parent;
         this.fileApi = fileApi;
         this.wsClient = wsClient;
         this.sessionUsername = sessionUsername;
         this.feedback = feedback;
         this.uploadingState = uploadingState;
+        this.optimisticAppender = optimisticAppender;
     }
 
     public void chooseAndSend(long activeChannelId, long activeServerId, String activePrivateUser) {
@@ -94,9 +96,20 @@ public class FileUploadController {
                         out.setServerId(sv);
                         out.setChannelId(ch);
                     }
+
+                    // Optimistic UI
+                    out.setTempId(java.util.UUID.randomUUID().toString());
+                    out.setStatus("SENDING");
+                    if (optimisticAppender != null) {
+                        optimisticAppender.accept(out);
+                    }
+
                     wsClient.send(out).whenComplete((ws, err) -> {
-                        if (err != null) SwingUtilities.invokeLater(
+                        if (err != null) {
+                            out.setStatus("ERROR");
+                            SwingUtilities.invokeLater(
                                 () -> feedback.accept(Toast.Level.ERROR, "Gửi tệp thất bại: " + err.getMessage()));
+                        }
                     });
                 } catch (Exception ex) {
                     if (ex instanceof InterruptedException) {

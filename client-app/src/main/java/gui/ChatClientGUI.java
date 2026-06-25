@@ -33,6 +33,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 /**
  * Cửa sổ chat chính. Đóng vai trò orchestrator: dựng layout, giữ trạng thái
@@ -114,11 +115,11 @@ public class ChatClientGUI extends JFrame {
         this.chatHistoryView = new ChatHistoryView(sessionUsername, messageActions);
         this.rightSidebar = new RightSidebarView(sessionUsername, this::openAssignRoleDialog, this::confirmKick);
         this.unreadSync = new UnreadCountSync(notificationApi, serverSidebar, channelSidebar, friendSidebar, sessionUsername);
-        this.fileUpload = new FileUploadController(this, fileApi, wsClient, sessionUsername, this::toast, chatInput::setUploading);
-        this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast, msg -> {
-            // Optimistic UI: append to view immediately
+        Consumer<MessageDTO> optimisticAppender = msg -> {
             chatHistoryView.appendMessage(msg);
-        });
+        };
+        this.fileUpload = new FileUploadController(this, fileApi, wsClient, sessionUsername, this::toast, chatInput::setUploading, optimisticAppender);
+        this.outbound = new OutboundMessageController(wsClient, sessionUsername, this::toast, optimisticAppender);
         // Sau khi ghim/bỏ ghim → broadcast marker kèm channelId để client khác refresh real-time.
         this.pinController = new PinController(this, this::toast, channelApi, () -> activeChannelId,
                 cid -> outbound.broadcast(MessageType.CHAT, "[SYSTEM_PIN_UPDATE]", activeServerId, cid, null));
