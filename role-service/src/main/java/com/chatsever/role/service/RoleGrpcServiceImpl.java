@@ -52,7 +52,18 @@ public class RoleGrpcServiceImpl extends RoleServiceGrpc.RoleServiceImplBase {
     public void getPermissions(GetPermissionsRequest request, StreamObserver<GetPermissionsResponse> responseObserver) {
         try {
             Map<String, Object> perms = roleService.getEffectivePermissions(String.valueOf(request.getServerId()), request.getUserId());
-            List<String> permissions = (List<String>) perms.get("permissions");
+            // Permission.toNames() trả về String "A,B,C" (không phải List) -> tách thành List cho proto
+            // (repeated string permissions). Trước đây ép thẳng (List<String>) gây ClassCastException
+            // -> GetPermissions luôn INTERNAL -> channel/server check quyền fail.
+            Object permsObj = perms.get("permissions");
+            List<String> permissions;
+            if (permsObj instanceof List<?> list) {
+                permissions = (List<String>) list;
+            } else if (permsObj instanceof String s && !s.isBlank()) {
+                permissions = java.util.Arrays.asList(s.split(","));
+            } else {
+                permissions = java.util.List.of();
+            }
             String roleName = (String) perms.get("role");
             Integer bitmask = (Integer) perms.get("permissionBitmask");
 

@@ -9,6 +9,8 @@ import com.chatsever.auth.repository.RefreshTokenRepository;
 import com.chatsever.auth.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -129,7 +131,10 @@ public class AuthService {
                 .subject(username)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                // Pin HS256 KHỚP CHÍNH XÁC gateway (SecretKeySpec "HmacSHA256" + MacAlgorithm.HS256).
+                // Nếu dùng Keys.hmacShaKeyFor(secret) thì JJWT tự suy alg theo độ dài secret -> ra HS384
+                // khi secret dài -> gateway (chỉ chấp nhận HS256) trả 401. Tạo key HmacSHA256 tường minh.
+                .signWith(new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"), Jwts.SIG.HS256)
                 .compact();
     }
 
