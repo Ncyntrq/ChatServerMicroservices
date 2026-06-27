@@ -15,18 +15,78 @@ Dự án bao gồm **12 microservices nghiệp vụ**, 2 thư viện dùng chung
 ---
 
 ## Mục lục
-1. [Tính năng nổi bật](#-tính-năng-nổi-bật)
-2. [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-3. [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-4. [Danh sách Microservices](#-danh-sách-microservices)
-5. [Hướng dẫn cài đặt & Triển khai](#-hướng-dẫn-cài-đặt--triển-khai)
-6. [Ứng dụng Desktop Client](#-ứng-dụng-desktop-client)
-7. [DevOps & Observability (Giám sát)](#-devops--observability)
-8. [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
+1. [Hướng dẫn Test nhanh (dùng VPS có sẵn)](#-hướng-dẫn-test-nhanh-dùng-vps-có-sẵn)
+2. [Tính năng nổi bật](#-tính-năng-nổi-bật)
+3. [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+4. [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
+5. [Danh sách Microservices](#-danh-sách-microservices)
+6. [Hướng dẫn tự Triển khai Backend](#-hướng-dẫn-tự-triển-khai-backend)
+7. [Ứng dụng Desktop Client](#-ứng-dụng-desktop-client)
+8. [DevOps & Observability (Giám sát)](#-devops--observability)
+9. [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
 
 ---
 
-## Tính năng nổi bật
+## 🚀 Hướng dẫn Test nhanh (dùng VPS có sẵn)
+
+> **Backend đã được triển khai sẵn trên VPS `35.198.251.73`.** Bạn **KHÔNG** cần cài Docker, MySQL, RabbitMQ hay bất kỳ hạ tầng nào. Chỉ cần build và chạy Desktop Client là có thể test ngay.
+
+### Yêu cầu
+
+- **JDK 17** trở lên
+- **Maven 3.8+** (hoặc dùng wrapper `./mvnw` đã đính kèm)
+
+### Bước 1: Clone dự án
+
+```bash
+git clone https://github.com/<your-org>/chat-server-microservices.git
+cd chat-server-microservices
+```
+
+### Bước 2: Kiểm tra cấu hình kết nối
+
+Mở file [`client-app/src/main/java/network/ApiConfig.java`](file:///Users/thanhnguyen/Documents/chat-server-microservices/client-app/src/main/java/network/ApiConfig.java) và đảm bảo 2 dòng sau **trỏ tới VPS**:
+
+```java
+public static final String GATEWAY_HTTP = System.getProperty(
+        "chatsever.gateway.http", "http://35.198.251.73:8080");
+
+public static final String GATEWAY_WS = System.getProperty(
+        "chatsever.gateway.ws", "ws://35.198.251.73:8080");
+```
+
+> **Lưu ý:** Mặc định file đã trỏ sẵn tới VPS. Nếu thấy giá trị là `localhost` thì hãy đổi thành `http://35.198.251.73:8080` và `ws://35.198.251.73:8080`.
+
+### Bước 3: Build Client
+
+```bash
+# Build common-lib và grpc-contracts trước (dependency)
+./mvnw clean install -pl common-lib,grpc-contracts -DskipTests
+
+# Build Desktop Client
+./mvnw clean package -pl client-app -DskipTests
+```
+
+### Bước 4: Chạy ứng dụng
+
+```bash
+java -jar client-app/target/client-app-*.jar
+```
+
+Ứng dụng sẽ tự động kết nối tới backend trên VPS. Đăng ký tài khoản mới hoặc đăng nhập và bắt đầu chat!
+
+### Tóm tắt
+
+| Bước | Hành động |
+|------|-----------|
+| 1 | Clone repo |
+| 2 | Kiểm tra `ApiConfig.java` — đảm bảo trỏ tới `35.198.251.73:8080` |
+| 3 | `./mvnw clean install -pl common-lib,grpc-contracts -DskipTests` rồi `./mvnw clean package -pl client-app -DskipTests` |
+| 4 | `java -jar client-app/target/client-app-*.jar` |
+
+---
+
+## ✨ Tính năng nổi bật
 
 * **Xác thực & Bảo mật:** Quản lý đăng ký/đăng nhập tập trung. Sử dụng băm mật khẩu BCrypt và JWT (Access Token 2h, Refresh Token 7 ngày). Hệ thống đang trong giai đoạn migrate sang **Keycloak (OIDC)**: Gateway xác thực ở chế độ **dual-mode** — ưu tiên token Keycloak (RS256/JWKS), tự động fallback về token HS256 do `auth-service` phát hành.
 * **Hệ thống Máy chủ (Servers) & Kênh (Channels):** Tạo server cộng đồng, chia sẻ mã mời (invite code), tổ chức các kênh trò chuyện (text/voice).
@@ -40,7 +100,7 @@ Dự án bao gồm **12 microservices nghiệp vụ**, 2 thư viện dùng chung
 
 ---
 
-## Kiến trúc hệ thống
+## 🏗 Kiến trúc hệ thống
 
 ```text
                     ┌──────────────┐
@@ -68,7 +128,7 @@ Dự án bao gồm **12 microservices nghiệp vụ**, 2 thư viện dùng chung
 
 ---
 
-## Công nghệ sử dụng
+## 🛠 Công nghệ sử dụng
 
 | Phân lớp | Công nghệ áp dụng |
 |---|---|
@@ -88,7 +148,7 @@ Dự án bao gồm **12 microservices nghiệp vụ**, 2 thư viện dùng chung
 
 ---
 
-## Danh sách Microservices
+## 📦 Danh sách Microservices
 
 Hạ tầng chạy trên các port: `MySQL: 3307` | `RabbitMQ: 5672 (UI: 15672)` | `MinIO: 9000 (Console: 9001)` | `Keycloak: 8180`.
 
@@ -112,7 +172,9 @@ Hạ tầng chạy trên các port: `MySQL: 3307` | `RabbitMQ: 5672 (UI: 15672)`
 
 ---
 
-## Hướng dẫn Cài đặt & Triển khai
+## 🔧 Hướng dẫn tự Triển khai Backend
+
+> Phần này dành cho ai muốn **tự dựng backend riêng**. Nếu chỉ muốn test, hãy xem [Hướng dẫn Test nhanh](#-hướng-dẫn-test-nhanh-dùng-vps-có-sẵn) ở trên.
 
 ### Yêu cầu hệ thống
 - **JDK 17**
@@ -168,9 +230,18 @@ kubectl apply -k k8s/overlays/dev
 kubectl apply -k k8s/overlays/prod
 ```
 
+Khi chạy backend local, nhớ sửa `ApiConfig.java` về `localhost`:
+```java
+public static final String GATEWAY_HTTP = System.getProperty(
+        "chatsever.gateway.http", "http://localhost:8080");
+
+public static final String GATEWAY_WS = System.getProperty(
+        "chatsever.gateway.ws", "ws://localhost:8080");
+```
+
 ---
 
-## Ứng dụng Desktop Client
+## 🖥 Ứng dụng Desktop Client
 
 Giao diện người dùng được xây dựng bằng **Java Swing** kết hợp thư viện **FlatLaf**, mang lại UI/UX hiện đại (giao diện 3 cột, hỗ trợ Light/Dark mode).
 
@@ -182,7 +253,7 @@ Giao diện người dùng được xây dựng bằng **Java Swing** kết hợ
 # Chạy ứng dụng
 java -jar client-app/target/client-app-*.jar
 ```
-*Mặc định Client kết nối tới Gateway qua `http://localhost:8080` và WebSocket qua `ws://localhost:8080/ws/chat`. Có thể ghi đè khi chạy:*
+*Mặc định Client kết nối tới VPS tại `http://35.198.251.73:8080`. Có thể ghi đè khi chạy bằng system property:*
 ```bash
 java -Dchatsever.gateway.http=http://<host>:8080 \
      -Dchatsever.gateway.ws=ws://<host>:8080 \
@@ -191,7 +262,7 @@ java -Dchatsever.gateway.http=http://<host>:8080 \
 
 ---
 
-## DevOps & Observability
+## 📊 DevOps & Observability
 
 Toàn bộ công cụ DevOps và giám sát được tách riêng vào `docker-compose.devops.yml`:
 ```bash
@@ -210,7 +281,7 @@ docker compose -f docker-compose.devops.yml up -d
 
 ---
 
-## Cấu trúc thư mục
+## 📁 Cấu trúc thư mục
 
 ```text
 chat-server-microservices/
@@ -227,6 +298,8 @@ chat-server-microservices/
 ├── messaging-service/          # Service xử lý chat, WebSocket
 ├── ...                         # (Các service nghiệp vụ khác)
 ├── client-app/                 # Source code Desktop Client (Swing UI)
+│   └── src/main/java/network/
+│       └── ApiConfig.java      # ⬅ File cấu hình endpoint (đổi tại đây để chuyển VPS/localhost)
 ├── k8s/                        # Manifest Kubernetes (Kustomize: base + overlays/dev,prod)
 └── devops/                     # Cấu hình Prometheus, Grafana, Loki, Promtail, Keycloak realm
 ```
